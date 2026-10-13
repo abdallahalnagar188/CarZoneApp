@@ -46,4 +46,28 @@ class VehicleModel {
   };
 
   Color get swatch => colors[color] ?? colors['white']!;
+
+  factory VehicleModel.fromJson(Map<String, dynamic> json) {
+    return VehicleModel(
+      id: json['id']?.toString() ?? '',
+      customerId: json['customer_id']?.toString() ?? json['customerId']?.toString() ?? '',
+      make: json['make']?.toString() ?? '',
+      model: json['model']?.toString() ?? '',
+      year: (json['year'] as num?)?.toInt(),
+      color: json['color']?.toString() ?? 'white',
+      plate: json['plate']?.toString() ?? '',
+      isDefault: json['is_default'] ?? json['isDefault'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'customer_id': customerId,
+    'make': make,
+    'model': model,
+    'year': year,
+    'color': color,
+    'plate': plate,
+    'is_default': isDefault,
+  };
 }

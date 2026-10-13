@@ -7,6 +7,7 @@ import '../enums/enums.dart';
 import 'availability_service.dart';
 import 'carzone_db_service.dart';
 import 'pricing_service.dart';
+import 'supabase_service.dart';
 
 class SlotTakenException implements Exception {}
 
@@ -62,6 +63,7 @@ class OrderService {
       ],
     );
     _db.orders.add(order);
+    _db.saveOrder(order);
     _db.notify(
       userId: customerId,
       type: 'created',
@@ -86,6 +88,7 @@ class OrderService {
       ..status = OrderStatus.cancelled
       ..timeline.add(TimelineEntry('cancelled', DateTime.now()));
     _db.orders.refresh();
+    _db.saveOrder(order);
     _db.notify(
       userId: order.customerId,
       type: 'cancelled',
@@ -105,40 +108,47 @@ class OrderService {
       ..scheduledAt = slot
       ..timeline.add(TimelineEntry('rescheduled', DateTime.now()));
     _db.orders.refresh();
+    _db.saveOrder(order);
   }
 
   Future<void> review(OrderModel order, int stars, List<String> tags, String comment) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final customer = _db.customerById(order.customerId);
-    _db.reviews.insert(
-      0,
-      ReviewModel(
-        id: 'rv_${DateTime.now().microsecondsSinceEpoch}',
-        orderId: order.id,
-        customerName: customer?.name ?? '',
-        branchId: order.branchId,
-        serviceName: order.primary.name,
-        stars: stars,
-        comment: comment,
-        tags: tags,
-        createdAt: DateTime.now(),
-      ),
+    final rev = ReviewModel(
+      id: 'rv_${DateTime.now().microsecondsSinceEpoch}',
+      orderId: order.id,
+      customerName: customer?.name ?? '',
+      branchId: order.branchId,
+      serviceName: order.primary.name,
+      stars: stars,
+      comment: comment,
+      tags: tags,
+      createdAt: DateTime.now(),
     );
+    _db.reviews.insert(0, rev);
+    _db.saveReview(rev);
   }
 
   Future<String> report(OrderModel order, String category, String description) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final ticket = _db.nextTicket();
-    _db.complaints.add({
-      'id': ticket,
-      'orderId': order.id,
-      'category': category,
-      'description': description,
+    final row = {
+      'id': 'cp_${DateTime.now().microsecondsSinceEpoch}',
+      'ticket_number': ticket,
+      'order_id': order.id,
+      'customer_id': order.customerId,
+      'reason': category,
+      'details': description,
       'status': 'open',
-      'createdAt': DateTime.now(),
-    });
+      'created_at': DateTime.now().toIso8601String(),
+    };
+    _db.complaints.add(row);
+    try {
+      await SupabaseService.client.from('complaints').upsert(row);
+    } catch (_) {}
     order.complaintId = ticket;
     _db.orders.refresh();
+    _db.saveOrder(order);
     return ticket;
   }
 
@@ -154,6 +164,7 @@ class OrderService {
       if (order.status == OrderStatus.completed && order.paymentStatus == PaymentStatus.pending) {
         order.paymentStatus = PaymentStatus.paid;
         _db.orders.refresh();
+        _db.saveOrder(order);
       }
       return;
     }
@@ -161,6 +172,7 @@ class OrderService {
       ..status = next
       ..timeline.add(TimelineEntry(next.key, DateTime.now()));
     _db.orders.refresh();
+    _db.saveOrder(order);
     final title = _toasts[next];
     if (title != null) {
       _db.notify(

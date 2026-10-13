@@ -44,4 +44,50 @@ class OfferModel {
   String get badge => discountType == DiscountType.percent
       ? '$discountValue%'
       : '$discountValue';
+
+  factory OfferModel.fromJson(Map<String, dynamic> json) {
+    final dtStr = (json['discount_type'] ?? json['discountType'])?.toString() ?? 'percent';
+    final discountType = dtStr == 'fixed' ? DiscountType.fixed : DiscountType.percent;
+
+    final rawBranchIds = (json['branch_ids'] ?? json['branchIds']) as List?;
+    final branchIds = rawBranchIds?.map((e) => e.toString()).toList() ?? [];
+
+    final rawServiceIds = (json['service_ids'] ?? json['serviceIds']) as List?;
+    final serviceIds = rawServiceIds?.map((e) => e.toString()).toList() ?? [];
+
+    final start = DateTime.tryParse(json['start_at'] ?? json['startAt'] ?? '') ?? DateTime.now();
+    final end = DateTime.tryParse(json['end_at'] ?? json['endAt'] ?? '') ?? DateTime.now().add(const Duration(days: 7));
+
+    return OfferModel(
+      id: json['id']?.toString() ?? '',
+      platform: json['platform'] as bool? ?? false,
+      branchIds: branchIds,
+      serviceIds: serviceIds,
+      title: LocalizedText.fromJson(json['title']),
+      description: LocalizedText.fromJson(json['description']),
+      discountType: discountType,
+      discountValue: (json['discount_value'] ?? json['discountValue'] as num?)?.toInt() ?? 0,
+      startAt: start,
+      endAt: end,
+      status: json['status']?.toString() ?? 'active',
+      featured: json['featured'] as bool? ?? false,
+      photoIndex: (json['photo_index'] ?? json['photoIndex'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'platform': platform,
+    'branch_ids': branchIds,
+    'service_ids': serviceIds,
+    'title': title.toJson(),
+    'description': description.toJson(),
+    'discount_type': discountType == DiscountType.fixed ? 'fixed' : 'percent',
+    'discount_value': discountValue,
+    'start_at': startAt.toIso8601String(),
+    'end_at': endAt.toIso8601String(),
+    'status': status,
+    'featured': featured,
+    'photo_index': photoIndex,
+  };
 }

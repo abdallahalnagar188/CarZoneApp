@@ -15,6 +15,25 @@ class OrderItem {
     required this.price,
     required this.durationMin,
   });
+
+  factory OrderItem.fromJson(Map<String, dynamic> json) {
+    final typeStr = (json['type']?.toString() ?? 'primary').toLowerCase();
+    return OrderItem(
+      serviceId: json['service_id']?.toString() ?? json['serviceId']?.toString() ?? '',
+      name: LocalizedText.fromJson(json['name']),
+      type: typeStr == 'addon' ? ServiceType.addon : ServiceType.primary,
+      price: (json['price'] as num?)?.toInt() ?? 0,
+      durationMin: (json['duration_min'] ?? json['durationMin'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'service_id': serviceId,
+    'name': name.toJson(),
+    'type': type == ServiceType.addon ? 'addon' : 'primary',
+    'price': price,
+    'duration_min': durationMin,
+  };
 }
 
 class TimelineEntry {
@@ -22,6 +41,18 @@ class TimelineEntry {
   final DateTime at;
 
   const TimelineEntry(this.key, this.at);
+
+  factory TimelineEntry.fromJson(Map<String, dynamic> json) {
+    return TimelineEntry(
+      json['key']?.toString() ?? '',
+      DateTime.tryParse(json['at']?.toString() ?? '') ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'at': at.toIso8601String(),
+  };
 }
 
 class OrderModel {
@@ -85,4 +116,76 @@ class OrderModel {
         OrderStatus.waiting,
         OrderStatus.inService,
       ].contains(status);
+
+  factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] as List?;
+    final items = rawItems != null
+        ? rawItems.map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e as Map))).toList()
+        : <OrderItem>[];
+
+    final rawTimeline = json['timeline'] as List?;
+    final timeline = rawTimeline != null
+        ? rawTimeline.map((e) => TimelineEntry.fromJson(Map<String, dynamic>.from(e as Map))).toList()
+        : <TimelineEntry>[];
+
+    final statusStr = json['status']?.toString() ?? 'pending';
+    final status = OrderStatus.values.firstWhere(
+      (s) => s.name == statusStr || s.key == statusStr,
+      orElse: () => OrderStatus.pending,
+    );
+
+    final paymentStr = (json['payment_status'] ?? json['paymentStatus'])?.toString() ?? 'pending';
+    final paymentStatus = PaymentStatus.values.firstWhere(
+      (p) => p.name == paymentStr,
+      orElse: () => PaymentStatus.pending,
+    );
+
+    return OrderModel(
+      id: json['id']?.toString() ?? '',
+      number: json['number']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      customerId: json['customer_id']?.toString() ?? json['customerId']?.toString() ?? '',
+      vehicleId: json['vehicle_id']?.toString() ?? json['vehicleId']?.toString() ?? '',
+      branchId: json['branch_id']?.toString() ?? json['branchId']?.toString() ?? '',
+      items: items,
+      subtotal: (json['subtotal'] as num?)?.toInt() ?? 0,
+      discount: (json['discount'] as num?)?.toInt() ?? 0,
+      offerId: json['offer_id']?.toString() ?? json['offerId']?.toString(),
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      durationMin: (json['duration_min'] ?? json['durationMin'] as num?)?.toInt() ?? 30,
+      scheduledAt: DateTime.tryParse(json['scheduled_at'] ?? json['scheduledAt'] ?? '') ?? DateTime.now(),
+      status: status,
+      paymentStatus: paymentStatus,
+      note: json['note']?.toString(),
+      timeline: timeline,
+      cancelReason: json['cancel_reason']?.toString() ?? json['cancelReason']?.toString(),
+      lateCancel: json['late_cancel'] ?? json['lateCancel'] ?? false,
+      complaintId: json['complaint_id']?.toString() ?? json['complaintId']?.toString(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? json['createdAt'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'number': number,
+    'code': code,
+    'customer_id': customerId,
+    'vehicle_id': vehicleId,
+    'branch_id': branchId,
+    'items': items.map((i) => i.toJson()).toList(),
+    'subtotal': subtotal,
+    'discount': discount,
+    'offer_id': offerId,
+    'total': total,
+    'duration_min': durationMin,
+    'scheduled_at': scheduledAt.toIso8601String(),
+    'status': status.key,
+    'payment_status': paymentStatus.name,
+    'note': note,
+    'timeline': timeline.map((t) => t.toJson()).toList(),
+    'cancel_reason': cancelReason,
+    'late_cancel': lateCancel,
+    'complaint_id': complaintId,
+    'created_at': createdAt.toIso8601String(),
+  };
 }

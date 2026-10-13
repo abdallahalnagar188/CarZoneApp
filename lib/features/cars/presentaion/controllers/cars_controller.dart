@@ -84,8 +84,9 @@ class CarsController extends GetxController {
         ..plate = plate
         ..year = year;
       _db.vehicles.refresh();
+      _db.saveVehicle(existing);
     } else {
-      _db.vehicles.add(VehicleModel(
+      final newV = VehicleModel(
         id: 've_${DateTime.now().microsecondsSinceEpoch}',
         customerId: uid,
         make: make.value!,
@@ -94,7 +95,9 @@ class CarsController extends GetxController {
         plate: plate,
         year: year,
         isDefault: vehicles.isEmpty,
-      ));
+      );
+      _db.vehicles.add(newV);
+      _db.saveVehicle(newV);
     }
     saving.value = false;
     Get.back();
@@ -104,6 +107,7 @@ class CarsController extends GetxController {
   void setDefault(VehicleModel v) {
     for (final x in vehicles) {
       x.isDefault = x.id == v.id;
+      _db.saveVehicle(x);
     }
     _db.vehicles.refresh();
   }
@@ -122,7 +126,11 @@ class CarsController extends GetxController {
     if (!ok) return;
     final wasDefault = v.isDefault;
     _db.vehicles.remove(v);
-    if (wasDefault && vehicles.isNotEmpty) vehicles.first.isDefault = true;
+    _db.deleteVehicle(v.id);
+    if (wasDefault && vehicles.isNotEmpty) {
+      vehicles.first.isDefault = true;
+      _db.saveVehicle(vehicles.first);
+    }
     _db.vehicles.refresh();
     if (Get.currentRoute == Routes.carFormRoute) Get.back();
   }

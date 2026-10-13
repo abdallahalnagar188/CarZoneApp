@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import '../../../../core/local/cache_helper.dart';
 import '../../../../core/routing/app_routes.dart';
 
+import '../../../../core/services/carzone_db_service.dart';
+
 class SplashController extends GetxController with GetSingleTickerProviderStateMixin {
   late final AnimationController animationController;
   late final Animation<double> logoScale;
@@ -17,6 +19,9 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
   @override
   void onInit() {
     super.onInit();
+    if (Get.isRegistered<CarzoneDbService>()) {
+      Get.find<CarzoneDbService>().fetchFromSupabase();
+    }
     animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1100),

@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:math' as math;
 
 import 'package:get/get.dart';
@@ -13,19 +14,23 @@ import '../../commons/models/review_model.dart';
 import '../../commons/models/vehicle_model.dart';
 import '../../commons/models/wash_service_model.dart';
 import '../enums/enums.dart';
+import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
-  final areas = <AreaModel>[];
-  final branches = <BranchModel>[];
-  final services = <WashServiceModel>[];
-  final offers = <OfferModel>[];
+  final areas = <AreaModel>[].obs;
+  final branches = <BranchModel>[].obs;
+  final services = <WashServiceModel>[].obs;
+  final offers = <OfferModel>[].obs;
   final reviews = <ReviewModel>[].obs;
-  final customers = <CustomerModel>[];
+  final customers = <CustomerModel>[].obs;
   final vehicles = <VehicleModel>[].obs;
   final orders = <OrderModel>[].obs;
   final notifications = <NotificationModel>[].obs;
   final favorites = <String>{}.obs;
   final complaints = <Map<String, dynamic>>[];
+
+  final isSyncing = false.obs;
+  final isSynced = false.obs;
 
   int _nextNumber = 10001;
   int _nextTicket = 501;
@@ -48,6 +53,7 @@ class CarzoneDbService extends GetxService {
 
   CarzoneDbService init() {
     _seed(DateTime.now());
+    fetchFromSupabase();
     return this;
   }
 
@@ -366,9 +372,124 @@ class CarzoneDbService extends GetxService {
     return (rating: avg, count: list.length);
   }
 
+  Future<bool> fetchFromSupabase() async {
+    try {
+      isSyncing.value = true;
+      final client = SupabaseService.client;
+
+      final results = await Future.wait([
+        client.from('areas').select(),
+        client.from('branches').select(),
+        client.from('services').select(),
+        client.from('offers').select(),
+        client.from('customers').select(),
+        client.from('vehicles').select(),
+        client.from('orders').select().order('created_at', ascending: false),
+        client.from('reviews').select().order('created_at', ascending: false),
+        client.from('notifications').select().order('created_at', ascending: false),
+      ]);
+
+      final remoteAreas = (results[0] as List)
+          .map((e) => AreaModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteBranches = (results[1] as List)
+          .map((e) => BranchModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteServices = (results[2] as List)
+          .map((e) => WashServiceModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteOffers = (results[3] as List)
+          .map((e) => OfferModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteCustomers = (results[4] as List)
+          .map((e) => CustomerModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteVehicles = (results[5] as List)
+          .map((e) => VehicleModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteOrders = (results[6] as List)
+          .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteReviews = (results[7] as List)
+          .map((e) => ReviewModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final remoteNotifications = (results[8] as List)
+          .map((e) => NotificationModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+
+      if (remoteAreas.isNotEmpty) areas.assignAll(remoteAreas);
+      if (remoteBranches.isNotEmpty) branches.assignAll(remoteBranches);
+      if (remoteServices.isNotEmpty) services.assignAll(remoteServices);
+      if (remoteOffers.isNotEmpty) offers.assignAll(remoteOffers);
+      if (remoteCustomers.isNotEmpty) customers.assignAll(remoteCustomers);
+      if (remoteVehicles.isNotEmpty) vehicles.assignAll(remoteVehicles);
+      if (remoteOrders.isNotEmpty) orders.assignAll(remoteOrders);
+      if (remoteReviews.isNotEmpty) reviews.assignAll(remoteReviews);
+      if (remoteNotifications.isNotEmpty) notifications.assignAll(remoteNotifications);
+
+      isSynced.value = true;
+      dev.log('[CarzoneDbService] Loaded data from Supabase successfully.');
+      return true;
+    } catch (e, st) {
+      dev.log('[CarzoneDbService] Supabase fetch error (using cache): $e\n$st');
+      return false;
+    } finally {
+      isSyncing.value = false;
+    }
+  }
+
+  Future<void> saveOrder(OrderModel order) async {
+    try {
+      await SupabaseService.client.from('orders').upsert(order.toJson());
+    } catch (e) {
+      dev.log('Error saving order to Supabase: $e');
+    }
+  }
+
+  Future<void> saveVehicle(VehicleModel vehicle) async {
+    try {
+      await SupabaseService.client.from('vehicles').upsert(vehicle.toJson());
+    } catch (e) {
+      dev.log('Error saving vehicle to Supabase: $e');
+    }
+  }
+
+  Future<void> deleteVehicle(String id) async {
+    try {
+      await SupabaseService.client.from('vehicles').delete().eq('id', id);
+    } catch (e) {
+      dev.log('Error deleting vehicle from Supabase: $e');
+    }
+  }
+
+  Future<void> saveReview(ReviewModel review) async {
+    try {
+      await SupabaseService.client.from('reviews').upsert(review.toJson());
+    } catch (e) {
+      dev.log('Error saving review to Supabase: $e');
+    }
+  }
+
+  Future<void> saveCustomer(CustomerModel customer) async {
+    try {
+      await SupabaseService.client.from('customers').upsert(customer.toJson());
+    } catch (e) {
+      dev.log('Error saving customer to Supabase: $e');
+    }
+  }
+
+  Future<void> saveNotification(NotificationModel notif) async {
+    try {
+      await SupabaseService.client.from('notifications').upsert(notif.toJson());
+    } catch (e) {
+      dev.log('Error saving notification to Supabase: $e');
+    }
+  }
+
   CustomerModel registerCustomer(String phone, String name) {
     final row = CustomerModel(id: 'cu_new_${customers.length}', name: name, phone: phone);
     customers.add(row);
+    saveCustomer(row);
     return row;
   }
 
@@ -385,17 +506,16 @@ class CarzoneDbService extends GetxService {
     required LocalizedText body,
     String? orderId,
   }) {
-    notifications.insert(
-      0,
-      NotificationModel(
-        id: 'nt_${DateTime.now().microsecondsSinceEpoch}',
-        userId: userId,
-        type: type,
-        title: title,
-        body: body,
-        orderId: orderId,
-        createdAt: DateTime.now(),
-      ),
+    final notif = NotificationModel(
+      id: 'nt_${DateTime.now().microsecondsSinceEpoch}',
+      userId: userId,
+      type: type,
+      title: title,
+      body: body,
+      orderId: orderId,
+      createdAt: DateTime.now(),
     );
+    notifications.insert(0, notif);
+    saveNotification(notif);
   }
 }
