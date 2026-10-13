@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/utils/system_ui.dart';
 import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/helpers/format_helper.dart';
@@ -24,7 +25,7 @@ class WashDetailsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<WashDetailsController>();
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUi.onBrand,
       child: Scaffold(
         bottomNavigationBar: const BookNowBar(),
         body: Obx(() {

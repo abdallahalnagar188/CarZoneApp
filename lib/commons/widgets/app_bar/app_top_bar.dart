@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../core/utils/system_ui.dart';
 import '../../../core/constance/app_colors.dart';
 import '../../../core/extensions/sized_box_extension.dart';
 import '../button/app_icon_button.dart';
@@ -36,7 +37,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final canPop = showBack && (onBack != null || Navigator.of(context).canPop());
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUi.onBrand,
       child: Container(
         decoration: BoxDecoration(
           gradient: AppColors.headerGradient,

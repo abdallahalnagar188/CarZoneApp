@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -9,6 +10,7 @@ import 'core/local/lang_controller.dart';
 import 'core/local/theme_controller.dart';
 import 'core/routing/app_routes.dart';
 import 'core/utils/responsive_helper.dart';
+import 'core/utils/system_ui.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -38,7 +40,10 @@ class MyApp extends StatelessWidget {
             initialRoute: Routes.splashRoute,
             builder: (context, child) {
               ResponsiveHelper.configureClampedScreenUtil(context);
-              return child ?? const SizedBox.shrink();
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: SystemUi.adaptive,
+                child: child ?? const SizedBox.shrink(),
+              );
             },
           ),
         );

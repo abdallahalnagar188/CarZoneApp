@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/utils/system_ui.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../controllers/onboarding_controller.dart';
 import '../widgets/onboarding_footer.dart';
@@ -14,7 +15,7 @@ class OnboardingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<OnboardingController>();
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUi.onBrand,
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: Column(

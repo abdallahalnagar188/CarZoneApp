@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../constance/app_colors.dart';
+import '../utils/system_ui.dart';
 import '../enums/enums.dart';
 import 'cache_controller.dart';
 
@@ -28,13 +28,7 @@ class ThemeController extends GetxController {
     await CacheController().setter(key: CacheKeys.theme, value: value);
     Get.changeThemeMode(value ? ThemeMode.dark : ThemeMode.light);
     Get.forceAppUpdate();
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: value ? Brightness.light : Brightness.dark,
-        statusBarBrightness: value ? Brightness.dark : Brightness.light,
-      ),
-    );
+    SystemUi.apply();
     update();
   }
 

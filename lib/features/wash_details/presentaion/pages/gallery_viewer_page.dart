@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../core/utils/system_ui.dart';
 import '../../../../commons/widgets/common_widgets.dart';
 import '../controllers/wash_details_controller.dart';
 
@@ -38,7 +39,7 @@ class _GalleryViewerPageState extends State<GalleryViewerPage> {
     final seed = controller.branch!.photoSeed;
     final count = controller.galleryCount;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUi.onBrand,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(

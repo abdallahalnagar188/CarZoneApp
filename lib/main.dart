@@ -9,6 +9,7 @@ import 'core/local/cache_helper.dart';
 import 'core/local/theme_controller.dart';
 import 'core/network/dio_helper.dart';
 import 'core/services/supabase_service.dart';
+import 'core/utils/system_ui.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,15 +22,8 @@ Future<void> main() async {
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  final themeController = Get.put(ThemeController(), permanent: true);
-  final dark = themeController.isDarkMode.value;
-  SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
-      statusBarBrightness: dark ? Brightness.dark : Brightness.light,
-    ),
-  );
+  Get.put(ThemeController(), permanent: true);
+  SystemUi.apply();
 
   runApp(const MyApp());
 }

@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../../../core/utils/system_ui.dart';
 import '../controllers/wash_map_controller.dart';
 import '../widgets/map_branch_carousel.dart';
 import '../widgets/map_side_actions.dart';
@@ -16,10 +17,10 @@ class MapPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<WashMapController>();
     final top = MediaQuery.paddingOf(context).top;
-    final bottomNav = 94.h + MediaQuery.paddingOf(context).bottom;
+    final bottomNav = MediaQuery.paddingOf(context).bottom + 4.h;
     final carouselHeight = 150.h;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: SystemUi.adaptive,
       child: Stack(
         children: [
           Obx(

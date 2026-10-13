@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/utils/system_ui.dart';
 import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../controllers/home_controller.dart';
@@ -27,7 +28,7 @@ class HomePage extends StatelessWidget {
     final controller = Get.find<HomeController>();
     final header = HomeSliverHeader(topPadding: MediaQuery.paddingOf(context).top);
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUi.onBrand,
       child: RefreshIndicator(
         onRefresh: controller.load,
         edgeOffset: header.minExtent,
