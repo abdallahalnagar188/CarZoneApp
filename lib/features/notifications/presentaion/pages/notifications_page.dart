@@ -22,7 +22,7 @@ class NotificationsPage extends StatelessWidget {
       body: Obx(() {
         final groups = controller.grouped;
         if (groups.isEmpty) {
-          return Center(child: CustomEmptyState(icon: Iconsax.notification, title: 'empty.notif'.tr));
+          return CustomEmptyState(icon: Iconsax.notification, title: 'empty.notif'.tr);
         }
         return ListView(
           padding: EdgeInsets.all(20.r),

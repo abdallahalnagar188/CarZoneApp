@@ -30,13 +30,11 @@ class BookingsPage extends StatelessWidget {
         final list = controller.tab.value == 0 ? controller.upcoming : controller.history;
         if (controller.loading.value) return const AppShimmerList();
         if (list.isEmpty) {
-          return Center(
-            child: CustomEmptyState(
-              icon: Iconsax.calendar_remove,
-              title: 'empty.bookings'.tr,
-              actionText: 'empty.bookCta'.tr,
-              onAction: controller.bookWash,
-            ),
+          return CustomEmptyState(
+            icon: Iconsax.calendar_remove,
+            title: 'empty.bookings'.tr,
+            actionText: 'empty.bookCta'.tr,
+            onAction: controller.bookWash,
           );
         }
         return RefreshIndicator(

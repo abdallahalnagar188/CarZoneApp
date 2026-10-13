@@ -17,13 +17,11 @@ class FavoritesPage extends StatelessWidget {
       body: Obx(() {
         final rows = controller.rows;
         if (rows.isEmpty) {
-          return Center(
-            child: CustomEmptyState(
-              icon: Iconsax.heart,
-              title: 'empty.fav'.tr,
-              actionText: 'empty.favCta'.tr,
-              onAction: controller.explore,
-            ),
+          return CustomEmptyState(
+            icon: Iconsax.heart,
+            title: 'empty.fav'.tr,
+            actionText: 'empty.favCta'.tr,
+            onAction: controller.explore,
           );
         }
         return ListView.separated(

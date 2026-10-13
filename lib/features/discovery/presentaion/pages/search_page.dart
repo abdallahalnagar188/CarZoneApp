@@ -26,23 +26,32 @@ class SearchPage extends StatelessWidget {
           autofocus: true,
           dense: true,
           textInputAction: TextInputAction.search,
-          prefix: Icon(Iconsax.search_normal_1, color: AppColors.ink500, size: 20.sp),
+          prefix: Icon(Iconsax.search_normal_1,
+              color: AppColors.ink500, size: 20.sp),
           onChanged: controller.onChanged,
           onSubmitted: controller.submit,
         ),
       ),
       body: Obx(() {
         if (controller.query.value.isEmpty) {
+          if (controller.recent.isEmpty) {
+            return CustomEmptyState(
+                icon: Iconsax.search_normal_1, title: 'search.ph'.tr);
+          }
           return ListView(
             padding: EdgeInsets.all(20.r),
             children: [
-              if (controller.recent.isNotEmpty) ...[
+              ...[
                 Row(
                   children: [
-                    Expanded(child: Text('search.recent'.tr, style: theme.titleMedium)),
+                    Expanded(
+                        child:
+                            Text('search.recent'.tr, style: theme.titleMedium)),
                     TextButton(
                       onPressed: controller.clearRecent,
-                      child: Text('search.clear'.tr, style: theme.labelMedium?.copyWith(color: AppColors.primary)),
+                      child: Text('search.clear'.tr,
+                          style: theme.labelMedium
+                              ?.copyWith(color: AppColors.primary)),
                     ),
                   ],
                 ),
@@ -50,16 +59,20 @@ class SearchPage extends StatelessWidget {
                   spacing: 8.w,
                   runSpacing: 8.h,
                   children: controller.recent
-                      .map((r) => AppChip(label: r, icon: Iconsax.clock, flat: true, onTap: () => controller.useRecent(r)))
+                      .map((r) => AppChip(
+                          label: r,
+                          icon: Iconsax.clock,
+                          flat: true,
+                          onTap: () => controller.useRecent(r)))
                       .toList(),
                 ),
-              ] else
-                CustomEmptyState(icon: Iconsax.search_normal_1, title: 'search.ph'.tr),
+              ],
             ],
           );
         }
         if (!controller.hasResults) {
-          return CustomEmptyState(icon: Iconsax.search_status, title: 'empty.search'.tr);
+          return CustomEmptyState(
+              icon: Iconsax.search_status, title: 'empty.search'.tr);
         }
         return ListView(
           padding: EdgeInsets.all(20.r),

@@ -21,13 +21,11 @@ class CarsPage extends StatelessWidget {
       body: Obx(() {
         final list = controller.vehicles;
         if (list.isEmpty) {
-          return Center(
-            child: CustomEmptyState(
-              icon: Iconsax.car,
-              title: 'empty.cars'.tr,
-              actionText: 'cars.add'.tr,
-              onAction: controller.openNew,
-            ),
+          return CustomEmptyState(
+            icon: Iconsax.car,
+            title: 'empty.cars'.tr,
+            actionText: 'cars.add'.tr,
+            onAction: controller.openNew,
           );
         }
         return ListView.separated(

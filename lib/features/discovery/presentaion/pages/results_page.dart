@@ -25,15 +25,13 @@ class ResultsPage extends StatelessWidget {
             child: Obx(() {
               if (controller.loading.value) return const AppShimmerList(itemHeight: 220);
               if (controller.rows.isEmpty) {
-                return Center(
-                  child: CustomEmptyState(
-                    icon: Iconsax.search_status,
-                    title: 'empty.results'.tr,
-                    actionText: 'empty.clear'.tr,
-                    onAction: controller.clearFilters,
-                    secondaryText: 'empty.area'.tr,
-                    onSecondary: controller.changeArea,
-                  ),
+                return CustomEmptyState(
+                  icon: Iconsax.search_status,
+                  title: 'empty.results'.tr,
+                  actionText: 'empty.clear'.tr,
+                  onAction: controller.clearFilters,
+                  secondaryText: 'empty.area'.tr,
+                  onSecondary: controller.changeArea,
                 );
               }
               return RefreshIndicator(
