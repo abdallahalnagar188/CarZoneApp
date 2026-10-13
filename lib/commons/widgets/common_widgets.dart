@@ -21,3 +21,4 @@ export 'snack_bar/snack_bar.dart';
 export 'text_field/app_text_field.dart';
 export 'cards/guest_login_card.dart';
 export 'animations/fade_slide_in.dart';
+export 'maps/branch_location_map.dart';

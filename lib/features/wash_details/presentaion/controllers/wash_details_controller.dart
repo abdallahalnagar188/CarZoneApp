@@ -10,6 +10,7 @@ import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/availability_service.dart';
 import '../../../../core/services/carzone_db_service.dart';
 import '../../../../core/services/discovery_service.dart';
+import '../../../../core/services/maps_service.dart';
 import '../../../../core/services/pricing_service.dart';
 import '../../../../core/utils/utils.dart';
 import '../../../booking/presentaion/controllers/booking_controller.dart';
@@ -84,9 +85,13 @@ class WashDetailsController extends GetxController {
 
   void toggleHours() => hoursExpanded.toggle();
 
-  void call() => Utils.getSnakBar(message: 'toast.call'.tr, type: TosterTypes.warning);
+  void call() {
+    if (branch != null) MapsService.call(branch!.phone);
+  }
 
-  void navigate() => Utils.getSnakBar(message: 'toast.maps'.tr, type: TosterTypes.warning);
+  void navigate() {
+    if (branch != null) MapsService.openDirections(branch!.lat, branch!.lng);
+  }
 
   void share() => Utils.getSnakBar(message: 'toast.share'.tr, type: TosterTypes.sucsses);
 

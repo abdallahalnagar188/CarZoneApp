@@ -75,41 +75,25 @@ class BookingDetailsPage extends StatelessWidget {
             10.height,
             StatusTimeline(order: order),
             16.height,
-            SummarySection(
-              icon: Iconsax.building,
-              title: 'book.wash'.tr,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(branch.name.value, style: theme.titleMedium),
-                  Text(branch.address.value, style: theme.bodySmall),
-                  12.height,
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          title: 'book.navigate'.tr,
-                          icon: Iconsax.routing,
-                          small: true,
-                          variant: AppButtonVariant.ghost,
-                          onTap: controller.navigate,
-                        ),
-                      ),
-                      10.width,
-                      Expanded(
-                        child: AppButton(
-                          title: 'book.contact'.tr,
-                          icon: Iconsax.call,
-                          small: true,
-                          variant: AppButtonVariant.ghost,
-                          onTap: controller.contact,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            Text('wash.location'.tr, style: theme.titleLarge),
+            10.height,
+            Text(branch.name.value, style: theme.titleMedium),
+            10.height,
+            BranchLocationMap(
+              lat: branch.lat,
+              lng: branch.lng,
+              address: branch.address.value,
+              pinLabel: FormatHelper.time(order.scheduledAt),
             ),
+            10.height,
+            AppButton(
+              title: 'book.contact'.tr,
+              icon: Iconsax.call,
+              small: true,
+              variant: AppButtonVariant.ghost,
+              onTap: controller.contact,
+            ),
+            16.height,
             if (vehicle != null)
               SummarySection(
                 icon: Iconsax.car,

@@ -7,6 +7,7 @@ import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/maps_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/utils/utils.dart';
 import '../../../booking/presentaion/controllers/booking_controller.dart';
@@ -96,9 +97,13 @@ class BookingDetailsController extends GetxController {
 
   void report() => Get.toNamed(Routes.reportRoute, arguments: orderId);
 
-  void contact() => Utils.getSnakBar(message: 'toast.call'.tr, type: TosterTypes.warning);
+  void contact() {
+    if (branch != null) MapsService.call(branch!.phone);
+  }
 
-  void navigate() => Utils.getSnakBar(message: 'toast.maps'.tr, type: TosterTypes.warning);
+  void navigate() {
+    if (branch != null) MapsService.openDirections(branch!.lat, branch!.lng);
+  }
 
   void simulateAdvance() {
     if (order.value != null) _orders.advance(order.value!);

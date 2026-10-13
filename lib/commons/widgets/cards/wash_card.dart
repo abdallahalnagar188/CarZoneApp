@@ -81,8 +81,9 @@ class WashCard extends StatelessWidget {
                         width: 36.r,
                         height: 36.r,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
+                          color: AppColors.surface.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(color: AppColors.line.withValues(alpha: 0.6)),
                         ),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 250),

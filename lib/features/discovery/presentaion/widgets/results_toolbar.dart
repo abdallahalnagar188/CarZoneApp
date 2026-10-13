@@ -14,13 +14,13 @@ class ResultsToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<ResultsController>();
     return SizedBox(
-      height: 40.h,
+      height: 44.h,
       child: Obx(() {
         final f = controller.filters.value;
         final count = f.activeCount;
         return ListView(
           scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 2.h),
           children: [
             AppChip(
               label: count > 0 ? 'filter.count'.trParams({'n': '$count'}) : 'filter'.tr,
@@ -29,7 +29,7 @@ class ResultsToolbar extends StatelessWidget {
               onTap: controller.openFilters,
             ),
             for (final s in SortMode.values) ...[
-              SizedBox(width: 8.w),
+              SizedBox(width: 10.w),
               AppChip(
                 label: 'sort.${s.name}'.tr,
                 flat: true,

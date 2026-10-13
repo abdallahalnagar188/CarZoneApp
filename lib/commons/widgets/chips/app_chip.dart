@@ -32,7 +32,7 @@ class AppChip extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
           gradient: selected ? AppColors.primaryGradient : null,
           color: selected ? null : (flat ? AppColors.surface : AppColors.primarySoft),

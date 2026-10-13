@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
+import '../../../../core/helpers/format_helper.dart';
 import '../controllers/wash_details_controller.dart';
 import '../widgets/amenities_wrap.dart';
 import '../widgets/book_now_bar.dart';
@@ -36,6 +37,20 @@ class WashDetailsPage extends StatelessWidget {
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 0),
                 sliver: const SliverToBoxAdapter(child: WashInfoCard()),
+              ),
+              SliverToBoxAdapter(child: SectionHeader(title: 'wash.location'.tr)),
+              SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                sliver: SliverToBoxAdapter(
+                  child: BranchLocationMap(
+                    lat: controller.branch!.lat,
+                    lng: controller.branch!.lng,
+                    address: controller.branch!.address.value,
+                    pinLabel: controller.listing.value!.fromPrice == null
+                        ? controller.branch!.name.value
+                        : FormatHelper.money(controller.listing.value!.fromPrice!),
+                  ),
+                ),
               ),
               SliverToBoxAdapter(child: SectionHeader(title: 'wash.gallery'.tr)),
               const SliverToBoxAdapter(child: WashGalleryStrip()),

@@ -19,8 +19,9 @@ class ResultsPage extends StatelessWidget {
       appBar: AppTopBar(title: controller.title),
       body: Column(
         children: [
-          SizedBox(height: 14.h),
+          SizedBox(height: 18.h),
           const ResultsToolbar(),
+          SizedBox(height: 4.h),
           Expanded(
             child: Obx(() {
               if (controller.loading.value) return const AppShimmerList(itemHeight: 220);
@@ -37,7 +38,7 @@ class ResultsPage extends StatelessWidget {
               return RefreshIndicator(
                 onRefresh: controller.load,
                 child: ListView.separated(
-                  padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 30.h),
+                  padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 30.h),
                   itemCount: controller.rows.length,
                   separatorBuilder: (_, __) => SizedBox(height: 14.h),
                   itemBuilder: (_, i) {
