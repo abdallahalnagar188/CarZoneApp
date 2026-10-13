@@ -14,7 +14,7 @@ class SupabaseService {
     try {
       await Supabase.initialize(
         url: SupabaseConstants.supabaseUrl,
-        publishableKey: SupabaseConstants.supabasePublishableKey,
+        anonKey: SupabaseConstants.supabaseAnonKey,
       );
     } catch (e) {
       log('Supabase init error: $e');
