@@ -15,6 +15,7 @@ import '../../commons/models/vehicle_model.dart';
 import '../../commons/models/wash_service_model.dart';
 import '../enums/enums.dart';
 import '../local/cache_controller.dart';
+import 'session_service.dart';
 import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
@@ -204,6 +205,31 @@ class CarzoneDbService extends GetxService {
       dev.log('[CarzoneDbService] Successfully loaded 100% data from Supabase.');
       return true;
     } catch (e, st) {
+      final errStr = e.toString();
+      if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
+        dev.log('[CarzoneDbService] Detected expired JWT during fetch. Attempting session recovery...');
+        try {
+          final res = await SupabaseService.client.auth.refreshSession();
+          if (res.session != null) {
+            dev.log('[CarzoneDbService] Session refreshed successfully. Retrying fetch...');
+            if (Get.isRegistered<SessionService>()) {
+              await Get.find<SessionService>().saveToken(res.session!.accessToken);
+            }
+            return await fetchFromSupabase();
+          }
+        } catch (_) {
+          // If refresh fails, clear stale auth state so client falls back to clean anon access
+          dev.log('[CarzoneDbService] Refresh failed. Clearing stale auth and retrying with anon role...');
+          try {
+            await SupabaseService.client.auth.signOut();
+            if (Get.isRegistered<SessionService>()) {
+              await Get.find<SessionService>().clearToken();
+            }
+          } catch (_) {}
+          return await fetchFromSupabase();
+        }
+      }
+
       hasError.value = true;
       errorMessage.value = e.toString();
       dev.log('[CarzoneDbService] Supabase fetch error: $e\n$st');
@@ -223,6 +249,20 @@ class CarzoneDbService extends GetxService {
       final set = (res as List).map((e) => e['branch_id'].toString()).toSet();
       favorites.assignAll(set);
     } catch (e) {
+      final errStr = e.toString();
+      if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
+        dev.log('[CarzoneDbService] JWT expired during loadFavorites. Attempting recovery...');
+        try {
+          final res = await SupabaseService.client.auth.refreshSession();
+          if (res.session != null) {
+            return await loadFavorites(userId);
+          }
+        } catch (_) {
+          try {
+            await SupabaseService.client.auth.signOut();
+          } catch (_) {}
+        }
+      }
       dev.log('[CarzoneDbService] Error loading favorites from Supabase: $e');
     }
   }
@@ -333,6 +373,16 @@ class CarzoneDbService extends GetxService {
         customers.refresh();
       }
     } catch (e) {
+      final errStr = e.toString();
+      if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
+        dev.log('[CarzoneDbService] JWT expired during updateCustomerToken. Attempting recovery...');
+        try {
+          final res = await SupabaseService.client.auth.refreshSession();
+          if (res.session != null) {
+            return await updateCustomerToken(customerId, res.session!.accessToken);
+          }
+        } catch (_) {}
+      }
       dev.log('[CarzoneDbService] Error updating customer token in Supabase: $e');
     }
   }

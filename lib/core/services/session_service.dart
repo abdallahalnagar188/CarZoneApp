@@ -37,6 +37,7 @@ class SessionService extends GetxService {
   double get lng => area.lng;
 
   SessionService init() {
+    ensureValidSession();
     _restoreUser();
     _restoreToken();
 
@@ -152,6 +153,27 @@ class SessionService extends GetxService {
     }
   }
 
+  Future<void> ensureValidSession() async {
+    try {
+      final session = SupabaseService.client.auth.currentSession;
+      if (session != null && session.isExpired) {
+        dev.log('[SessionService] Session is expired. Attempting token refresh...');
+        try {
+          final res = await SupabaseService.client.auth.refreshSession();
+          if (res.session != null) {
+            dev.log('[SessionService] Session token refreshed successfully.');
+            await saveToken(res.session!.accessToken);
+          }
+        } catch (refreshErr) {
+          dev.log('[SessionService] Token refresh failed ($refreshErr). Signing out expired session.');
+          await signOut();
+        }
+      }
+    } catch (e) {
+      dev.log('[SessionService] ensureValidSession error: $e');
+    }
+  }
+
   Future<void> refreshProfile() async {
     final authUser = SupabaseService.client.auth.currentUser;
     if (authUser == null) return;
@@ -179,6 +201,20 @@ class SessionService extends GetxService {
         }
       }
     } catch (e) {
+      final errStr = e.toString();
+      if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
+        dev.log('[SessionService] JWT expired during refreshProfile. Attempting recovery...');
+        try {
+          final res = await SupabaseService.client.auth.refreshSession();
+          if (res.session != null) {
+            await saveToken(res.session!.accessToken);
+            return refreshProfile();
+          }
+        } catch (_) {
+          await signOut();
+          return;
+        }
+      }
       dev.log('[SessionService] refreshProfile error: $e');
     }
   }
