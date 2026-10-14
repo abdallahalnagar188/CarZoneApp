@@ -30,7 +30,7 @@ class HomePage extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUi.onBrand,
       child: RefreshIndicator(
-        onRefresh: controller.load,
+        onRefresh: controller.refreshHome,
         edgeOffset: header.minExtent,
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),

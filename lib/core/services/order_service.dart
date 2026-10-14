@@ -7,7 +7,6 @@ import '../enums/enums.dart';
 import 'availability_service.dart';
 import 'carzone_db_service.dart';
 import 'pricing_service.dart';
-import 'supabase_service.dart';
 
 class SlotTakenException implements Exception {}
 
@@ -143,9 +142,7 @@ class OrderService {
       'created_at': DateTime.now().toIso8601String(),
     };
     _db.complaints.add(row);
-    try {
-      await SupabaseService.client.from('complaints').upsert(row);
-    } catch (_) {}
+    _db.saveComplaint(row);
     order.complaintId = ticket;
     _db.orders.refresh();
     _db.saveOrder(order);

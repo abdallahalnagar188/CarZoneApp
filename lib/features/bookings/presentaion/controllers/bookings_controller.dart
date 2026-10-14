@@ -25,7 +25,7 @@ class BookingsController extends GetxController {
 
   Future<void> refreshList() async {
     loading.value = true;
-    await Future.delayed(const Duration(milliseconds: 400));
+    await _db.fetchFromSupabase();
     _compute();
     loading.value = false;
   }

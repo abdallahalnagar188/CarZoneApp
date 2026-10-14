@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 
 import '../../../../core/local/cache_helper.dart';
 import '../../../../core/routing/app_routes.dart';
-
 import '../../../../core/services/carzone_db_service.dart';
 
 class SplashController extends GetxController with GetSingleTickerProviderStateMixin {
@@ -14,14 +13,10 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
   late final Animation<double> logoFade;
   late final Animation<double> textFade;
   late final Animation<Offset> textSlide;
-  Timer? _timer;
 
   @override
   void onInit() {
     super.onInit();
-    if (Get.isRegistered<CarzoneDbService>()) {
-      Get.find<CarzoneDbService>().fetchFromSupabase();
-    }
     animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1100),
@@ -35,7 +30,22 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
       CurvedAnimation(parent: animationController, curve: const Interval(0.45, 1, curve: Curves.easeOutCubic)),
     );
     animationController.forward();
-    _timer = Timer(const Duration(milliseconds: 1900), _openNext);
+    _startPrewarming();
+  }
+
+  Future<void> _startPrewarming() async {
+    final minDelay = Future.delayed(const Duration(milliseconds: 1800));
+    final fetchFuture = Get.isRegistered<CarzoneDbService>()
+        ? Get.find<CarzoneDbService>().fetchFromSupabase()
+        : Future.value(true);
+
+    // Concurrently wait for animation delay and remote pre-warm, with safety timeout
+    await Future.wait([
+      minDelay,
+      fetchFuture.timeout(const Duration(seconds: 5), onTimeout: () => false),
+    ]);
+
+    _openNext();
   }
 
   void _openNext() {
@@ -45,7 +55,6 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
 
   @override
   void onClose() {
-    _timer?.cancel();
     animationController.dispose();
     super.onClose();
   }

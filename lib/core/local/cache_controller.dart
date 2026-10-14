@@ -29,6 +29,8 @@ class CacheController {
       await _shared.setBool(key.name, value);
     } else if (value is List<String>) {
       await _shared.setStringList(key.name, value);
+    } else if (value == null) {
+      await _shared.remove(key.name);
     }
   }
 

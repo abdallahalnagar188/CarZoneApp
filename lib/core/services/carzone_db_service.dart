@@ -14,9 +14,11 @@ import '../../commons/models/review_model.dart';
 import '../../commons/models/vehicle_model.dart';
 import '../../commons/models/wash_service_model.dart';
 import '../enums/enums.dart';
+import '../local/cache_controller.dart';
 import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
+  // Remote reactive collections
   final areas = <AreaModel>[].obs;
   final branches = <BranchModel>[].obs;
   final services = <WashServiceModel>[].obs;
@@ -27,324 +29,38 @@ class CarzoneDbService extends GetxService {
   final orders = <OrderModel>[].obs;
   final notifications = <NotificationModel>[].obs;
   final favorites = <String>{}.obs;
-  final complaints = <Map<String, dynamic>>[];
+  final complaints = <Map<String, dynamic>>[].obs;
 
+  // Remote synchronization state
   final isSyncing = false.obs;
   final isSynced = false.obs;
+  final hasError = false.obs;
+  final errorMessage = ''.obs;
 
   int _nextNumber = 10001;
   int _nextTicket = 501;
-  final _codes = ['5K8P2', 'H7Q3M', 'R2N8T', 'B9X4L', 'W6C5Z', 'J3V7K'];
+  static const _codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  final _rnd = math.Random();
 
-  static const _names = [
-    'Ahmed Hassan', 'Mona Salah', 'Omar Fathy', 'Nour Adel', 'Hassan Magdy',
-    'Layla Mostafa', 'Youssef Kamal', 'Farah Nabil', 'Mahmoud Eid',
-    'Salma Hassan', 'Karim Tarek', 'Hana Osama', 'Tamer Shawky', 'Dina Hany',
-    'Ali Gaber', 'Mariam Samir', 'Sherif Lotfy', 'Aya Khaled', 'Hossam Reda',
-    'Nada Fouad',
-  ];
-
-  static const _comments = [
-    LocalizedText('شغل نظيف والموعد كان مظبوط.', 'Clean work and the slot was on time.'),
-    LocalizedText('الداخلية رجعت جديدة.', 'The interior looks new again.'),
-    LocalizedText('كويس بس الانتظار زاد شوية.', 'Good, though the wait ran a bit long.'),
-    LocalizedText('سعر واضح وتعامل محترم.', 'Clear price and polite staff.'),
-  ];
+  static const AreaModel defaultArea = AreaModel(
+    id: 'nasr',
+    name: LocalizedText('مدينة نصر', 'Nasr City'),
+    lat: 30.0566,
+    lng: 31.3301,
+  );
 
   CarzoneDbService init() {
-    _seed(DateTime.now());
+    // Initiate background remote fetch immediately upon service registration
     fetchFromSupabase();
     return this;
   }
 
-  DateTime _at(DateTime now, int dayOffset, int hour, [int minute = 0]) =>
-      DateTime(now.year, now.month, now.day + dayOffset, hour, minute);
-
-  List<WorkingDay> _week(String open, String close, [List<int> closed = const []]) =>
-      List.generate(7, (i) => WorkingDay(open, close, closed: closed.contains(i)));
-
-  void _seed(DateTime now) {
-    areas.addAll(const [
-      AreaModel(id: 'nasr', name: LocalizedText('مدينة نصر', 'Nasr City'), lat: 30.0566, lng: 31.3301),
-      AreaModel(id: 'helio', name: LocalizedText('مصر الجديدة', 'Heliopolis'), lat: 30.091, lng: 31.322),
-      AreaModel(id: 'nc', name: LocalizedText('التجمع', 'New Cairo'), lat: 30.0074, lng: 31.4913),
-      AreaModel(id: 'maadi', name: LocalizedText('المعادي', 'Maadi'), lat: 29.9602, lng: 31.2497),
-      AreaModel(id: 'zamalek', name: LocalizedText('الزمالك', 'Zamalek'), lat: 30.0626, lng: 31.2194),
-      AreaModel(id: 'moh', name: LocalizedText('المهندسين', 'Mohandessin'), lat: 30.0554, lng: 31.2001),
-      AreaModel(id: 'zayed', name: LocalizedText('الشيخ زايد', 'Sheikh Zayed'), lat: 30.0278, lng: 30.9746),
-      AreaModel(id: 'oct', name: LocalizedText('٦ أكتوبر', '6th of October'), lat: 29.972, lng: 30.944),
-    ]);
-
-    final defs = <List<dynamic>>[
-      ['br_nasr', 'biz_carzen', 'nasr', 'كارزن ووش – مدينة نصر', 'Carzen Wash – Nasr City', 30.0642, 31.348, 6, false, _week('09:00', '24:00'), ['waiting', 'ac', 'wifi', 'card', 'coffee', 'covered'], 1.0],
-      ['br_helio', 'biz_carzen', 'helio', 'كارزن ووش – مصر الجديدة', 'Carzen Wash – Heliopolis', 30.0872, 31.3195, 4, false, _week('09:00', '24:00'), ['waiting', 'ac', 'card'], 1.0],
-      ['br_nile_maadi', 'biz_nile', 'maadi', 'بريق النيل – المعادي', 'Nile Sparkle – Maadi', 29.9628, 31.258, 5, true, _week('08:00', '22:00'), ['waiting', 'wifi', 'coffee'], 1.1],
-      ['br_nile_zam', 'biz_nile', 'zamalek', 'بريق النيل – الزمالك', 'Nile Sparkle – Zamalek', 30.0602, 31.2215, 3, false, _week('10:00', '22:00'), ['ac', 'card', 'covered'], 1.2],
-      ['br_palm_nc', 'biz_palm', 'nc', 'رغوة النخيل – التجمع', 'Palm Foam – New Cairo', 30.013, 31.478, 6, true, _week('09:00', '23:00'), ['waiting', 'ac', 'wifi', 'card'], 1.0],
-      ['br_palm_oct', 'biz_palm', 'oct', 'رغوة النخيل – ٦ أكتوبر', 'Palm Foam – 6th of October', 29.969, 30.952, 4, false, _week('09:00', '21:00'), ['waiting', 'covered'], 0.9],
-      ['br_lotus_moh', 'biz_lotus', 'moh', 'لوتس – المهندسين', 'Lotus Auto Spa – Mohandessin', 30.0518, 31.203, 3, false, _week('11:00', '23:00', [5]), ['ac', 'wifi', 'coffee', 'card'], 1.3],
-      ['br_corniche_zam', 'biz_corniche', 'zamalek', 'الكورنيش – الزمالك', 'Corniche Clean – Zamalek', 30.066, 31.224, 4, false, _week('09:00', '20:00', [5]), ['waiting', 'card'], 1.0],
-      ['br_pyramid_zay', 'biz_pyramid', 'zayed', 'بولش الهرم – الشيخ زايد', 'Pyramid Polish – Sheikh Zayed', 30.031, 30.982, 5, false, _week('09:00', '22:00'), ['waiting', 'ac', 'covered'], 0.95],
-      ['br_pyramid_oct', 'biz_pyramid', 'oct', 'بولش الهرم – ٦ أكتوبر', 'Pyramid Polish – 6th of October', 29.981, 30.961, 4, false, _week('09:00', '21:00'), ['waiting', 'card'], 0.9],
-      ['br_oasis_nasr', 'biz_oasis', 'nasr', 'لمعان الواحة – مدينة نصر', 'Oasis Shine – Nasr City', 30.0488, 31.339, 5, true, _week('08:00', '24:00'), ['waiting', 'ac', 'wifi', 'coffee', 'card'], 1.0],
-      ['br_golden_hel', 'biz_golden', 'helio', 'الإطار الذهبي – مصر الجديدة', 'Golden Tire Wash – Heliopolis', 30.0944, 31.333, 4, false, _week('09:00', '23:00'), ['card', 'covered', 'waiting'], 1.05],
-      ['br_dune_maadi', 'biz_dune', 'maadi', 'كثبان حمراء – المعادي', 'Red Dune Wash – Maadi', 29.955, 31.27, 3, false, _week('10:00', '20:00'), ['waiting'], 0.8],
-    ];
-
-    for (var i = 0; i < defs.length; i++) {
-      final d = defs[i];
-      final area = areas.firstWhere((a) => a.id == d[2]);
-      branches.add(BranchModel(
-        id: d[0],
-        businessId: d[1],
-        areaId: d[2],
-        name: LocalizedText(d[3], d[4]),
-        address: LocalizedText('${area.name.ar}، القاهرة', '${area.name.en}, Cairo'),
-        lat: d[5],
-        lng: d[6],
-        capacity: d[7],
-        featured: d[8],
-        workingHours: d[9],
-        amenities: List<String>.from(d[10]),
-        phone: '+20 2 555 0142',
-        photoSeed: i,
-        businessActive: d[1] != 'biz_dune',
-        settings: BranchSettings(autoConfirm: d[0] == 'br_oasis_nasr'),
-      ));
-      final mult = d[11] as double;
-      int price(int n) => d[0] == 'br_nasr' ? n : math.max(20, (n * mult).round());
-      void svc(String key, ServiceType type, String cat, LocalizedText name, int p, int dur) {
-        services.add(WashServiceModel(
-          id: 'svc_${d[0]}_$key',
-          branchId: d[0],
-          type: type,
-          category: cat,
-          name: name,
-          description: type == ServiceType.addon
-              ? const LocalizedText('إضافة اختيارية على الخدمة الأساسية.', 'Optional extra on the main service.')
-              : const LocalizedText('خدمة غسيل بمعايير كارزن.', 'A Carzen-standard wash service.'),
-          price: price(p),
-          durationMin: dur,
-        ));
-      }
-
-      svc('ext', ServiceType.primary, 'exterior', const LocalizedText('غسيل خارجي', 'Exterior Wash'), 100, 20);
-      svc('int', ServiceType.primary, 'interior', const LocalizedText('غسيل داخلي', 'Interior Wash'), 100, 25);
-      svc('full', ServiceType.primary, 'full', const LocalizedText('غسيل داخلي وخارجي', 'Interior + Exterior'), 180, 40);
-      svc('deep', ServiceType.primary, 'deep', const LocalizedText('تنظيف عميق (بخار)', 'Deep Cleaning (Steam)'), 300, 60);
-      svc('tire', ServiceType.addon, 'exterior', const LocalizedText('تنظيف الإطارات', 'Tire Cleaning'), 30, 5);
-      svc('air', ServiceType.addon, 'interior', const LocalizedText('معطر جو', 'Air Freshener'), 20, 2);
-      svc('wax', ServiceType.addon, 'exterior', const LocalizedText('تلميع بالشمع', 'Wax Polish'), 60, 15);
-    }
-
-    offers.addAll([
-      OfferModel(
-        id: 'of_platform',
-        platform: true,
-        branchIds: branches.map((b) => b.id).toList(),
-        serviceIds: services.where((s) => s.category == 'exterior' && s.isPrimary).map((s) => s.id).toList(),
-        title: const LocalizedText('خصم ١٥٪ على الغسيل الخارجي', '15% off exterior washes'),
-        description: const LocalizedText('على كل المغاسل المشاركة هذا الأسبوع.', 'At participating washes this week.'),
-        discountType: DiscountType.percent,
-        discountValue: 15,
-        startAt: _at(now, -1, 0),
-        endAt: _at(now, 5, 23),
-        status: 'active',
-        featured: true,
-        photoIndex: 0,
-      ),
-      OfferModel(
-        id: 'of_deep',
-        platform: false,
-        branchIds: const ['br_nasr'],
-        serviceIds: const ['svc_br_nasr_deep'],
-        title: const LocalizedText('تنظيف عميق بخصم ١٥٪', '15% off deep cleaning'),
-        description: const LocalizedText('على التنظيف بالبخار في مدينة نصر.', 'Steam cleaning at Nasr City.'),
-        discountType: DiscountType.percent,
-        discountValue: 15,
-        startAt: _at(now, -2, 0),
-        endAt: _at(now, 6, 23),
-        status: 'active',
-        photoIndex: 1,
-      ),
-      OfferModel(
-        id: 'of_nile',
-        platform: false,
-        branchIds: const ['br_nile_maadi'],
-        serviceIds: const ['svc_br_nile_maadi_full'],
-        title: const LocalizedText('٢٠ ج.م على الغسيل الكامل', '20 EGP off a full wash'),
-        description: const LocalizedText('في فرع المعادي.', 'At the Maadi branch.'),
-        discountType: DiscountType.fixed,
-        discountValue: 20,
-        startAt: _at(now, -1, 0),
-        endAt: _at(now, 4, 23),
-        status: 'active',
-        photoIndex: 2,
-      ),
-    ]);
-
-    customers.add(CustomerModel(id: 'cu_ahmed', name: 'Ahmed Hassan', phone: '+20 100 123 4567'));
-    for (var i = 1; i < _names.length; i++) {
-      final n = 1100000000 + i * 137;
-      final s = n.toString();
-      customers.add(CustomerModel(
-        id: 'cu_$i',
-        name: _names[i],
-        phone: '+20 ${s.substring(0, 3)} ${s.substring(3, 6)} ${s.substring(6)}',
-      ));
-    }
-
-    vehicles.addAll([
-      VehicleModel(id: 've_corolla', customerId: 'cu_ahmed', make: 'Toyota', model: 'Corolla', year: 2021, color: 'white', plate: 'ABC123', isDefault: true),
-      VehicleModel(id: 've_sportage', customerId: 'cu_ahmed', make: 'Kia', model: 'Sportage', year: 2023, color: 'black', plate: 'KLM482'),
-    ]);
-
-    final full = services.firstWhere((s) => s.id == 'svc_br_nasr_full');
-    final fullItem = OrderItem(serviceId: full.id, name: full.name, type: full.type, price: full.price, durationMin: full.durationMin);
-    const ahmedDays = [14, 17, 19, 21, 23, 25, 27];
-    for (var i = 0; i < ahmedDays.length; i++) {
-      final at = _at(now, -ahmedDays[i], 11);
-      orders.add(OrderModel(
-        id: 'ord_ahmed_$i',
-        number: 'CZ-${9800 + i}',
-        code: 'A${i}K7P',
-        customerId: 'cu_ahmed',
-        vehicleId: 've_corolla',
-        branchId: 'br_nasr',
-        items: [fullItem],
-        subtotal: 180,
-        discount: 0,
-        total: 180,
-        durationMin: 40,
-        scheduledAt: at,
-        status: OrderStatus.completed,
-        paymentStatus: PaymentStatus.paid,
-        createdAt: at.subtract(const Duration(days: 1)),
-        timeline: [
-          TimelineEntry('pending', at.subtract(const Duration(days: 1))),
-          TimelineEntry('confirmed', at.subtract(const Duration(hours: 20))),
-          TimelineEntry('waiting', at.subtract(const Duration(minutes: 5))),
-          TimelineEntry('in_service', at.add(const Duration(minutes: 2))),
-          TimelineEntry('completed', at.add(const Duration(minutes: 42))),
-        ],
-      ));
-    }
-    final ns = _at(now, -30, 16);
-    orders.add(OrderModel(
-      id: 'ord_ahmed_ns',
-      number: 'CZ-9790',
-      code: 'N5S2W',
-      customerId: 'cu_ahmed',
-      vehicleId: 've_corolla',
-      branchId: 'br_nasr',
-      items: [fullItem],
-      subtotal: 180,
-      discount: 0,
-      total: 180,
-      durationMin: 40,
-      scheduledAt: ns,
-      status: OrderStatus.noShow,
-      createdAt: ns.subtract(const Duration(days: 1)),
-      timeline: [
-        TimelineEntry('pending', ns.subtract(const Duration(days: 1))),
-        TimelineEntry('confirmed', ns.subtract(const Duration(hours: 22))),
-        TimelineEntry('no_show', ns.add(const Duration(minutes: 15))),
-      ],
-    ));
-
-    final ext = services.firstWhere((s) => s.id == 'svc_br_nasr_ext');
-    final busy = [10, 10, 11, 12, 13, 13, 14, 15, 18, 19, 19, 20];
-    for (var i = 0; i < busy.length; i++) {
-      final at = _at(now, 0, busy[i], i.isEven ? 0 : 30);
-      orders.add(OrderModel(
-        id: 'ord_bg_$i',
-        number: 'CZ-${9700 + i}',
-        code: 'BG${i}XX',
-        customerId: customers[1 + i % 19].id,
-        vehicleId: '',
-        branchId: 'br_nasr',
-        items: [OrderItem(serviceId: ext.id, name: ext.name, type: ext.type, price: ext.price, durationMin: ext.durationMin)],
-        subtotal: ext.price,
-        discount: 0,
-        total: ext.price,
-        durationMin: 40,
-        scheduledAt: at,
-        status: OrderStatus.confirmed,
-        createdAt: at.subtract(const Duration(hours: 5)),
-      ));
-    }
-
-    final nasrReviews = <ReviewModel>[];
-    for (var i = 0; i < 6; i++) {
-      nasrReviews.add(ReviewModel(
-        id: 'rv_ahmed_$i',
-        orderId: 'ord_ahmed_${i + 1}',
-        customerName: 'Ahmed Hassan',
-        branchId: 'br_nasr',
-        serviceName: full.name,
-        stars: 5,
-        comment: _comments[i % 4].value,
-        tags: const ['clean'],
-        createdAt: _at(now, -ahmedDays[i + 1], 15),
-      ));
-    }
-    for (var i = 0; i < 14; i++) {
-      final stars = i < 10 ? 5 : 4;
-      nasrReviews.add(ReviewModel(
-        id: 'rv_host_$i',
-        customerName: _names[1 + i % 19],
-        branchId: 'br_nasr',
-        serviceName: ext.name,
-        stars: stars,
-        comment: (stars == 4 ? _comments[2] : _comments[i % 2 == 0 ? 0 : 1]).ar,
-        tags: stars == 5 ? const ['clean'] : const ['value'],
-        reply: i == 2 ? 'شكراً لتقييمك، ننتظرك مرة أخرى!' : null,
-        createdAt: _at(now, -(2 + i), 18),
-      ));
-    }
-    reviews.addAll(nasrReviews);
-
-    final rnd = math.Random(20261008);
-    for (final b in branches.where((b) => b.id != 'br_nasr')) {
-      final count = 4 + rnd.nextInt(14);
-      for (var i = 0; i < count; i++) {
-        final stars = 3 + rnd.nextInt(3);
-        reviews.add(ReviewModel(
-          id: 'rv_${b.id}_$i',
-          customerName: _names[rnd.nextInt(_names.length)],
-          branchId: b.id,
-          serviceName: services.firstWhere((s) => s.branchId == b.id && s.isPrimary).name,
-          stars: stars,
-          comment: _comments[rnd.nextInt(4)].ar,
-          createdAt: _at(now, -(1 + rnd.nextInt(28)), 12 + rnd.nextInt(8)),
-        ));
-      }
-    }
-
-    notifications.addAll([
-      NotificationModel(
-        id: 'nt_ahmed_review',
-        userId: 'cu_ahmed',
-        type: 'review_reminder',
-        title: const LocalizedText('قيّم زيارتك الأخيرة', 'Rate your last visit'),
-        body: const LocalizedText('غسيل داخلي وخارجي في كارزن ووش – مدينة نصر.', 'Interior + Exterior at Carzen Wash – Nasr City.'),
-        orderId: 'ord_ahmed_0',
-        createdAt: _at(now, -1, 18),
-      ),
-      NotificationModel(
-        id: 'nt_ahmed_offer',
-        userId: 'cu_ahmed',
-        type: 'offer',
-        title: const LocalizedText('خصم على الغسيل الخارجي', 'Exterior wash offer'),
-        body: const LocalizedText('١٥٪ هذا الأسبوع على الغسيل الخارجي.', '15% off exterior washes this week.'),
-        createdAt: _at(now, 0, 9),
-      ),
-    ]);
-  }
-
+  // Safe entity accessors with null/empty fallbacks
   BranchModel? branch(String id) => branches.firstWhereOrNull((b) => b.id == id);
 
-  AreaModel area(String id) => areas.firstWhere((a) => a.id == id, orElse: () => areas.first);
+  AreaModel area(String id) =>
+      areas.firstWhereOrNull((a) => a.id == id) ??
+      (areas.isNotEmpty ? areas.first : defaultArea);
 
   WashServiceModel? service(String id) => services.firstWhereOrNull((s) => s.id == id);
 
@@ -372,9 +88,50 @@ class CarzoneDbService extends GetxService {
     return (rating: avg, count: list.length);
   }
 
+  // Next order number, code, and ticket generators
+  String nextNumber() => 'CZ-${_nextNumber++}';
+
+  String nextCode() {
+    return List.generate(5, (_) => _codeChars[_rnd.nextInt(_codeChars.length)]).join();
+  }
+
+  String nextTicket() => 'TK-${_nextTicket++}';
+
+  void _initCounters() {
+    // Dynamically calculate next order number from existing orders in Supabase
+    var maxNum = 10000;
+    for (final o in orders) {
+      final parts = o.number.split('-');
+      if (parts.length == 2) {
+        final parsed = int.tryParse(parts[1]);
+        if (parsed != null && parsed > maxNum) {
+          maxNum = parsed;
+        }
+      }
+    }
+    _nextNumber = maxNum + 1;
+
+    // Dynamically calculate next complaint ticket
+    var maxTicket = 500;
+    for (final c in complaints) {
+      final ticketStr = c['ticket_number']?.toString() ?? '';
+      final parts = ticketStr.split('-');
+      if (parts.length == 2) {
+        final parsed = int.tryParse(parts[1]);
+        if (parsed != null && parsed > maxTicket) {
+          maxTicket = parsed;
+        }
+      }
+    }
+    _nextTicket = maxTicket + 1;
+  }
+
+  /// Fetches all master data and user data from Supabase.
   Future<bool> fetchFromSupabase() async {
     try {
       isSyncing.value = true;
+      hasError.value = false;
+      errorMessage.value = '';
       final client = SupabaseService.client;
 
       final results = await Future.wait([
@@ -387,6 +144,7 @@ class CarzoneDbService extends GetxService {
         client.from('orders').select().order('created_at', ascending: false),
         client.from('reviews').select().order('created_at', ascending: false),
         client.from('notifications').select().order('created_at', ascending: false),
+        client.from('complaints').select().order('created_at', ascending: false),
       ]);
 
       final remoteAreas = (results[0] as List)
@@ -416,33 +174,115 @@ class CarzoneDbService extends GetxService {
       final remoteNotifications = (results[8] as List)
           .map((e) => NotificationModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
+      final remoteComplaints = (results[9] as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
 
-      if (remoteAreas.isNotEmpty) areas.assignAll(remoteAreas);
-      if (remoteBranches.isNotEmpty) branches.assignAll(remoteBranches);
-      if (remoteServices.isNotEmpty) services.assignAll(remoteServices);
-      if (remoteOffers.isNotEmpty) offers.assignAll(remoteOffers);
-      if (remoteCustomers.isNotEmpty) customers.assignAll(remoteCustomers);
-      if (remoteVehicles.isNotEmpty) vehicles.assignAll(remoteVehicles);
-      if (remoteOrders.isNotEmpty) orders.assignAll(remoteOrders);
-      if (remoteReviews.isNotEmpty) reviews.assignAll(remoteReviews);
-      if (remoteNotifications.isNotEmpty) notifications.assignAll(remoteNotifications);
+      areas.assignAll(remoteAreas);
+      branches.assignAll(remoteBranches);
+      services.assignAll(remoteServices);
+      offers.assignAll(remoteOffers);
+      customers.assignAll(remoteCustomers);
+      vehicles.assignAll(remoteVehicles);
+      orders.assignAll(remoteOrders);
+      reviews.assignAll(remoteReviews);
+      notifications.assignAll(remoteNotifications);
+      complaints.assignAll(remoteComplaints);
 
+      // If user is currently authenticated in Supabase or has cached/guest ID, load their favorites
+      final cachedUserId = CacheController().getter(key: CacheKeys.userId);
+      final guestUserId = CacheController().getter(key: CacheKeys.guestUserId);
+      final effectiveUid = client.auth.currentUser?.id ??
+          (cachedUserId is String ? cachedUserId : null) ??
+          (guestUserId is String ? guestUserId : null);
+      if (effectiveUid != null) {
+        await loadFavorites(effectiveUid);
+      }
+
+      _initCounters();
       isSynced.value = true;
-      dev.log('[CarzoneDbService] Loaded data from Supabase successfully.');
+      dev.log('[CarzoneDbService] Successfully loaded 100% data from Supabase.');
       return true;
     } catch (e, st) {
-      dev.log('[CarzoneDbService] Supabase fetch error (using cache): $e\n$st');
+      hasError.value = true;
+      errorMessage.value = e.toString();
+      dev.log('[CarzoneDbService] Supabase fetch error: $e\n$st');
       return false;
     } finally {
       isSyncing.value = false;
     }
   }
 
+  /// Load favorites for specific user from Supabase.
+  Future<void> loadFavorites(String userId) async {
+    try {
+      final res = await SupabaseService.client
+          .from('favorites')
+          .select('branch_id')
+          .eq('user_id', userId);
+      final set = (res as List).map((e) => e['branch_id'].toString()).toSet();
+      favorites.assignAll(set);
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error loading favorites from Supabase: $e');
+    }
+  }
+
+  /// Toggle favorite on branch for user in Supabase.
+  Future<void> toggleFavorite(String branchId, String userId) async {
+    if (favorites.contains(branchId)) {
+      favorites.remove(branchId);
+      try {
+        await SupabaseService.client
+            .from('favorites')
+            .delete()
+            .eq('user_id', userId)
+            .eq('branch_id', branchId);
+      } catch (e) {
+        dev.log('[CarzoneDbService] Error deleting favorite from Supabase: $e');
+      }
+    } else {
+      favorites.add(branchId);
+      try {
+        await SupabaseService.client.from('favorites').upsert({
+          'user_id': userId,
+          'branch_id': branchId,
+        });
+      } catch (e) {
+        dev.log('[CarzoneDbService] Error inserting favorite to Supabase: $e');
+      }
+    }
+  }
+
+  /// Migrates any favorites recorded under guest ID to target user ID
+  Future<void> migrateGuestFavorites(String guestId, String targetUserId) async {
+    if (guestId == targetUserId) return;
+    try {
+      final res = await SupabaseService.client
+          .from('favorites')
+          .select('branch_id')
+          .eq('user_id', guestId);
+      final guestBranchIds = (res as List).map((e) => e['branch_id'].toString()).toList();
+      for (final bid in guestBranchIds) {
+        await SupabaseService.client.from('favorites').upsert({
+          'user_id': targetUserId,
+          'branch_id': bid,
+        });
+      }
+      await SupabaseService.client
+          .from('favorites')
+          .delete()
+          .eq('user_id', guestId);
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error migrating guest favorites: $e');
+    }
+  }
+
+  // Remote Write Operations
   Future<void> saveOrder(OrderModel order) async {
     try {
       await SupabaseService.client.from('orders').upsert(order.toJson());
     } catch (e) {
-      dev.log('Error saving order to Supabase: $e');
+      dev.log('[CarzoneDbService] Error saving order to Supabase: $e');
     }
   }
 
@@ -450,7 +290,7 @@ class CarzoneDbService extends GetxService {
     try {
       await SupabaseService.client.from('vehicles').upsert(vehicle.toJson());
     } catch (e) {
-      dev.log('Error saving vehicle to Supabase: $e');
+      dev.log('[CarzoneDbService] Error saving vehicle to Supabase: $e');
     }
   }
 
@@ -458,7 +298,7 @@ class CarzoneDbService extends GetxService {
     try {
       await SupabaseService.client.from('vehicles').delete().eq('id', id);
     } catch (e) {
-      dev.log('Error deleting vehicle from Supabase: $e');
+      dev.log('[CarzoneDbService] Error deleting vehicle from Supabase: $e');
     }
   }
 
@@ -466,7 +306,7 @@ class CarzoneDbService extends GetxService {
     try {
       await SupabaseService.client.from('reviews').upsert(review.toJson());
     } catch (e) {
-      dev.log('Error saving review to Supabase: $e');
+      dev.log('[CarzoneDbService] Error saving review to Supabase: $e');
     }
   }
 
@@ -474,7 +314,26 @@ class CarzoneDbService extends GetxService {
     try {
       await SupabaseService.client.from('customers').upsert(customer.toJson());
     } catch (e) {
-      dev.log('Error saving customer to Supabase: $e');
+      dev.log('[CarzoneDbService] Error saving customer to Supabase: $e');
+    }
+  }
+
+  Future<void> updateCustomerToken(String customerId, String? token) async {
+    try {
+      final now = DateTime.now().toIso8601String();
+      await SupabaseService.client.from('customers').update({
+        'access_token': token,
+        'token_updated_at': now,
+      }).eq('id', customerId);
+
+      final cust = customerById(customerId);
+      if (cust != null) {
+        cust.accessToken = token;
+        cust.tokenUpdatedAt = DateTime.tryParse(now);
+        customers.refresh();
+      }
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error updating customer token in Supabase: $e');
     }
   }
 
@@ -482,22 +341,46 @@ class CarzoneDbService extends GetxService {
     try {
       await SupabaseService.client.from('notifications').upsert(notif.toJson());
     } catch (e) {
-      dev.log('Error saving notification to Supabase: $e');
+      dev.log('[CarzoneDbService] Error saving notification to Supabase: $e');
     }
   }
 
-  CustomerModel registerCustomer(String phone, String name) {
-    final row = CustomerModel(id: 'cu_new_${customers.length}', name: name, phone: phone);
+  Future<void> markNotificationRead(String notifId) async {
+    try {
+      await SupabaseService.client
+          .from('notifications')
+          .update({'read': true})
+          .eq('id', notifId);
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error updating notification in Supabase: $e');
+    }
+  }
+
+  Future<void> markAllNotificationsRead(String userId) async {
+    try {
+      await SupabaseService.client
+          .from('notifications')
+          .update({'read': true})
+          .eq('user_id', userId);
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error updating all notifications in Supabase: $e');
+    }
+  }
+
+  Future<void> saveComplaint(Map<String, dynamic> complaint) async {
+    try {
+      await SupabaseService.client.from('complaints').upsert(complaint);
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error saving complaint to Supabase: $e');
+    }
+  }
+
+  CustomerModel registerCustomer(String authId, String phone, String name) {
+    final row = CustomerModel(id: authId, name: name, phone: phone);
     customers.add(row);
     saveCustomer(row);
     return row;
   }
-
-  String nextNumber() => 'CZ-${_nextNumber++}';
-
-  String nextCode() => _codes[(_nextNumber - 10002) % _codes.length];
-
-  String nextTicket() => 'TK-${_nextTicket++}';
 
   void notify({
     required String userId,

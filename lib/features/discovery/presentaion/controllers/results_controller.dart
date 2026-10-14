@@ -42,6 +42,7 @@ class ResultsController extends GetxController {
     if (isWashNow) filters.value = const DiscoveryFilters(sort: SortMode.earliest);
     ever(Get.find<SessionService>().areaId, (_) => load());
     ever(Get.find<CarzoneDbService>().orders, (_) => _compute());
+    ever(Get.find<CarzoneDbService>().branches, (_) => _compute());
     load();
   }
 

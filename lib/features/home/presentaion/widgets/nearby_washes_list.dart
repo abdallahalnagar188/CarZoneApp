@@ -26,12 +26,14 @@ class NearbyWashesList extends StatelessWidget {
             return FadeSlideIn(
               delay: Duration(milliseconds: 90 * i.clamp(0, 4)),
               offsetY: 18,
-              child: WashCard(
-                width: 250.w,
-                row: row,
-                favorite: favorites.ids.contains(row.branch.id),
-                onTap: () => controller.openWash(row.branch.id),
-                onFavorite: () => favorites.toggle(row.branch.id),
+              child: Obx(
+                () => WashCard(
+                  width: 250.w,
+                  row: row,
+                  favorite: favorites.ids.contains(row.branch.id),
+                  onTap: () => controller.openWash(row.branch.id),
+                  onFavorite: () => favorites.toggle(row.branch.id),
+                ),
               ),
             );
           },

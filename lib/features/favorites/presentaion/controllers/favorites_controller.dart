@@ -2,28 +2,43 @@ import 'package:get/get.dart';
 
 import '../../../../commons/models/branch_listing_model.dart';
 import '../../../../commons/models/branch_model.dart';
-import '../../../../core/helpers/auth_guard.dart';
+import '../../../../core/enums/enums.dart';
+import '../../../../core/local/cache_controller.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
 import '../../../../core/services/discovery_service.dart';
+import '../../../../core/services/session_service.dart';
+import '../../../../core/services/supabase_service.dart';
 
 class FavoritesController extends GetxController {
   final _discovery = DiscoveryService();
 
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
 
+  SessionService get _session => Get.find<SessionService>();
+
   RxSet<String> get ids => _db.favorites;
 
   bool isFavorite(String branchId) => _db.favorites.contains(branchId);
 
+  String resolveEffectiveUserId() {
+    final sessionUid = _session.userId ?? SupabaseService.client.auth.currentUser?.id;
+    if (sessionUid != null && sessionUid.isNotEmpty) return sessionUid;
+
+    final cachedUid = CacheController().getter(key: CacheKeys.userId);
+    if (cachedUid is String && cachedUid.isNotEmpty) return cachedUid;
+
+    var guestId = CacheController().getter(key: CacheKeys.guestUserId);
+    if (guestId is! String || guestId.isEmpty) {
+      guestId = 'guest_${DateTime.now().millisecondsSinceEpoch}';
+      CacheController().setter(key: CacheKeys.guestUserId, value: guestId);
+    }
+    return guestId;
+  }
+
   void toggle(String branchId) {
-    AuthGuard.run(() {
-      if (_db.favorites.contains(branchId)) {
-        _db.favorites.remove(branchId);
-      } else {
-        _db.favorites.add(branchId);
-      }
-    });
+    final uid = resolveEffectiveUserId();
+    _db.toggleFavorite(branchId, uid);
   }
 
   List<BranchListingModel> get rows => _db.favorites

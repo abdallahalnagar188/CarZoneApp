@@ -76,6 +76,7 @@ class WashCard extends StatelessWidget {
                     top: 10.h,
                     end: 10.w,
                     child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: onFavorite,
                       child: Container(
                         width: 36.r,
@@ -83,7 +84,11 @@ class WashCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.surface.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(12.r),
-                          border: Border.all(color: AppColors.line.withValues(alpha: 0.6)),
+                          border: Border.all(
+                            color: favorite
+                                ? Colors.red.withValues(alpha: 0.35)
+                                : AppColors.line.withValues(alpha: 0.6),
+                          ),
                         ),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 250),
@@ -92,7 +97,7 @@ class WashCard extends StatelessWidget {
                             favorite ? Iconsax.heart5 : Iconsax.heart,
                             key: ValueKey(favorite),
                             size: 18.sp,
-                            color: favorite ? AppColors.danger : AppColors.ink900,
+                            color: favorite ? Colors.red : AppColors.ink900,
                           ),
                         ),
                       ),

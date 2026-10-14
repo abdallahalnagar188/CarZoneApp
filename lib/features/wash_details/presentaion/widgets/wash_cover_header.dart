@@ -36,7 +36,7 @@ class WashCoverHeader extends StatelessWidget {
               glass: true,
               icon: Icon(
                 favorites.ids.contains(controller.branchId) ? Iconsax.heart5 : Iconsax.heart,
-                color: favorites.ids.contains(controller.branchId) ? const Color(0xFFFF7A7E) : Colors.white,
+                color: favorites.ids.contains(controller.branchId) ? Colors.red : Colors.white,
               ),
               onTap: controller.toggleFavorite,
             ),

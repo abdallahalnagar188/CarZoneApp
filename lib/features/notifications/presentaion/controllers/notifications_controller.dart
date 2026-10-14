@@ -28,11 +28,16 @@ class NotificationsController extends GetxController {
       n.read = true;
     }
     _db.notifications.refresh();
+    final uid = _session.userId;
+    if (uid != null) {
+      _db.markAllNotificationsRead(uid);
+    }
   }
 
   void open(NotificationModel n) {
     n.read = true;
     _db.notifications.refresh();
+    _db.markNotificationRead(n.id);
     if (n.orderId != null) {
       final order = _db.order(n.orderId!);
       if (n.type == 'review_reminder' && order != null && !_db.reviews.any((r) => r.orderId == order.id)) {

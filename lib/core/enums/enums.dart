@@ -13,6 +13,7 @@ enum CacheKeys {
   recentSearches,
   notifReminders,
   notifOffers,
+  guestUserId,
 }
 
 enum AppLanguages { ar, en }

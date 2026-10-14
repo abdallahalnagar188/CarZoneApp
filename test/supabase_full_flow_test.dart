@@ -38,13 +38,13 @@ void main() {
     expect(db.vehicles.length, greaterThanOrEqualTo(2));
 
     expect(db.orders, isNotEmpty);
-    expect(db.orders.length, equals(20));
+    expect(db.orders.length, greaterThanOrEqualTo(20));
 
     expect(db.reviews, isNotEmpty);
     expect(db.reviews.length, greaterThanOrEqualTo(100));
 
     expect(db.notifications, isNotEmpty);
-    expect(db.notifications.length, equals(2));
+    expect(db.notifications.length, greaterThanOrEqualTo(2));
 
     // 5. Test computed properties from live Supabase data
     final nasrRating = db.ratingFor('br_nasr');

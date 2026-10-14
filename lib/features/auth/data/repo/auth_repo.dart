@@ -52,19 +52,56 @@ class AuthRepo {
     }
   }
 
-  /// Find an existing customer in the local DB by phone number.
-  CustomerModel? findCustomerByPhone(String prettyPhone) =>
-      _db.customerByPhone(prettyPhone);
+  /// Find an existing customer in the local DB or Supabase by phone number.
+  Future<CustomerModel?> findCustomerByPhone(String prettyPhone) async {
+    final local = _db.customerByPhone(prettyPhone);
+    if (local != null) return local;
+    try {
+      final res = await _client
+          .from('customers')
+          .select()
+          .eq('phone', prettyPhone)
+          .maybeSingle();
+      if (res != null) {
+        final cust = CustomerModel.fromJson(Map<String, dynamic>.from(res));
+        _db.customers.add(cust);
+        return cust;
+      }
+    } catch (_) {}
+    return null;
+  }
 
   /// Find an existing customer by their Supabase auth UID.
-  CustomerModel? findCustomerByAuthId(String authId) =>
-      _db.customers.firstWhereOrNull((c) => c.id == authId);
+  Future<CustomerModel?> findCustomerByAuthId(String authId) async {
+    final local = _db.customers.firstWhereOrNull((c) => c.id == authId);
+    if (local != null) return local;
+    try {
+      final res = await _client
+          .from('customers')
+          .select()
+          .eq('id', authId)
+          .maybeSingle();
+      if (res != null) {
+        final cust = CustomerModel.fromJson(Map<String, dynamic>.from(res));
+        _db.customers.add(cust);
+        return cust;
+      }
+    } catch (_) {}
+    return null;
+  }
 
   /// Register a new customer (upserts to both local + Supabase).
   /// Uses the Supabase auth user ID as the customer ID.
   Future<CustomerModel> register(
-      String authId, String phone, String name) async {
-    final row = CustomerModel(id: authId, name: name, phone: phone);
+      String authId, String phone, String name, {String? token}) async {
+    final effectiveToken = token ?? _client.auth.currentSession?.accessToken;
+    final row = CustomerModel(
+      id: authId,
+      name: name,
+      phone: phone,
+      accessToken: effectiveToken,
+      tokenUpdatedAt: effectiveToken != null ? DateTime.now() : null,
+    );
     _db.customers.add(row);
     await _db.saveCustomer(row);
     return row;
@@ -81,4 +118,7 @@ class AuthRepo {
 
   /// Get the current auth user (if any).
   User? get currentAuthUser => _client.auth.currentUser;
+
+  /// Get the current auth session access token (if any).
+  String? get currentSessionToken => _client.auth.currentSession?.accessToken;
 }

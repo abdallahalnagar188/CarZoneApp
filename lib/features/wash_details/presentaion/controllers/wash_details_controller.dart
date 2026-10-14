@@ -41,6 +41,8 @@ class WashDetailsController extends GetxController {
     super.onInit();
     branchId = Get.arguments?.toString() ?? 'br_nasr';
     load();
+    ever(_db.branches, (_) => _compute());
+    ever(_db.services, (_) => _compute());
     ever(_db.reviews, (_) => _compute());
     ever(_db.orders, (_) => _compute());
   }

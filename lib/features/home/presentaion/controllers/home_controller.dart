@@ -43,12 +43,28 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     load();
-    everAll([_db.orders, _db.reviews, _db.notifications, session.user, session.areaId], (_) => _compute());
+    everAll([
+      _db.branches,
+      _db.services,
+      _db.offers,
+      _db.areas,
+      _db.orders,
+      _db.reviews,
+      _db.notifications,
+      session.user,
+      session.areaId,
+    ], (_) => _compute());
   }
 
   Future<void> load() async {
     loading.value = true;
-    await Future.delayed(const Duration(milliseconds: 450));
+    _compute();
+    loading.value = false;
+  }
+
+  Future<void> refreshHome() async {
+    loading.value = true;
+    await _db.fetchFromSupabase();
     _compute();
     loading.value = false;
   }

@@ -131,8 +131,8 @@ class AuthController extends GetxController {
     }
 
     // Try to find existing customer by auth ID or phone
-    var existing = _repo.findCustomerByAuthId(authUser.id);
-    existing ??= _repo.findCustomerByPhone(phone);
+    var existing = await _repo.findCustomerByAuthId(authUser.id);
+    existing ??= await _repo.findCustomerByPhone(phone);
 
     if (existing == null) {
       // New user — go to profile setup to collect their name
@@ -142,8 +142,12 @@ class AuthController extends GetxController {
       return;
     }
 
-    // Existing user — sign in
-    await _session.signIn(existing);
+    // Existing user — sign in with active session token
+    final token = _repo.currentSessionToken;
+    if (token != null) {
+      await _session.saveToken(token);
+    }
+    await _session.signIn(existing, token: token);
     Utils.getSnakBar(
         message: 'otp.success'.tr, type: TosterTypes.sucsses);
     AuthGuard.completeLogin();
@@ -162,10 +166,11 @@ class AuthController extends GetxController {
       return;
     }
 
+    final token = _repo.currentSessionToken;
     saving.value = true;
-    final row = await _repo.register(authUser.id, phone, name);
+    final row = await _repo.register(authUser.id, phone, name, token: token);
     saving.value = false;
-    await _session.signIn(row);
+    await _session.signIn(row, token: token);
     AuthGuard.completeLogin();
   }
 
