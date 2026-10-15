@@ -1,0 +1,12 @@
+insert into public.complaints (id, ticket, customer_id, business_id, branch_id, order_id, category, description, status, assigned_admin_id, resolution, created_at, updated_at) values
+  ('cp_1', 'TK-1031', 'cu_007', 'biz_pyramid', 'br_pyramid_zay', 'ord_py_1', 'quality', 'تم استلام السيارة وبها بقع واضحة على الزجاج والجنوط رغم أن الخدمة كانت غسيل كامل.', 'open', null, null, '2026-10-14T10:00:00.000Z', '2026-10-14T10:00:00.000Z'),
+  ('cp_2', 'TK-1032', 'cu_008', 'biz_pyramid', 'br_pyramid_zay', 'ord_py_2', 'pricing', 'تم تحصيل مبلغ أعلى من السعر المعروض في التطبيق بدون توضيح السبب.', 'in_review', 'au_mona', null, '2026-10-13T10:00:00.000Z', '2026-10-13T10:00:00.000Z'),
+  ('cp_3', 'TK-1033', 'cu_009', 'biz_pyramid', 'br_pyramid_zay', null, 'behavior', 'تعامل غير لائق من أحد العاملين عند الاستفسار عن مدة الانتظار.', 'waiting', 'au_mona', null, '2026-10-12T10:00:00.000Z', '2026-10-12T10:00:00.000Z'),
+  ('cp_4', 'TK-1034', 'cu_010', 'biz_pyramid', 'br_pyramid_zay', null, 'quality', 'تم استلام السيارة وبها بقع واضحة على الزجاج والجنوط رغم أن الخدمة كانت غسيل كامل.', 'open', null, null, '2026-10-11T10:00:00.000Z', '2026-10-11T10:00:00.000Z'),
+  ('cp_5', 'TK-1035', 'cu_011', 'biz_nile', 'br_nile_maadi', null, 'booking', 'وصلت في موعد الحجز ولم يتم استقبال السيارة إلا بعد ٤٠ دقيقة.', 'resolved', 'au_mona', 'تمت مراجعة الحالة مع مدير الفرع وتعويض العميل بغسلة مجانية.', '2026-10-10T10:00:00.000Z', '2026-10-10T10:00:00.000Z'),
+  ('cp_6', 'TK-1036', 'cu_012', 'biz_palm', 'br_palm_nc', null, 'refund', 'تم إلغاء الخدمة من المغسلة ولم يتم رد المبلغ المدفوع بالبطاقة.', 'closed', 'au_mona', 'تمت مراجعة الحالة مع مدير الفرع وتعويض العميل بغسلة مجانية.', '2026-10-09T10:00:00.000Z', '2026-10-09T10:00:00.000Z'),
+  ('cp_7', 'TK-1037', 'cu_013', 'biz_lotus', 'br_lotus_moh', null, 'other', 'الفرع كان مغلقًا في وقت يظهر فيه مفتوحًا على التطبيق.', 'in_review', 'au_mona', null, '2026-10-08T10:00:00.000Z', '2026-10-08T10:00:00.000Z'),
+  ('cp_8', 'TK-1038', 'cu_ahmed', 'biz_carzen', 'br_nasr', 'ord_ahmed_ns', 'booking', 'وصلت في موعد الحجز ولم يتم استقبال السيارة إلا بعد ٤٠ دقيقة.', 'open', null, null, '2026-10-07T10:00:00.000Z', '2026-10-07T10:00:00.000Z'),
+  ('cp_9', 'TK-1039', 'cu_014', 'biz_golden', 'br_golden_hel', null, 'quality', 'تم استلام السيارة وبها بقع واضحة على الزجاج والجنوط رغم أن الخدمة كانت غسيل كامل.', 'waiting', 'au_mona', null, '2026-10-06T10:00:00.000Z', '2026-10-06T10:00:00.000Z');
+
+-- complaint_notes: 6 rows
