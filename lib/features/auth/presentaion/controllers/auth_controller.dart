@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:developer' as dev;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/constance/supabase_constants.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
 import '../../../../core/helpers/format_helper.dart';
@@ -24,6 +27,7 @@ class AuthController extends GetxController {
   final sending = false.obs;
   final verifying = false.obs;
   final saving = false.obs;
+  final googleSigningIn = false.obs;
   final resendIn = 0.obs;
   final lockedFor = 0.obs;
 
@@ -38,13 +42,89 @@ class AuthController extends GetxController {
 
   SessionService get _session => Get.find<SessionService>();
 
-  /// Parse the input to a pretty phone and E.164 format, then send OTP.
-  Future<void> sendCode() async {
-    final pretty = FormatHelper.parseEgPhone(phoneController.text);
-    if (pretty == null) {
-      phoneError.value = 'login.bad'.tr;
+  /// Initiate native in-app Google Sign-In popup without opening Chrome app
+  Future<void> signInWithGoogle() async {
+    if (googleSigningIn.value || sending.value) return;
+    googleSigningIn.value = true;
+    try {
+      if (SupabaseConstants.googleWebClientId.isNotEmpty) {
+        final res = await _repo.signInWithGoogleNative();
+        if (res == null) {
+          // User dismissed or canceled the popup dialog
+          return;
+        }
+        await _handleSuccessfulAuth(res);
+      } else {
+        // Fallback: in-app browser view
+        final started = await _repo.signInWithGoogleInAppBrowser();
+        if (!started) {
+          Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
+        }
+      }
+    } on AuthException catch (e) {
+      dev.log('[AuthController] signInWithGoogle AuthException: ${e.message}');
+      Utils.getSnakBar(message: _repo.mapAuthError(e), type: TosterTypes.failed);
+    } catch (e) {
+      dev.log('[AuthController] signInWithGoogle unexpected error: $e');
+      Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
+    } finally {
+      googleSigningIn.value = false;
+    }
+  }
+
+  Future<void> _handleSuccessfulAuth(AuthResponse res) async {
+    final authUser = res.user ?? _repo.currentAuthUser;
+    if (authUser == null) {
+      Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
       return;
     }
+
+    final token = res.session?.accessToken ?? _repo.currentSessionToken;
+    if (token != null) {
+      await _session.saveToken(token);
+    }
+
+    var existing = await _repo.findCustomerByAuthId(authUser.id);
+    if (existing == null && authUser.phone != null && authUser.phone!.isNotEmpty) {
+      existing = await _repo.findCustomerByPhone(authUser.phone!);
+    }
+
+    if (existing != null) {
+      await _session.signIn(existing, token: token);
+      Utils.getSnakBar(message: 'otp.success'.tr, type: TosterTypes.sucsses);
+      AuthGuard.completeLogin();
+    } else {
+      nameController.clear();
+      final gName = authUser.userMetadata?['full_name'] ??
+          authUser.userMetadata?['name'] ??
+          '';
+      if (gName.toString().isNotEmpty) {
+        nameController.text = gName.toString();
+      }
+      if (authUser.phone != null && authUser.phone!.isNotEmpty) {
+        phone = authUser.phone!;
+        phoneController.text = authUser.phone!;
+      }
+      Get.toNamed(Routes.profileSetupRoute);
+    }
+  }
+
+  /// Parse the input to a pretty phone and E.164 format, then send OTP.
+  Future<void> sendCode() async {
+    final rawInput = phoneController.text.trim();
+    if (rawInput.isEmpty) {
+      phoneError.value = null;
+      Utils.getSnakBar(message: 'login.bad'.tr, type: TosterTypes.failed);
+      return;
+    }
+
+    final pretty = FormatHelper.parseEgPhone(rawInput);
+    if (pretty == null) {
+      phoneError.value = null;
+      Utils.getSnakBar(message: 'login.bad'.tr, type: TosterTypes.failed);
+      return;
+    }
+
     phoneError.value = null;
     phone = pretty;
     // Convert pretty "+20 100 123 4567" to E.164 "+201001234567"
@@ -55,7 +135,8 @@ class AuthController extends GetxController {
     sending.value = false;
 
     if (error != null) {
-      phoneError.value = error;
+      phoneError.value = null; // Do not expose backend error inline
+      Utils.getSnakBar(message: error, type: TosterTypes.failed);
       return;
     }
 
@@ -63,6 +144,10 @@ class AuthController extends GetxController {
     otpController.clear();
     _startTimer(resend: 30);
     Get.toNamed(Routes.otpRoute);
+    Utils.getSnakBar(
+      message: 'otp.sent'.trParams({'phone': phone}),
+      type: TosterTypes.sucsses,
+    );
   }
 
   void _startTimer({int resend = 0, int lock = 0}) {
@@ -88,20 +173,23 @@ class AuthController extends GetxController {
     }
     _startTimer(resend: 30);
     Utils.getSnakBar(
-        message: 'otp.sent'.trParams({'phone': phone}),
-        type: TosterTypes.sucsses);
+      message: 'otp.sent'.trParams({'phone': phone}),
+      type: TosterTypes.sucsses,
+    );
   }
 
   void changeNumber() => Get.back();
 
   Future<void> verify() async {
     if (lockedFor.value > 0) {
-      otpError.value = 'otp.locked'.tr;
+      otpError.value = null;
+      Utils.getSnakBar(message: 'otp.locked'.tr, type: TosterTypes.warning);
       return;
     }
     final code = otpController.text.trim();
     if (code.length != 6) {
-      otpError.value = 'otp.invalid'.tr;
+      otpError.value = null;
+      Utils.getSnakBar(message: 'otp.invalid'.tr, type: TosterTypes.warning);
       return;
     }
 
@@ -115,24 +203,29 @@ class AuthController extends GetxController {
       if (_attempts >= 5) {
         _attempts = 0;
         _startTimer(lock: 60);
-        otpError.value = 'otp.locked'.tr;
+        otpError.value = null;
+        Utils.getSnakBar(message: 'otp.locked'.tr, type: TosterTypes.warning);
         return;
       }
-      otpError.value = error;
+      otpError.value = null;
+      Utils.getSnakBar(message: error, type: TosterTypes.failed);
       return;
     }
 
     // OTP verified — Supabase session is now active.
-    // Check if we have an existing customer record.
+    // Check if we have an existing customer record (or link seeded customer).
     final authUser = _repo.currentAuthUser;
     if (authUser == null) {
-      otpError.value = 'otp.error'.tr;
+      otpError.value = null;
+      Utils.getSnakBar(message: 'otp.error'.tr, type: TosterTypes.failed);
       return;
     }
 
-    // Try to find existing customer by auth ID or phone
-    var existing = await _repo.findCustomerByAuthId(authUser.id);
-    existing ??= await _repo.findCustomerByPhone(phone);
+    final token = _repo.currentSessionToken;
+    // Try atomic profile sync first (will link unlinked accounts with matching phone)
+    var existing = await _repo.syncProfile(phone: _e164Phone, token: token);
+    existing ??= await _repo.findCustomerByAuthId(authUser.id);
+    existing ??= await _repo.findCustomerByPhone(_e164Phone);
 
     if (existing == null) {
       // New user — go to profile setup to collect their name
@@ -143,7 +236,6 @@ class AuthController extends GetxController {
     }
 
     // Existing user — sign in with active session token
-    final token = _repo.currentSessionToken;
     if (token != null) {
       await _session.saveToken(token);
     }
@@ -156,21 +248,39 @@ class AuthController extends GetxController {
   Future<void> saveName() async {
     final name = nameController.text.trim();
     if (name.length < 2) {
-      nameError.value = 'profile.nameErr'.tr;
+      nameError.value = null;
+      Utils.getSnakBar(message: 'profile.nameErr'.tr, type: TosterTypes.warning);
       return;
     }
 
     final authUser = _repo.currentAuthUser;
     if (authUser == null) {
-      nameError.value = 'otp.error'.tr;
+      nameError.value = null;
+      Utils.getSnakBar(message: 'otp.error'.tr, type: TosterTypes.failed);
       return;
+    }
+
+    var effectivePhone = _e164Phone.isNotEmpty
+        ? _e164Phone
+        : (authUser.phone ?? phone.replaceAll(' ', ''));
+
+    if (effectivePhone.isEmpty) {
+      final input = phoneController.text.trim();
+      final parsed = FormatHelper.parseEgPhone(input);
+      if (parsed == null) {
+        phoneError.value = null;
+        Utils.getSnakBar(message: 'login.bad'.tr, type: TosterTypes.warning);
+        return;
+      }
+      effectivePhone = parsed.replaceAll(' ', '');
     }
 
     final token = _repo.currentSessionToken;
     saving.value = true;
-    final row = await _repo.register(authUser.id, phone, name, token: token);
+    final row = await _repo.register(authUser.id, effectivePhone, name, token: token);
     saving.value = false;
     await _session.signIn(row, token: token);
+    Utils.getSnakBar(message: 'otp.success'.tr, type: TosterTypes.sucsses);
     AuthGuard.completeLogin();
   }
 

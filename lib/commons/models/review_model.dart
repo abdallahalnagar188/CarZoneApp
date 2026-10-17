@@ -29,6 +29,11 @@ class ReviewModel {
     final rawTags = json['tags'] as List?;
     final tags = rawTags?.map((e) => e.toString()).toList() ?? [];
 
+    final rawComment = json['comment'];
+    final commentText = rawComment is Map
+        ? LocalizedText.fromJson(rawComment).value
+        : (rawComment?.toString() ?? '');
+
     return ReviewModel(
       id: json['id']?.toString() ?? '',
       orderId: json['order_id']?.toString() ?? json['orderId']?.toString(),
@@ -36,7 +41,7 @@ class ReviewModel {
       branchId: json['branch_id']?.toString() ?? json['branchId']?.toString() ?? '',
       serviceName: LocalizedText.fromJson(json['service_name'] ?? json['serviceName']),
       stars: (json['stars'] as num?)?.toInt() ?? 5,
-      comment: json['comment']?.toString() ?? '',
+      comment: commentText,
       tags: tags,
       reply: json['reply']?.toString(),
       createdAt: DateTime.tryParse(json['created_at'] ?? json['createdAt'] ?? '') ?? DateTime.now(),

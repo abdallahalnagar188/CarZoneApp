@@ -34,7 +34,7 @@ class WashServiceModel {
       id: json['id']?.toString() ?? '',
       branchId: json['branch_id']?.toString() ?? json['branchId']?.toString() ?? '',
       type: type,
-      category: json['category']?.toString() ?? '',
+      category: json['category_id']?.toString() ?? json['category']?.toString() ?? '',
       name: LocalizedText.fromJson(json['name']),
       description: LocalizedText.fromJson(json['description']),
       price: (json['price'] as num?)?.toInt() ?? 0,

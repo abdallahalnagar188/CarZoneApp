@@ -1,9 +1,11 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constance/api_paths.dart';
 import '../constance/supabase_constants.dart';
+import '../network/pretty_http_logger.dart';
 
 class SupabaseService {
   SupabaseService._();
@@ -15,6 +17,7 @@ class SupabaseService {
       await Supabase.initialize(
         url: SupabaseConstants.supabaseUrl,
         publishableKey: SupabaseConstants.supabaseAnonKey,
+        httpClient: kDebugMode ? PrettyHttpLogger() : null,
       );
     } catch (e) {
       log('Supabase init error: $e');

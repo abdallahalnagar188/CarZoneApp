@@ -10,6 +10,10 @@ import '../local/cache_helper.dart';
 import '../network/dio_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../helpers/auth_guard.dart';
+import '../routing/app_routes.dart';
+import '../../features/auth/presentaion/controllers/auth_controller.dart';
+
 import 'carzone_db_service.dart';
 import 'supabase_service.dart';
 
@@ -61,8 +65,28 @@ class SessionService extends GetxService {
         final cust = _db.customerById(authUser.id);
         if (cust != null) {
           await signIn(cust, token: sessionToken);
+          if (Get.currentRoute == Routes.loginRoute || Get.currentRoute == Routes.otpRoute) {
+            AuthGuard.completeLogin();
+          }
         } else {
           await refreshProfile();
+          if (user.value != null) {
+            if (Get.currentRoute == Routes.loginRoute || Get.currentRoute == Routes.otpRoute) {
+              AuthGuard.completeLogin();
+            }
+          } else {
+            // New OAuth user without customer profile yet -> navigate to profile setup
+            if (Get.currentRoute == Routes.loginRoute || Get.currentRoute == Routes.otpRoute) {
+              if (Get.isRegistered<AuthController>()) {
+                final authCtrl = Get.find<AuthController>();
+                final name = authUser.userMetadata?['full_name'] ?? authUser.userMetadata?['name'] ?? '';
+                if (name.toString().isNotEmpty) {
+                  authCtrl.nameController.text = name.toString();
+                }
+              }
+              Get.toNamed(Routes.profileSetupRoute);
+            }
+          }
         }
         await _db.loadFavorites(authUser.id);
       } else if (data.event == AuthChangeEvent.signedOut) {
@@ -181,7 +205,7 @@ class SessionService extends GetxService {
       final res = await SupabaseService.client
           .from('customers')
           .select()
-          .eq('id', authUser.id)
+          .eq('user_id', authUser.id)
           .maybeSingle();
       if (res != null) {
         final cust = CustomerModel.fromJson(Map<String, dynamic>.from(res));

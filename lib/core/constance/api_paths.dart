@@ -11,7 +11,7 @@ class ApiEndPoints {
   static const String offers = 'offers';
   static const String orders = 'orders';
   static const String reviews = 'reviews';
-  static const String favorites = 'favorites';
-  static const String notifications = 'notifications';
+  static const String favorites = 'customer_favorites';
+  static const String notifications = 'customer_notifications';
   static const String complaints = 'complaints';
 }

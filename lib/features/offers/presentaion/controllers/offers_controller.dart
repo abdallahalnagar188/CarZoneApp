@@ -26,9 +26,15 @@ class OffersController extends GetxController {
     loading.value = false;
   }
 
-  String washName(OfferModel offer) =>
-      offer.platform ? 'app.name'.tr : (_db.branch(offer.branchIds.first)?.name.value ?? '');
+  String washName(OfferModel offer) {
+    if (offer.platform) return 'app.name'.tr;
+    final bid = offer.branchIds.firstOrNull;
+    if (bid == null || bid.isEmpty) return 'app.name'.tr;
+    return _db.branch(bid)?.name.value ?? 'app.name'.tr;
+  }
 
-  void open(OfferModel offer) =>
-      Get.toNamed(Routes.washDetailsRoute, arguments: offer.platform ? 'br_nasr' : offer.branchIds.first);
+  void open(OfferModel offer) {
+    final bid = offer.platform ? 'br_nasr' : (offer.branchIds.firstOrNull ?? 'br_nasr');
+    Get.toNamed(Routes.washDetailsRoute, arguments: bid);
+  }
 }

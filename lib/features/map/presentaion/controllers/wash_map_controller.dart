@@ -38,15 +38,20 @@ class WashMapController extends GetxController {
   void onInit() {
     super.onInit();
     _loadStyle();
-    _compute();
-    ever(session.areaId, (_) {
-      _compute();
+    _loadMapData();
+    ever(session.areaId, (_) async {
+      await _loadMapData();
       _resetSelection();
       recenter();
     });
     ever(Get.find<CarzoneDbService>().orders, (_) => _compute());
     ever(Get.find<CarzoneDbService>().branches, (_) => _compute());
     ever(Get.find<ThemeController>().isDarkMode, (_) => _loadStyle());
+  }
+
+  Future<void> _loadMapData() async {
+    await Get.find<CarzoneDbService>().fetchMapBranches(areaId: session.areaId.value);
+    _compute();
   }
 
   Future<void> _loadStyle() async {

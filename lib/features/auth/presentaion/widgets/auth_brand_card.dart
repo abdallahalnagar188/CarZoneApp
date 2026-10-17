@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../../commons/widgets/logo/app_logo.dart';
 import '../../../../core/constance/app_colors.dart';
@@ -13,22 +14,86 @@ class AuthBrandCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: BoxDecoration(
-        gradient: AppColors.sandGradient,
-        borderRadius: BorderRadius.circular(22.r),
-        border: Border.all(color: AppColors.secondaryStrong.withValues(alpha: 0.4)),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFDF5), Color(0xFFFEF3C7)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD97706).withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          AppLogo(size: 52.r),
+          Container(
+            padding: EdgeInsets.all(4.r),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: AppLogo(size: 46.r),
+          ),
           14.width,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('app.name'.tr, style: theme.headlineSmall?.copyWith(color: AppColors.brandNight)),
-                Text('app.tagline'.tr, style: theme.bodySmall?.copyWith(color: AppColors.sandInk)),
+                Text(
+                  'app.name'.tr,
+                  style: theme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.brandNight,
+                    fontSize: 17.sp,
+                  ),
+                ),
+                2.height,
+                Text(
+                  'app.tagline'.tr,
+                  style: theme.bodyMedium?.copyWith(
+                    color: const Color(0xFF92400E),
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: const Color(0xFFFDE68A)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Iconsax.flash_1, size: 13.sp, color: const Color(0xFFD97706)),
+                4.width,
+                Text(
+                  'حجز فوري',
+                  style: theme.labelSmall?.copyWith(
+                    color: const Color(0xFF92400E),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11.sp,
+                  ),
+                ),
               ],
             ),
           ),

@@ -63,12 +63,14 @@ class DiscoveryService {
   final _pricing = PricingService();
 
   BranchListingModel decorate(BranchModel b, {String? category}) {
-    final rating = _db.ratingFor(b.id);
+    final liveRating = _db.ratingFor(b.id);
+    final rating = liveRating.count > 0 ? liveRating.rating : (b.rating > 0 ? b.rating : 5.0);
+    final reviewCount = liveRating.count > 0 ? liveRating.count : b.reviewCount;
     return BranchListingModel(
       branch: b,
       km: FormatHelper.haversineKm(_session.lat, _session.lng, b.lat, b.lng),
-      rating: rating.rating,
-      reviewCount: rating.count,
+      rating: rating,
+      reviewCount: reviewCount,
       fromPrice: _pricing.fromPrice(b.id, category: category),
       open: _availability.isOpenNow(b),
       nextSlot: _availability.nextSlot(b),

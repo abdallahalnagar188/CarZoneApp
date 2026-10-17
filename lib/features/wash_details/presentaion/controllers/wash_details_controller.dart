@@ -54,7 +54,7 @@ class WashDetailsController extends GetxController {
 
   Future<void> load() async {
     loading.value = true;
-    await Future.delayed(const Duration(milliseconds: 400));
+    await _db.fetchBranchDetails(branchId);
     _compute();
     loading.value = false;
   }

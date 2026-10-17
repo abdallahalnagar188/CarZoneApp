@@ -19,15 +19,24 @@ class BookingsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _compute();
+    loadBookings();
     everAll([_db.orders, session.user], (_) => _compute());
   }
 
+  Future<void> loadBookings() async {
+    final uid = session.userId;
+    if (uid != null) {
+      loading.value = true;
+      await _db.fetchUserBookings(userId: uid);
+      _compute();
+      loading.value = false;
+    } else {
+      _compute();
+    }
+  }
+
   Future<void> refreshList() async {
-    loading.value = true;
-    await _db.fetchFromSupabase();
-    _compute();
-    loading.value = false;
+    await loadBookings();
   }
 
   void _compute() {

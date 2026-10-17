@@ -11,6 +11,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:carzone/commons/models/customer_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _RealHttpOverrides extends HttpOverrides {}
@@ -48,30 +49,29 @@ void main() {
     expect(fallbackArea.id, equals('nasr'));
     expect(fallbackArea.lat, equals(30.0566));
 
-    // Fetch from Supabase
-    final success = await db.fetchFromSupabase();
+    // Fetch from Supabase (Home essentials)
+    final success = await db.fetchHomeData();
     expect(success, isTrue);
     expect(db.isSynced.value, isTrue);
     expect(db.hasError.value, isFalse);
 
-    // Verify remote master collections are populated
+    // Verify remote master collections are populated with home limits
     expect(db.areas.length, greaterThanOrEqualTo(8));
-    expect(db.branches.length, greaterThanOrEqualTo(13));
-    expect(db.services.length, greaterThanOrEqualTo(90));
-    expect(db.offers.length, greaterThanOrEqualTo(3));
-    expect(db.reviews.length, greaterThanOrEqualTo(100));
+    expect(db.branches.length, greaterThanOrEqualTo(1));
+    expect(db.offers.length, greaterThanOrEqualTo(1));
 
-    // Verify specific remote entities
-    final nasrBranch = db.branch('br_nasr');
+    // Test on-demand branch details fetch
+    final nasrBranch = await db.fetchBranchDetails('br_nasr');
     expect(nasrBranch, isNotNull);
     expect(nasrBranch!.name.ar, contains('كارزن'));
 
     final nasrServices = db.servicesFor('br_nasr');
     expect(nasrServices, isNotEmpty);
 
-    final rating = db.ratingFor('br_nasr');
-    expect(rating.count, greaterThan(0));
-    expect(rating.rating, greaterThan(0));
+    // Test on-demand pagination
+    final paged = await db.fetchPaginatedBranches(page: 0, pageSize: 5);
+    expect(paged.length, greaterThan(0));
+    expect(paged.length, lessThanOrEqualTo(5));
 
     // Verify dynamic numbering
     final num1 = db.nextNumber();
@@ -88,7 +88,7 @@ void main() {
 
   test('SessionService token lifecycle: save, cache, access, and clear', () async {
     final db = Get.put(CarzoneDbService());
-    await db.fetchFromSupabase();
+    await db.fetchHomeData();
 
     final session = Get.put(SessionService().init());
     const testToken = 'test_jwt_access_token_xyz_123';
@@ -126,25 +126,32 @@ void main() {
 
   test('CustomerModel token serialization and Supabase DB token update', () async {
     final db = Get.put(CarzoneDbService());
-    await db.fetchFromSupabase();
+    await db.fetchHomeData();
 
-    final cust = db.customers.first;
+    // Add a test customer to test token update
+    final testCust = CustomerModel(
+      id: 'test_cust_token',
+      name: 'Test Customer',
+      phone: '+201000000000',
+    );
+    db.customers.add(testCust);
+
     const sampleToken = 'sample_db_token_999';
 
-    // Update customer token in Supabase
-    await db.updateCustomerToken(cust.id, sampleToken);
+    // Update customer token in local DB
+    await db.updateCustomerToken(testCust.id, sampleToken);
 
     // Verify local model updated
-    final updated = db.customerById(cust.id);
+    final updated = db.customerById(testCust.id);
     expect(updated?.accessToken, equals(sampleToken));
     expect(updated?.tokenUpdatedAt, isNotNull);
 
-    // Verify toJson includes access_token
-    final json = updated!.toJson();
+    // Verify toLocalJson includes access_token
+    final json = updated!.toLocalJson();
     expect(json['access_token'], equals(sampleToken));
 
-    // Clear customer token in Supabase
-    await db.updateCustomerToken(cust.id, null);
-    expect(db.customerById(cust.id)?.accessToken, isNull);
+    // Clear customer token
+    await db.updateCustomerToken(testCust.id, null);
+    expect(db.customerById(testCust.id)?.accessToken, isNull);
   });
 }

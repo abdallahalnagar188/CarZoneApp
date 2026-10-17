@@ -6,6 +6,7 @@ import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../controllers/auth_controller.dart';
+import '../widgets/phone_input.dart';
 
 class ProfileSetupPage extends StatelessWidget {
   const ProfileSetupPage({super.key});
@@ -32,6 +33,10 @@ class ProfileSetupPage extends StatelessWidget {
               onChanged: (_) => controller.nameError.value = null,
             ),
           ),
+          if (controller.phone.isEmpty) ...[
+            18.height,
+            const PhoneInput(),
+          ],
           28.height,
           Obx(
             () => AppButton(

@@ -82,6 +82,8 @@ class BranchModel {
   final List<WorkingDay> workingHours;
   final BranchSettings settings;
   final int photoSeed;
+  final double rating;
+  final int reviewCount;
 
   const BranchModel({
     required this.id,
@@ -100,6 +102,8 @@ class BranchModel {
     this.featured = false,
     this.businessActive = true,
     this.settings = const BranchSettings(),
+    this.rating = 0.0,
+    this.reviewCount = 0,
   });
 
   bool get bookable => active && businessActive;
@@ -129,8 +133,10 @@ class BranchModel {
       featured: json['featured'] as bool? ?? false,
       businessActive: json['business_active'] ?? json['businessActive'] ?? true,
       workingHours: hours.isNotEmpty ? hours : List.generate(7, (_) => const WorkingDay('09:00', '22:00')),
-      settings: BranchSettings.fromJson(json['settings'] != null ? Map<String, dynamic>.from(json['settings'] as Map) : null),
+      settings: BranchSettings.fromJson(json['settings'] != null ? Map<String, dynamic>.from(json['settings'] as Map) : json),
       photoSeed: (json['photo_seed'] ?? json['photoSeed'] as num?)?.toInt() ?? 0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: (json['review_count'] ?? json['reviewCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -151,5 +157,7 @@ class BranchModel {
     'working_hours': workingHours.map((h) => h.toJson()).toList(),
     'settings': settings.toJson(),
     'photo_seed': photoSeed,
+    'rating': rating,
+    'review_count': reviewCount,
   };
 }

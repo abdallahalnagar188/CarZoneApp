@@ -13,9 +13,6 @@ import '../../commons/models/order_model.dart';
 import '../../commons/models/review_model.dart';
 import '../../commons/models/vehicle_model.dart';
 import '../../commons/models/wash_service_model.dart';
-import '../enums/enums.dart';
-import '../local/cache_controller.dart';
-import 'session_service.dart';
 import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
@@ -51,9 +48,53 @@ class CarzoneDbService extends GetxService {
   );
 
   CarzoneDbService init() {
-    // Initiate background remote fetch immediately upon service registration
-    fetchFromSupabase();
+    // Only fetch Home essentials on app startup — never download the entire database at once!
+    fetchHomeData();
     return this;
+  }
+
+  void upsertBranches(List<BranchModel> newBranches) {
+    for (final b in newBranches) {
+      final index = branches.indexWhere((existing) => existing.id == b.id);
+      if (index >= 0) {
+        branches[index] = b;
+      } else {
+        branches.add(b);
+      }
+    }
+  }
+
+  void upsertServices(List<WashServiceModel> newServices) {
+    for (final s in newServices) {
+      final index = services.indexWhere((existing) => existing.id == s.id);
+      if (index >= 0) {
+        services[index] = s;
+      } else {
+        services.add(s);
+      }
+    }
+  }
+
+  void upsertReviews(List<ReviewModel> newReviews) {
+    for (final r in newReviews) {
+      final index = reviews.indexWhere((existing) => existing.id == r.id);
+      if (index >= 0) {
+        reviews[index] = r;
+      } else {
+        reviews.add(r);
+      }
+    }
+  }
+
+  void upsertOrders(List<OrderModel> newOrders) {
+    for (final o in newOrders) {
+      final index = orders.indexWhere((existing) => existing.id == o.id);
+      if (index >= 0) {
+        orders[index] = o;
+      } else {
+        orders.add(o);
+      }
+    }
   }
 
   // Safe entity accessors with null/empty fallbacks
@@ -127,155 +168,234 @@ class CarzoneDbService extends GetxService {
     _nextTicket = maxTicket + 1;
   }
 
-  /// Fetches all master data and user data from Supabase.
-  Future<bool> fetchFromSupabase() async {
+  /// 1. Home Page startup fetch: lightweight call loading ONLY areas, active offers (limit 6),
+  /// and top branches (limit 10) for the user's selected area.
+  Future<bool> fetchHomeData({String? areaId}) async {
     try {
       isSyncing.value = true;
       hasError.value = false;
       errorMessage.value = '';
       final client = SupabaseService.client;
 
-      final results = await Future.wait([
+      var branchQuery = client.from('branches').select();
+      if (areaId != null && areaId.isNotEmpty) {
+        branchQuery = branchQuery.eq('area_id', areaId);
+      }
+
+      final catalogResults = await Future.wait([
         client.from('areas').select(),
-        client.from('branches').select(),
-        client.from('services').select(),
-        client.from('offers').select(),
-        client.from('customers').select(),
-        client.from('vehicles').select(),
-        client.from('orders').select().order('created_at', ascending: false),
-        client.from('reviews').select().order('created_at', ascending: false),
-        client.from('notifications').select().order('created_at', ascending: false),
-        client.from('complaints').select().order('created_at', ascending: false),
+        branchQuery.limit(10),
+        client.from('offers').select('*, offer_branches(branch_id)').limit(8),
+        client.from('services').select().limit(25),
       ]);
 
-      final remoteAreas = (results[0] as List)
+      final remoteAreas = (catalogResults[0] as List)
           .map((e) => AreaModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
-      final remoteBranches = (results[1] as List)
+      final remoteBranches = (catalogResults[1] as List)
           .map((e) => BranchModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
-      final remoteServices = (results[2] as List)
-          .map((e) => WashServiceModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      final remoteOffers = (results[3] as List)
+      final remoteOffers = (catalogResults[2] as List)
           .map((e) => OfferModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
-      final remoteCustomers = (results[4] as List)
-          .map((e) => CustomerModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      final remoteVehicles = (results[5] as List)
-          .map((e) => VehicleModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      final remoteOrders = (results[6] as List)
-          .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      final remoteReviews = (results[7] as List)
-          .map((e) => ReviewModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      final remoteNotifications = (results[8] as List)
-          .map((e) => NotificationModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      final remoteComplaints = (results[9] as List)
-          .map((e) => Map<String, dynamic>.from(e as Map))
+      final remoteServices = (catalogResults[3] as List)
+          .map((e) => WashServiceModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
 
       areas.assignAll(remoteAreas);
-      branches.assignAll(remoteBranches);
-      services.assignAll(remoteServices);
       offers.assignAll(remoteOffers);
-      customers.assignAll(remoteCustomers);
-      vehicles.assignAll(remoteVehicles);
-      orders.assignAll(remoteOrders);
-      reviews.assignAll(remoteReviews);
-      notifications.assignAll(remoteNotifications);
-      complaints.assignAll(remoteComplaints);
+      upsertBranches(remoteBranches);
+      upsertServices(remoteServices);
 
-      // If user is currently authenticated in Supabase or has cached/guest ID, load their favorites
-      final cachedUserId = CacheController().getter(key: CacheKeys.userId);
-      final guestUserId = CacheController().getter(key: CacheKeys.guestUserId);
-      final effectiveUid = client.auth.currentUser?.id ??
-          (cachedUserId is String ? cachedUserId : null) ??
-          (guestUserId is String ? guestUserId : null);
-      if (effectiveUid != null) {
-        await loadFavorites(effectiveUid);
+      // Authenticated user active order lookup only
+      final currentUser = client.auth.currentUser;
+      if (currentUser != null) {
+        try {
+          final custRes = await client.from('customers').select().eq('user_id', currentUser.id).limit(1);
+          if (custRes.isNotEmpty) {
+            final cust = CustomerModel.fromJson(Map<String, dynamic>.from(custRes.first as Map));
+            final idx = customers.indexWhere((c) => c.id == cust.id);
+            if (idx >= 0) {
+              customers[idx] = cust;
+            } else {
+              customers.add(cust);
+            }
+          }
+          final orderRes = await client.from('orders').select().eq('customer_id', currentUser.id).order('scheduled_at', ascending: false).limit(5);
+          final remoteOrders = (orderRes as List)
+              .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+          upsertOrders(remoteOrders);
+        } catch (_) {}
       }
 
       _initCounters();
       isSynced.value = true;
-      dev.log('[CarzoneDbService] Successfully loaded 100% data from Supabase.');
       return true;
-    } catch (e, st) {
-      final errStr = e.toString();
-      if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
-        dev.log('[CarzoneDbService] Detected expired JWT during fetch. Attempting session recovery...');
-        try {
-          final res = await SupabaseService.client.auth.refreshSession();
-          if (res.session != null) {
-            dev.log('[CarzoneDbService] Session refreshed successfully. Retrying fetch...');
-            if (Get.isRegistered<SessionService>()) {
-              await Get.find<SessionService>().saveToken(res.session!.accessToken);
-            }
-            return await fetchFromSupabase();
-          }
-        } catch (_) {
-          // If refresh fails, clear stale auth state so client falls back to clean anon access
-          dev.log('[CarzoneDbService] Refresh failed. Clearing stale auth and retrying with anon role...');
-          try {
-            await SupabaseService.client.auth.signOut();
-            if (Get.isRegistered<SessionService>()) {
-              await Get.find<SessionService>().clearToken();
-            }
-          } catch (_) {}
-          return await fetchFromSupabase();
-        }
-      }
-
+    } catch (e) {
+      dev.log('[CarzoneDbService] fetchHomeData error: $e');
       hasError.value = true;
       errorMessage.value = e.toString();
-      dev.log('[CarzoneDbService] Supabase fetch error: $e\n$st');
       return false;
     } finally {
       isSyncing.value = false;
     }
   }
 
+  /// 2. Map Page fetch: called on-demand when user opens the map. Loads branches with coordinates (limit 60).
+  Future<List<BranchModel>> fetchMapBranches({String? areaId}) async {
+    try {
+      final client = SupabaseService.client;
+      var query = client.from('branches').select();
+      if (areaId != null && areaId.isNotEmpty) {
+        query = query.eq('area_id', areaId);
+      }
+      final res = await query.limit(60);
+      final list = (res as List)
+          .map((e) => BranchModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      upsertBranches(list);
+      return list;
+    } catch (e) {
+      dev.log('[CarzoneDbService] fetchMapBranches error: $e');
+      return [];
+    }
+  }
+
+  /// 3. Search / Results Page fetch: loads branches page by page using database pagination (.range).
+  Future<List<BranchModel>> fetchPaginatedBranches({
+    required int page,
+    int pageSize = 10,
+    String? areaId,
+    String? category,
+  }) async {
+    try {
+      final client = SupabaseService.client;
+      final from = page * pageSize;
+      final to = from + pageSize - 1;
+
+      var query = client.from('branches').select();
+      if (areaId != null && areaId.isNotEmpty) {
+        query = query.eq('area_id', areaId);
+      }
+      final res = await query.range(from, to);
+      final list = (res as List)
+          .map((e) => BranchModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      upsertBranches(list);
+
+      // Fetch primary services for these branches so prices calculate correctly
+      if (list.isNotEmpty) {
+        final bIds = list.map((b) => b.id).toList();
+        final sRes = await client.from('services').select().inFilter('branch_id', bIds).eq('type', 'primary');
+        final servicesList = (sRes as List)
+            .map((e) => WashServiceModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        upsertServices(servicesList);
+      }
+
+      return list;
+    } catch (e) {
+      dev.log('[CarzoneDbService] fetchPaginatedBranches error: $e');
+      return [];
+    }
+  }
+
+  /// 4. Wash Details Page fetch: loads single branch info, its specific services, and recent reviews.
+  Future<BranchModel?> fetchBranchDetails(String branchId) async {
+    try {
+      final client = SupabaseService.client;
+      final results = await Future.wait<dynamic>([
+        client.from('branches').select().eq('id', branchId).maybeSingle(),
+        client.from('services').select().eq('branch_id', branchId),
+        client.from('reviews').select().eq('branch_id', branchId).order('created_at', ascending: false).limit(25),
+      ]);
+
+      if (results[0] != null) {
+        final b = BranchModel.fromJson(Map<String, dynamic>.from(results[0] as Map));
+        upsertBranches([b]);
+      }
+      if (results[1] is List) {
+        final sList = (results[1] as List)
+            .map((e) => WashServiceModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        upsertServices(sList);
+      }
+      if (results[2] is List) {
+        final rList = (results[2] as List)
+            .map((e) => ReviewModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        upsertReviews(rList);
+      }
+
+      return branch(branchId);
+    } catch (e) {
+      dev.log('[CarzoneDbService] fetchBranchDetails error: $e');
+      return branch(branchId);
+    }
+  }
+
+  /// 5. Bookings Page fetch: loads user's bookings with pagination (.range).
+  Future<List<OrderModel>> fetchUserBookings({
+    required String userId,
+    int page = 0,
+    int pageSize = 15,
+  }) async {
+    try {
+      final client = SupabaseService.client;
+      final from = page * pageSize;
+      final to = from + pageSize - 1;
+
+      final res = await client
+          .from('orders')
+          .select()
+          .eq('customer_id', userId)
+          .order('scheduled_at', ascending: false)
+          .range(from, to);
+
+      final list = (res as List)
+          .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      upsertOrders(list);
+      return list;
+    } catch (e) {
+      dev.log('[CarzoneDbService] fetchUserBookings error: $e');
+      return [];
+    }
+  }
+
+  /// Alias for backward compatibility that delegates to fetchHomeData
+  Future<bool> fetchFromSupabase() => fetchHomeData();
+
   /// Load favorites for specific user from Supabase.
   Future<void> loadFavorites(String userId) async {
     try {
+      final cust = customerById(userId) ?? customers.firstWhereOrNull((c) => c.userId == userId);
+      final effectiveCustId = cust?.id ?? userId;
+
       final res = await SupabaseService.client
-          .from('favorites')
+          .from('customer_favorites')
           .select('branch_id')
-          .eq('user_id', userId);
+          .eq('customer_id', effectiveCustId);
       final set = (res as List).map((e) => e['branch_id'].toString()).toSet();
       favorites.assignAll(set);
     } catch (e) {
-      final errStr = e.toString();
-      if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
-        dev.log('[CarzoneDbService] JWT expired during loadFavorites. Attempting recovery...');
-        try {
-          final res = await SupabaseService.client.auth.refreshSession();
-          if (res.session != null) {
-            return await loadFavorites(userId);
-          }
-        } catch (_) {
-          try {
-            await SupabaseService.client.auth.signOut();
-          } catch (_) {}
-        }
-      }
       dev.log('[CarzoneDbService] Error loading favorites from Supabase: $e');
     }
   }
 
   /// Toggle favorite on branch for user in Supabase.
   Future<void> toggleFavorite(String branchId, String userId) async {
+    final cust = customerById(userId) ?? customers.firstWhereOrNull((c) => c.userId == userId);
+    final effectiveCustId = cust?.id ?? userId;
+
     if (favorites.contains(branchId)) {
       favorites.remove(branchId);
       try {
         await SupabaseService.client
-            .from('favorites')
+            .from('customer_favorites')
             .delete()
-            .eq('user_id', userId)
+            .eq('customer_id', effectiveCustId)
             .eq('branch_id', branchId);
       } catch (e) {
         dev.log('[CarzoneDbService] Error deleting favorite from Supabase: $e');
@@ -283,8 +403,8 @@ class CarzoneDbService extends GetxService {
     } else {
       favorites.add(branchId);
       try {
-        await SupabaseService.client.from('favorites').upsert({
-          'user_id': userId,
+        await SupabaseService.client.from('customer_favorites').upsert({
+          'customer_id': effectiveCustId,
           'branch_id': branchId,
         });
       } catch (e) {
@@ -297,21 +417,15 @@ class CarzoneDbService extends GetxService {
   Future<void> migrateGuestFavorites(String guestId, String targetUserId) async {
     if (guestId == targetUserId) return;
     try {
-      final res = await SupabaseService.client
-          .from('favorites')
-          .select('branch_id')
-          .eq('user_id', guestId);
-      final guestBranchIds = (res as List).map((e) => e['branch_id'].toString()).toList();
-      for (final bid in guestBranchIds) {
-        await SupabaseService.client.from('favorites').upsert({
-          'user_id': targetUserId,
+      final targetCust = customerById(targetUserId) ?? customers.firstWhereOrNull((c) => c.userId == targetUserId);
+      final effectiveTargetId = targetCust?.id ?? targetUserId;
+
+      for (final bid in favorites) {
+        await SupabaseService.client.from('customer_favorites').upsert({
+          'customer_id': effectiveTargetId,
           'branch_id': bid,
         });
       }
-      await SupabaseService.client
-          .from('favorites')
-          .delete()
-          .eq('user_id', guestId);
     } catch (e) {
       dev.log('[CarzoneDbService] Error migrating guest favorites: $e');
     }
@@ -360,36 +474,32 @@ class CarzoneDbService extends GetxService {
 
   Future<void> updateCustomerToken(String customerId, String? token) async {
     try {
-      final now = DateTime.now().toIso8601String();
-      await SupabaseService.client.from('customers').update({
-        'access_token': token,
-        'token_updated_at': now,
-      }).eq('id', customerId);
-
       final cust = customerById(customerId);
       if (cust != null) {
         cust.accessToken = token;
-        cust.tokenUpdatedAt = DateTime.tryParse(now);
+        cust.tokenUpdatedAt = DateTime.now();
         customers.refresh();
       }
-    } catch (e) {
-      final errStr = e.toString();
-      if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
-        dev.log('[CarzoneDbService] JWT expired during updateCustomerToken. Attempting recovery...');
-        try {
-          final res = await SupabaseService.client.auth.refreshSession();
-          if (res.session != null) {
-            return await updateCustomerToken(customerId, res.session!.accessToken);
-          }
-        } catch (_) {}
+
+      final authUser = SupabaseService.client.auth.currentUser;
+      if (authUser != null && token != null && token.isNotEmpty) {
+        final platformStr = GetPlatform.isIOS ? 'ios' : 'android';
+        await SupabaseService.client.from('push_devices').upsert({
+          'user_id': authUser.id,
+          'app': 'customer',
+          'platform': platformStr,
+          'token': token,
+          'last_seen_at': DateTime.now().toIso8601String(),
+        });
       }
-      dev.log('[CarzoneDbService] Error updating customer token in Supabase: $e');
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error updating customer push device in Supabase: $e');
     }
   }
 
   Future<void> saveNotification(NotificationModel notif) async {
     try {
-      await SupabaseService.client.from('notifications').upsert(notif.toJson());
+      await SupabaseService.client.from('customer_notifications').upsert(notif.toJson());
     } catch (e) {
       dev.log('[CarzoneDbService] Error saving notification to Supabase: $e');
     }
@@ -398,7 +508,7 @@ class CarzoneDbService extends GetxService {
   Future<void> markNotificationRead(String notifId) async {
     try {
       await SupabaseService.client
-          .from('notifications')
+          .from('customer_notifications')
           .update({'read': true})
           .eq('id', notifId);
     } catch (e) {
@@ -408,10 +518,13 @@ class CarzoneDbService extends GetxService {
 
   Future<void> markAllNotificationsRead(String userId) async {
     try {
+      final cust = customerById(userId) ?? customers.firstWhereOrNull((c) => c.userId == userId);
+      final effectiveCustId = cust?.id ?? userId;
+
       await SupabaseService.client
-          .from('notifications')
+          .from('customer_notifications')
           .update({'read': true})
-          .eq('user_id', userId);
+          .eq('customer_id', effectiveCustId);
     } catch (e) {
       dev.log('[CarzoneDbService] Error updating all notifications in Supabase: $e');
     }

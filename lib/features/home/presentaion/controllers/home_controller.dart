@@ -105,9 +105,12 @@ class HomeController extends GetxController {
 
   String branchName(String branchId) => _db.branch(branchId)?.name.value ?? '';
 
-  String offerWashName(OfferModel offer) => offer.platform
-      ? 'app.name'.tr
-      : branchName(offer.branchIds.first);
+  String offerWashName(OfferModel offer) {
+    if (offer.platform) return 'app.name'.tr;
+    final bid = offer.branchIds.firstOrNull;
+    if (bid == null || bid.isEmpty) return 'app.name'.tr;
+    return branchName(bid);
+  }
 
   void openSearch() => Get.toNamed(Routes.searchRoute);
 
@@ -123,10 +126,11 @@ class HomeController extends GetxController {
 
   void openOffers() => Get.toNamed(Routes.offersRoute);
 
-  void openOffer(OfferModel offer) => Get.toNamed(
-        Routes.washDetailsRoute,
-        arguments: offer.platform ? nearby.first.branch.id : offer.branchIds.first,
-      );
+  void openOffer(OfferModel offer) {
+    final defaultId = nearby.firstOrNull?.branch.id ?? 'br_nasr';
+    final targetId = offer.platform ? defaultId : (offer.branchIds.firstOrNull ?? defaultId);
+    Get.toNamed(Routes.washDetailsRoute, arguments: targetId);
+  }
 
   void openMap() => Get.find<MainController>().changeTab(1);
 

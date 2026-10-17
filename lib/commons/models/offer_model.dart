@@ -50,17 +50,22 @@ class OfferModel {
     final discountType = dtStr == 'fixed' ? DiscountType.fixed : DiscountType.percent;
 
     final rawBranchIds = (json['branch_ids'] ?? json['branchIds']) as List?;
-    final branchIds = rawBranchIds?.map((e) => e.toString()).toList() ?? [];
+    final obList = (json['offer_branches'] as List?)
+        ?.map((e) => e is Map ? (e['branch_id']?.toString() ?? '') : e.toString())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    final branchIds = rawBranchIds?.map((e) => e.toString()).toList() ?? obList ?? <String>[];
 
     final rawServiceIds = (json['service_ids'] ?? json['serviceIds']) as List?;
     final serviceIds = rawServiceIds?.map((e) => e.toString()).toList() ?? [];
 
-    final start = DateTime.tryParse(json['start_at'] ?? json['startAt'] ?? '') ?? DateTime.now();
-    final end = DateTime.tryParse(json['end_at'] ?? json['endAt'] ?? '') ?? DateTime.now().add(const Duration(days: 7));
+    final start = DateTime.tryParse(json['starts_at'] ?? json['start_at'] ?? json['startAt'] ?? '') ?? DateTime.now();
+    final end = DateTime.tryParse(json['ends_at'] ?? json['end_at'] ?? json['endAt'] ?? '') ?? DateTime.now().add(const Duration(days: 7));
+    final isPlatform = json['scope'] == 'platform' || (json['platform'] as bool? ?? false);
 
     return OfferModel(
       id: json['id']?.toString() ?? '',
-      platform: json['platform'] as bool? ?? false,
+      platform: isPlatform,
       branchIds: branchIds,
       serviceIds: serviceIds,
       title: LocalizedText.fromJson(json['title']),

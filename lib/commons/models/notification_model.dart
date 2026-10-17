@@ -24,7 +24,7 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id']?.toString() ?? '',
-      userId: json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
+      userId: json['customer_id']?.toString() ?? json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
       type: json['type']?.toString() ?? '',
       title: LocalizedText.fromJson(json['title']),
       body: LocalizedText.fromJson(json['body']),
@@ -36,7 +36,7 @@ class NotificationModel {
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'user_id': userId,
+    'customer_id': userId,
     'type': type,
     'title': title.toJson(),
     'body': body.toJson(),

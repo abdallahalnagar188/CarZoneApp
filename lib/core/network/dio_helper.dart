@@ -24,10 +24,12 @@ class DioHelper {
     if (kDebugMode) {
       dio.interceptors.add(
         PrettyDioLogger(
-          requestHeader: false,
+          requestHeader: true,
           requestBody: true,
+          responseHeader: false,
           responseBody: true,
-          compact: true,
+          error: true,
+          compact: false,
           maxWidth: 90,
         ),
       );
