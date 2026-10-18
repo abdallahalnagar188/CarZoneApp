@@ -21,21 +21,34 @@ class CarsPage extends StatelessWidget {
       body: Obx(() {
         final list = controller.vehicles;
         if (list.isEmpty) {
-          return CustomEmptyState(
-            icon: Iconsax.car,
-            title: 'empty.cars'.tr,
-            actionText: 'cars.add'.tr,
-            onAction: controller.openNew,
+          return RefreshIndicator(
+            onRefresh: controller.refreshVehicles,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(height: 120.h),
+                CustomEmptyState(
+                  icon: Iconsax.car,
+                  title: 'empty.cars'.tr,
+                  actionText: 'cars.add'.tr,
+                  onAction: controller.openNew,
+                ),
+              ],
+            ),
           );
         }
-        return ListView.separated(
-          padding: EdgeInsets.all(20.r),
-          itemCount: list.length,
-          separatorBuilder: (_, __) => SizedBox(height: 12.h),
-          itemBuilder: (_, i) => CarTile(
-            vehicle: list[i],
-            onTap: () => controller.openEdit(list[i]),
-            trailing: CarActionsMenu(vehicle: list[i]),
+        return RefreshIndicator(
+          onRefresh: controller.refreshVehicles,
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.all(20.r),
+            itemCount: list.length,
+            separatorBuilder: (_, __) => SizedBox(height: 12.h),
+            itemBuilder: (_, i) => CarTile(
+              vehicle: list[i],
+              onTap: () => controller.openEdit(list[i]),
+              trailing: CarActionsMenu(vehicle: list[i]),
+            ),
           ),
         );
       }),

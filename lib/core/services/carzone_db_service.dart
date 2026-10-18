@@ -13,6 +13,7 @@ import '../../commons/models/order_model.dart';
 import '../../commons/models/review_model.dart';
 import '../../commons/models/vehicle_model.dart';
 import '../../commons/models/wash_service_model.dart';
+import '../enums/enums.dart';
 import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
@@ -220,6 +221,7 @@ class CarzoneDbService extends GetxService {
             } else {
               customers.add(cust);
             }
+            fetchVehicles(cust.id);
           }
           final orderRes = await client.from('orders').select().eq('customer_id', currentUser.id).order('scheduled_at', ascending: false).limit(5);
           final remoteOrders = (orderRes as List)
@@ -342,14 +344,17 @@ class CarzoneDbService extends GetxService {
     int pageSize = 15,
   }) async {
     try {
+      final cust = customerById(userId) ?? customers.firstWhereOrNull((c) => c.userId == userId);
+      final effectiveCustId = cust?.id ?? userId;
+
       final client = SupabaseService.client;
       final from = page * pageSize;
       final to = from + pageSize - 1;
 
       final res = await client
           .from('orders')
-          .select()
-          .eq('customer_id', userId)
+          .select('*, order_items(*)')
+          .eq('customer_id', effectiveCustId)
           .order('scheduled_at', ascending: false)
           .range(from, to);
 
@@ -384,6 +389,31 @@ class CarzoneDbService extends GetxService {
     }
   }
 
+  /// Load vehicles for specific user from Supabase.
+  Future<List<VehicleModel>> fetchVehicles(String userId) async {
+    try {
+      final cust = customerById(userId) ?? customers.firstWhereOrNull((c) => c.userId == userId);
+      final effectiveCustId = cust?.id ?? userId;
+
+      final res = await SupabaseService.client
+          .from('vehicles')
+          .select()
+          .eq('customer_id', effectiveCustId)
+          .order('created_at', ascending: true);
+
+      final list = (res as List)
+          .map((e) => VehicleModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+
+      vehicles.removeWhere((v) => v.customerId == effectiveCustId);
+      vehicles.addAll(list);
+      return list;
+    } catch (e) {
+      dev.log('[CarzoneDbService] Error fetching vehicles from Supabase: $e');
+      return [];
+    }
+  }
+
   /// Toggle favorite on branch for user in Supabase.
   Future<void> toggleFavorite(String branchId, String userId) async {
     final cust = customerById(userId) ?? customers.firstWhereOrNull((c) => c.userId == userId);
@@ -403,10 +433,14 @@ class CarzoneDbService extends GetxService {
     } else {
       favorites.add(branchId);
       try {
-        await SupabaseService.client.from('customer_favorites').upsert({
-          'customer_id': effectiveCustId,
-          'branch_id': branchId,
-        });
+        await SupabaseService.client.from('customer_favorites').upsert(
+          {
+            'customer_id': effectiveCustId,
+            'branch_id': branchId,
+          },
+          onConflict: 'customer_id,branch_id',
+          ignoreDuplicates: true,
+        );
       } catch (e) {
         dev.log('[CarzoneDbService] Error inserting favorite to Supabase: $e');
       }
@@ -421,10 +455,14 @@ class CarzoneDbService extends GetxService {
       final effectiveTargetId = targetCust?.id ?? targetUserId;
 
       for (final bid in favorites) {
-        await SupabaseService.client.from('customer_favorites').upsert({
-          'customer_id': effectiveTargetId,
-          'branch_id': bid,
-        });
+        await SupabaseService.client.from('customer_favorites').upsert(
+          {
+            'customer_id': effectiveTargetId,
+            'branch_id': bid,
+          },
+          onConflict: 'customer_id,branch_id',
+          ignoreDuplicates: true,
+        );
       }
     } catch (e) {
       dev.log('[CarzoneDbService] Error migrating guest favorites: $e');
@@ -434,7 +472,76 @@ class CarzoneDbService extends GetxService {
   // Remote Write Operations
   Future<void> saveOrder(OrderModel order) async {
     try {
-      await SupabaseService.client.from('orders').upsert(order.toJson());
+      final b = branch(order.branchId);
+      final v = vehicle(order.vehicleId);
+
+      String businessId = b?.businessId ?? '';
+      if (businessId.isEmpty) {
+        final bRes = await SupabaseService.client
+            .from('branches')
+            .select('business_id')
+            .eq('id', order.branchId)
+            .maybeSingle();
+        businessId = bRes?['business_id']?.toString() ?? 'biz_carzen';
+      }
+
+      String plate = v?.plate ?? '';
+      if (plate.isEmpty) {
+        final vRes = await SupabaseService.client
+            .from('vehicles')
+            .select('plate')
+            .eq('id', order.vehicleId)
+            .maybeSingle();
+        plate = vRes?['plate']?.toString() ?? '';
+      }
+
+      final orderPayload = order.toDbMap(
+        businessId: businessId,
+        plate: plate,
+      );
+
+      await SupabaseService.client.from('orders').upsert(
+        orderPayload,
+        onConflict: 'id',
+      );
+
+      // Save order items if any
+      if (order.items.isNotEmpty) {
+        final itemsPayload = <Map<String, dynamic>>[];
+        for (int i = 0; i < order.items.length; i++) {
+          final it = order.items[i];
+          itemsPayload.add({
+            'id': 'oi_${order.id}_$i',
+            'order_id': order.id,
+            'service_id': it.serviceId.isEmpty ? null : it.serviceId,
+            'name': it.name.toJson(),
+            'type': it.type == ServiceType.addon ? 'addon' : 'primary',
+            'price': it.price,
+            'duration_min': it.durationMin,
+            'position': i,
+          });
+        }
+        await SupabaseService.client.from('order_items').upsert(
+          itemsPayload,
+          onConflict: 'id',
+          ignoreDuplicates: true,
+        );
+      }
+
+      // Save initial order event
+      final eventPayload = {
+        'id': 'oev_${order.id}_${order.status.key}',
+        'order_id': order.id,
+        'status': order.status.key,
+        'actor_type': 'customer',
+        'actor_id': order.customerId,
+        'at': order.createdAt.toIso8601String(),
+      };
+      await SupabaseService.client.from('order_events').upsert(
+        eventPayload,
+        onConflict: 'id',
+        ignoreDuplicates: true,
+      );
     } catch (e) {
       dev.log('[CarzoneDbService] Error saving order to Supabase: $e');
     }
@@ -442,9 +549,18 @@ class CarzoneDbService extends GetxService {
 
   Future<void> saveVehicle(VehicleModel vehicle) async {
     try {
+      if (vehicle.isDefault) {
+        // Ensure at most one default vehicle exists by unsetting others first
+        await SupabaseService.client
+            .from('vehicles')
+            .update({'is_default': false})
+            .eq('customer_id', vehicle.customerId)
+            .neq('id', vehicle.id);
+      }
       await SupabaseService.client.from('vehicles').upsert(vehicle.toJson());
     } catch (e) {
       dev.log('[CarzoneDbService] Error saving vehicle to Supabase: $e');
+      rethrow;
     }
   }
 
@@ -499,7 +615,11 @@ class CarzoneDbService extends GetxService {
 
   Future<void> saveNotification(NotificationModel notif) async {
     try {
-      await SupabaseService.client.from('customer_notifications').upsert(notif.toJson());
+      await SupabaseService.client.from('customer_notifications').upsert(
+        notif.toJson(),
+        onConflict: 'id',
+        ignoreDuplicates: true,
+      );
     } catch (e) {
       dev.log('[CarzoneDbService] Error saving notification to Supabase: $e');
     }

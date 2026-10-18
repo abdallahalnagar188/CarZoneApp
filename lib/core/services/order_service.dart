@@ -62,7 +62,7 @@ class OrderService {
       ],
     );
     _db.orders.add(order);
-    _db.saveOrder(order);
+    await _db.saveOrder(order);
     _db.notify(
       userId: customerId,
       type: 'created',
@@ -87,7 +87,7 @@ class OrderService {
       ..status = OrderStatus.cancelled
       ..timeline.add(TimelineEntry('cancelled', DateTime.now()));
     _db.orders.refresh();
-    _db.saveOrder(order);
+    await _db.saveOrder(order);
     _db.notify(
       userId: order.customerId,
       type: 'cancelled',
@@ -107,7 +107,7 @@ class OrderService {
       ..scheduledAt = slot
       ..timeline.add(TimelineEntry('rescheduled', DateTime.now()));
     _db.orders.refresh();
-    _db.saveOrder(order);
+    await _db.saveOrder(order);
   }
 
   Future<void> review(OrderModel order, int stars, List<String> tags, String comment) async {

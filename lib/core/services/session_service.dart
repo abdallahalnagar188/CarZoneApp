@@ -140,6 +140,7 @@ class SessionService extends GetxService {
         if (user.value != null) {
           CacheController().setter(key: CacheKeys.userId, value: authUser.id);
           CacheController().setter(key: CacheKeys.loggedIn, value: true);
+          _db.fetchVehicles(user.value!.id);
         } else {
           refreshProfile();
         }
@@ -223,6 +224,7 @@ class SessionService extends GetxService {
         if (userToken.value != null && cust.accessToken != userToken.value) {
           await _db.updateCustomerToken(cust.id, userToken.value);
         }
+        await _db.fetchVehicles(cust.id);
       }
     } catch (e) {
       final errStr = e.toString();
@@ -264,12 +266,14 @@ class SessionService extends GetxService {
       await CacheController().setter(key: CacheKeys.guestUserId, value: null);
     }
     await _db.loadFavorites(customer.id);
+    await _db.fetchVehicles(customer.id);
   }
 
   Future<void> signOut() async {
     await clearToken();
     user.value = null;
     _db.favorites.clear();
+    _db.vehicles.clear();
     await CacheController().logout();
     try {
       await SupabaseService.client.auth.signOut();

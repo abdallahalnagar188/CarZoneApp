@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -28,6 +30,20 @@ class CarsController extends GetxController {
       _db.vehicles.where((v) => v.customerId == _session.userId).toList();
 
   List<String> get models => make.value == null ? const [] : VehicleModel.makes[make.value] ?? const [];
+
+  @override
+  void onInit() {
+    super.onInit();
+    refreshVehicles();
+    ever(_session.user, (_) => refreshVehicles());
+  }
+
+  Future<void> refreshVehicles() async {
+    final uid = _session.userId;
+    if (uid != null) {
+      await _db.fetchVehicles(uid);
+    }
+  }
 
   void openNew() => AuthGuard.run(() => Get.toNamed(Routes.carFormRoute));
 
@@ -73,43 +89,53 @@ class CarsController extends GetxController {
     errors.assignAll(e);
     if (e.isNotEmpty) return;
     saving.value = true;
-    await Future.delayed(const Duration(milliseconds: 350));
-    final year = int.tryParse(yearController.text.trim());
-    final existing = editingId.value == null ? null : _db.vehicle(editingId.value!);
-    if (existing != null) {
-      existing
-        ..make = make.value!
-        ..model = model.value!
-        ..color = color.value
-        ..plate = plate
-        ..year = year;
-      _db.vehicles.refresh();
-      _db.saveVehicle(existing);
-    } else {
-      final newV = VehicleModel(
-        id: 've_${DateTime.now().microsecondsSinceEpoch}',
-        customerId: uid,
-        make: make.value!,
-        model: model.value!,
-        color: color.value,
-        plate: plate,
-        year: year,
-        isDefault: vehicles.isEmpty,
-      );
-      _db.vehicles.add(newV);
-      _db.saveVehicle(newV);
+    try {
+      await Future.delayed(const Duration(milliseconds: 350));
+      final year = int.tryParse(yearController.text.trim());
+      final existing = editingId.value == null ? null : _db.vehicle(editingId.value!);
+      if (existing != null) {
+        existing
+          ..make = make.value!
+          ..model = model.value!
+          ..color = color.value
+          ..plate = plate
+          ..year = year;
+        _db.vehicles.refresh();
+        await _db.saveVehicle(existing);
+      } else {
+        final newV = VehicleModel(
+          id: 've_${DateTime.now().microsecondsSinceEpoch}',
+          customerId: uid,
+          make: make.value!,
+          model: model.value!,
+          color: color.value,
+          plate: plate,
+          year: year,
+          isDefault: vehicles.isEmpty,
+        );
+        _db.vehicles.add(newV);
+        await _db.saveVehicle(newV);
+      }
+      saving.value = false;
+      Get.back();
+      Utils.getSnakBar(message: 'cars.saved'.tr, type: TosterTypes.sucsses);
+    } catch (e) {
+      saving.value = false;
+      dev.log('[CarsController] Error saving vehicle: $e');
+      Utils.getSnakBar(message: 'Error saving car: $e', type: TosterTypes.failed);
     }
-    saving.value = false;
-    Get.back();
-    Utils.getSnakBar(message: 'cars.saved'.tr, type: TosterTypes.sucsses);
   }
 
-  void setDefault(VehicleModel v) {
+  Future<void> setDefault(VehicleModel v) async {
     for (final x in vehicles) {
       x.isDefault = x.id == v.id;
-      _db.saveVehicle(x);
     }
     _db.vehicles.refresh();
+    try {
+      await _db.saveVehicle(v);
+    } catch (e) {
+      dev.log('[CarsController] Error setting default car: $e');
+    }
   }
 
   Future<void> delete(VehicleModel v) async {
@@ -126,10 +152,10 @@ class CarsController extends GetxController {
     if (!ok) return;
     final wasDefault = v.isDefault;
     _db.vehicles.remove(v);
-    _db.deleteVehicle(v.id);
+    await _db.deleteVehicle(v.id);
     if (wasDefault && vehicles.isNotEmpty) {
       vehicles.first.isDefault = true;
-      _db.saveVehicle(vehicles.first);
+      await _db.saveVehicle(vehicles.first);
     }
     _db.vehicles.refresh();
     if (Get.currentRoute == Routes.carFormRoute) Get.back();

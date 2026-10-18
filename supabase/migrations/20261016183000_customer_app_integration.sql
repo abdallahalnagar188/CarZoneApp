@@ -174,7 +174,7 @@ CREATE POLICY "Customers can insert own order events" ON public.order_events
   WITH CHECK (order_id IN (SELECT id FROM public.orders WHERE customer_id = (SELECT public.current_customer_id())));
 
 -- 7. Favorites
-GRANT SELECT, INSERT, DELETE ON public.customer_favorites TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.customer_favorites TO authenticated;
 
 DROP POLICY IF EXISTS "Customers can select own favorites" ON public.customer_favorites;
 CREATE POLICY "Customers can select own favorites" ON public.customer_favorites
@@ -186,18 +186,29 @@ CREATE POLICY "Customers can insert own favorites" ON public.customer_favorites
   FOR INSERT TO authenticated
   WITH CHECK (customer_id = (SELECT public.current_customer_id()));
 
+DROP POLICY IF EXISTS "Customers can update own favorites" ON public.customer_favorites;
+CREATE POLICY "Customers can update own favorites" ON public.customer_favorites
+  FOR UPDATE TO authenticated
+  USING (customer_id = (SELECT public.current_customer_id()))
+  WITH CHECK (customer_id = (SELECT public.current_customer_id()));
+
 DROP POLICY IF EXISTS "Customers can delete own favorites" ON public.customer_favorites;
 CREATE POLICY "Customers can delete own favorites" ON public.customer_favorites
   FOR DELETE TO authenticated
   USING (customer_id = (SELECT public.current_customer_id()));
 
 -- 8. Notifications
-GRANT SELECT, UPDATE ON public.customer_notifications TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.customer_notifications TO authenticated;
 
 DROP POLICY IF EXISTS "Customers can select own notifications" ON public.customer_notifications;
 CREATE POLICY "Customers can select own notifications" ON public.customer_notifications
   FOR SELECT TO authenticated
   USING (customer_id = (SELECT public.current_customer_id()));
+
+DROP POLICY IF EXISTS "Customers can insert own notifications" ON public.customer_notifications;
+CREATE POLICY "Customers can insert own notifications" ON public.customer_notifications
+  FOR INSERT TO authenticated
+  WITH CHECK (customer_id = (SELECT public.current_customer_id()));
 
 DROP POLICY IF EXISTS "Customers can mark own notifications read" ON public.customer_notifications;
 CREATE POLICY "Customers can mark own notifications read" ON public.customer_notifications
