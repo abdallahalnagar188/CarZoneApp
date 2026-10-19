@@ -497,15 +497,25 @@ class CarzoneDbService extends GetxService {
       }
 
       final authUser = SupabaseService.client.auth.currentUser;
-      if (authUser != null && token != null && token.isNotEmpty) {
-        final platformStr = GetPlatform.isIOS ? 'ios' : 'android';
-        await SupabaseService.client.from('push_devices').upsert({
-          'user_id': authUser.id,
-          'app': 'customer',
-          'platform': platformStr,
-          'token': token,
-          'last_seen_at': DateTime.now().toIso8601String(),
-        });
+      if (authUser != null) {
+        if (token != null && token.isNotEmpty) {
+          final platformStr = GetPlatform.isIOS ? 'ios' : 'android';
+          await SupabaseService.client.from('push_devices').upsert(
+            {
+              'user_id': authUser.id,
+              'app': 'customer',
+              'platform': platformStr,
+              'token': token,
+              'last_seen_at': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'token',
+          );
+        } else {
+          await SupabaseService.client
+              .from('push_devices')
+              .delete()
+              .eq('user_id', authUser.id);
+        }
       }
     } catch (e) {
       dev.log('[CarzoneDbService] Error updating customer push device in Supabase: $e');
