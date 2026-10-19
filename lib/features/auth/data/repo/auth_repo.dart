@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:developer' as dev;
 
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 
 import '../../../../commons/models/customer_model.dart';
 import '../../../../core/constance/supabase_constants.dart';
@@ -222,6 +224,12 @@ class AuthRepo {
     }
   }
 
+  /// Native Google Sign-In needs a web client ID everywhere, and on iOS also
+  /// an iOS client ID (plus its reversed URL scheme in Info.plist).
+  bool get canUseNativeGoogle =>
+      SupabaseConstants.googleWebClientId.isNotEmpty &&
+      (!GetPlatform.isIOS || SupabaseConstants.googleIosClientId.isNotEmpty);
+
   /// Native in-app Google Sign-In with bottom sheet account picker dialog.
   /// Does NOT open external Chrome browser.
   Future<AuthResponse?> signInWithGoogleNative({String? webClientId}) async {
@@ -230,8 +238,11 @@ class AuthRepo {
             ? SupabaseConstants.googleWebClientId
             : null);
 
-    final effectiveClientId = SupabaseConstants.googleAndroidClientId.isNotEmpty
-        ? SupabaseConstants.googleAndroidClientId
+    // iOS needs its own iOS client ID: any other ID makes the Google SDK raise a
+    // native exception (missing URL scheme) that kills the app. Android ignores
+    // clientId when serverClientId is set, and identifies the app by package + SHA-1.
+    final effectiveClientId = GetPlatform.isIOS && SupabaseConstants.googleIosClientId.isNotEmpty
+        ? SupabaseConstants.googleIosClientId
         : null;
 
     final googleSignIn = GoogleSignIn(
@@ -267,8 +278,21 @@ class AuthRepo {
     return res;
   }
 
-  /// In-app browser view OAuth fallback (opens in-app modal instead of separate Chrome app)
+  /// In-app browser view OAuth fallback (opens in-app modal instead of separate Chrome app).
+  /// Requires carzone://login-callback in Supabase Auth -> URL Configuration -> Redirect URLs.
   Future<bool> signInWithGoogleInAppBrowser() async {
+    // supabase_flutter signs in from the carzone://login-callback link but leaves
+    // the in-app Safari sheet open on iOS, so close it once the session arrives.
+    if (GetPlatform.isIOS) {
+      StreamSubscription<AuthState>? sub;
+      sub = _client.auth.onAuthStateChange.listen((state) {
+        if (state.event == AuthChangeEvent.signedIn) {
+          closeInAppWebView();
+          sub?.cancel();
+        }
+      });
+      Future.delayed(const Duration(minutes: 10), () => sub?.cancel());
+    }
     try {
       final res = await _client.auth.signInWithOAuth(
         OAuthProvider.google,

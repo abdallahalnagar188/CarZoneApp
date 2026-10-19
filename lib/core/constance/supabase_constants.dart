@@ -12,6 +12,13 @@ class SupabaseConstants {
   static const String googleWebClientId =
       '995916581459-633gqn8celnqlprln9ejt2oorblqiobl.apps.googleusercontent.com';
 
+  /// Google iOS Client ID (OAuth 2.0 Client ID of type iOS, bundle id com.example.carzone).
+  /// Leave empty until it exists: iOS then signs in through the browser instead.
+  /// When set, ios/Runner/Info.plist must also list its reversed form
+  /// (com.googleusercontent.apps.ID) under CFBundleURLSchemes, or Google
+  /// Sign-In crashes the app. test/qa/ios_config_test.dart checks this.
+  static const String googleIosClientId = '';
+
   /// Google Android Client ID from Google Cloud Console (OAuth 2.0 Client ID for Android)
   /// Linked to package name com.example.carzone and debug keystore SHA-1.
   static const String googleAndroidClientId =

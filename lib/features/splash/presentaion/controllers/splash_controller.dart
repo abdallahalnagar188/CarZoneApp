@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../core/local/cache_helper.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/deep_link_service.dart';
 
 class SplashController extends GetxController with GetSingleTickerProviderStateMixin {
   late final AnimationController animationController;
@@ -50,7 +51,13 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
 
   void _openNext() {
     if (isClosed) return;
-    Get.offAllNamed(CacheHelper.isOnboarded ? Routes.mainRoute : Routes.onboardingRoute);
+    if (CacheHelper.isOnboarded) {
+      Get.offAllNamed(Routes.mainRoute);
+      if (Get.isRegistered<DeepLinkService>()) Get.find<DeepLinkService>().markAppReady();
+    } else {
+      // Onboarding marks the app ready once the user reaches the main screen.
+      Get.offAllNamed(Routes.onboardingRoute);
+    }
   }
 
   @override

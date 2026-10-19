@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as dev;
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../routing/app_routes.dart';
@@ -12,6 +13,13 @@ class DeepLinkService extends GetxService {
   StreamSubscription<Uri>? _linkSub;
   String? _lastHandledBranchId;
   DateTime? _lastHandledTime;
+
+  // A link that arrives before the splash/onboarding has opened the main
+  // screen waits here; otherwise Get.offAllNamed(main) would wipe the wash page.
+  bool _appReady = false;
+  String? _pendingBranchId;
+
+  String? get pendingBranchId => _pendingBranchId;
 
   static const String supabaseShareBaseUrl =
       'https://tbcmgdwzarfdgzzmmele.supabase.co/functions/v1/share-wash';
@@ -31,10 +39,7 @@ class DeepLinkService extends GetxService {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         dev.log('[DeepLinkService] Cold start link detected: $initialUri');
-        // Give the UI a brief delay to finish booting splash/onboarding before deep routing
-        Future.delayed(const Duration(milliseconds: 600), () {
-          handleUri(initialUri);
-        });
+        handleUri(initialUri);
       }
     } catch (e) {
       dev.log('[DeepLinkService] Error getting initial deep link: $e');
@@ -117,7 +122,24 @@ class DeepLinkService extends GetxService {
     return null;
   }
 
+  /// Called once the main screen is on top (after splash or onboarding).
+  /// Opens a wash page that was requested by a link while the app was starting.
+  void markAppReady() {
+    if (_appReady) return;
+    _appReady = true;
+    final pending = _pendingBranchId;
+    if (pending == null) return;
+    _pendingBranchId = null;
+    // Let the main route finish pushing before stacking the wash page on it.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _navigateToWash(pending));
+  }
+
   Future<void> _navigateToWash(String branchId) async {
+    if (!_appReady) {
+      dev.log('[DeepLinkService] App not ready yet, holding link for $branchId');
+      _pendingBranchId = branchId;
+      return;
+    }
     try {
       // Ensure DB master data is synced from Supabase before opening details
       if (Get.isRegistered<CarzoneDbService>()) {

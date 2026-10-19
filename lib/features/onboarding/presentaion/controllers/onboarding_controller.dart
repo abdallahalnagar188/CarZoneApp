@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/local/cache_controller.dart';
 import '../../../../core/routing/app_routes.dart';
+import '../../../../core/services/deep_link_service.dart';
 
 class OnboardingController extends GetxController {
   static const int count = 3;
@@ -29,6 +30,7 @@ class OnboardingController extends GetxController {
   Future<void> finish() async {
     await CacheController().setter(key: CacheKeys.onboarded, value: true);
     Get.offAllNamed(Routes.mainRoute);
+    if (Get.isRegistered<DeepLinkService>()) Get.find<DeepLinkService>().markAppReady();
   }
 
   @override

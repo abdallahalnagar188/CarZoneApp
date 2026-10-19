@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../commons/models/customer_model.dart';
-import '../../../../core/constance/supabase_constants.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
 import '../../../../core/helpers/format_helper.dart';
@@ -48,7 +47,7 @@ class AuthController extends GetxController {
     if (googleSigningIn.value || sending.value) return;
     googleSigningIn.value = true;
     try {
-      if (SupabaseConstants.googleWebClientId.isNotEmpty) {
+      if (_repo.canUseNativeGoogle) {
         final res = await _repo.signInWithGoogleNative();
         if (res == null) {
           // User dismissed or canceled the popup dialog
