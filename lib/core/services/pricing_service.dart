@@ -41,7 +41,9 @@ class PricingService {
 
   OfferModel? offerFor(String branchId, String serviceId) {
     final list = liveOffers()
-        .where((o) => o.branchIds.contains(branchId) && o.serviceIds.contains(serviceId))
+        .where((o) =>
+            (o.platform || o.branchIds.isEmpty || o.branchIds.contains(branchId)) &&
+            (o.serviceIds.isEmpty || o.serviceIds.contains(serviceId)))
         .toList();
     if (list.isEmpty) return null;
     final service = _db.service(serviceId);

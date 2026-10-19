@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:get/get.dart';
 
+import '../services/availability_service.dart';
+
 class FormatHelper {
   FormatHelper._();
 
@@ -29,23 +31,28 @@ class FormatHelper {
   }
 
   static String time(DateTime d) {
-    final pm = d.hour >= 12;
-    final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
-    final m = d.minute.toString().padLeft(2, '0');
+    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+    final pm = local.hour >= 12;
+    final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final m = local.minute.toString().padLeft(2, '0');
     return isAr ? '$h:$m ${pm ? 'م' : 'ص'}' : '$h:$m ${pm ? 'PM' : 'AM'}';
   }
 
-  static String dayName(DateTime d) =>
-      isAr ? _arDays[d.weekday - 1] : _enDays[d.weekday - 1];
+  static String dayName(DateTime d) {
+    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+    return isAr ? _arDays[local.weekday - 1] : _enDays[local.weekday - 1];
+  }
 
   static String date(DateTime d) {
-    final month = isAr ? _arMonths[d.month - 1] : _enMonths[d.month - 1];
-    return '${dayName(d)} ${d.day} $month';
+    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+    final month = isAr ? _arMonths[local.month - 1] : _enMonths[local.month - 1];
+    return '${dayName(local)} ${local.day} $month';
   }
 
   static String shortDate(DateTime d) {
-    final month = isAr ? _arMonths[d.month - 1] : _enMonths[d.month - 1];
-    return '${d.day} $month';
+    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+    final month = isAr ? _arMonths[local.month - 1] : _enMonths[local.month - 1];
+    return '${local.day} $month';
   }
 
   static String dateTime(DateTime d) => '${date(d)} · ${time(d)}';

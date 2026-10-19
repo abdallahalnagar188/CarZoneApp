@@ -7,10 +7,13 @@ import '../../commons/models/localized_text.dart';
 import '../../commons/models/order_model.dart';
 import '../../commons/models/review_model.dart';
 import '../enums/enums.dart';
+import 'availability_service.dart';
 import 'carzone_db_service.dart';
 import 'supabase_service.dart';
 
 class SlotTakenException implements Exception {}
+class SlotTooSoonException implements Exception {}
+class SlotOutsideHoursException implements Exception {}
 
 /// A booking RPC refused the request. [code] is the server's reason,
 /// e.g. `branch_unavailable`, `order_not_cancellable` (see migration 20261019120000).
@@ -42,6 +45,8 @@ class OrderService {
       return Map<String, dynamic>.from(res as Map);
     } on PostgrestException catch (e) {
       dev.log('[OrderService] $fn refused: ${e.code} ${e.message}');
+      if (e.message == 'slot_too_soon') throw SlotTooSoonException();
+      if (e.message == 'slot_outside_hours') throw SlotOutsideHoursException();
       if (e.message.startsWith('slot_')) throw SlotTakenException();
       throw BookingException(e.message);
     }
@@ -73,7 +78,7 @@ class OrderService {
       'p_branch_id': branchId,
       'p_vehicle_id': vehicleId,
       'p_primary_service_id': primaryId,
-      'p_scheduled_at': slot.toUtc().toIso8601String(),
+      'p_scheduled_at': AvailabilityService.toUtcIsoString(slot),
       'p_addon_service_ids': addonIds,
     });
     final order = OrderModel.fromJson(json);
@@ -114,7 +119,7 @@ class OrderService {
   Future<void> reschedule(OrderModel order, DateTime slot) async {
     final json = await _rpc('reschedule_order', {
       'p_order_id': order.id,
-      'p_scheduled_at': slot.toUtc().toIso8601String(),
+      'p_scheduled_at': AvailabilityService.toUtcIsoString(slot),
     });
     _applyServerState(order, json);
     order.timeline.add(TimelineEntry('rescheduled', DateTime.now()));
@@ -123,11 +128,15 @@ class OrderService {
   Future<void> review(OrderModel order, int stars, List<String> tags, String comment) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final customer = _db.customerById(order.customerId);
+    final branch = _db.branch(order.branchId);
     final rev = ReviewModel(
       id: 'rv_${DateTime.now().microsecondsSinceEpoch}',
       orderId: order.id,
       customerName: customer?.name ?? '',
       branchId: order.branchId,
+      businessId: branch?.businessId ?? 'biz_default',
+      customerId: order.customerId,
+      serviceId: order.primary.serviceId,
       serviceName: order.primary.name,
       stars: stars,
       comment: comment,
@@ -139,17 +148,20 @@ class OrderService {
   }
 
   Future<String> report(OrderModel order, String category, String description) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 50));
     final ticket = _db.nextTicket();
+    final branch = _db.branch(order.branchId);
     final row = {
       'id': 'cp_${DateTime.now().microsecondsSinceEpoch}',
-      'ticket_number': ticket,
+      'ticket': ticket,
       'order_id': order.id,
       'customer_id': order.customerId,
-      'reason': category,
-      'details': description,
+      'branch_id': order.branchId,
+      'business_id': branch?.businessId ?? 'biz_default',
+      'category': category,
+      'description': description,
       'status': 'open',
-      'created_at': DateTime.now().toIso8601String(),
+      'created_at': DateTime.now().toUtc().toIso8601String(),
     };
     _db.complaints.add(row);
     _db.saveComplaint(row);

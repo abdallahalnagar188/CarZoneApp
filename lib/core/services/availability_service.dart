@@ -1,17 +1,75 @@
+import 'dart:developer' as dev;
+
 import 'package:get/get.dart';
 
 import '../../commons/models/branch_model.dart';
 import '../enums/enums.dart';
 import '../helpers/format_helper.dart';
 import 'carzone_db_service.dart';
+import 'supabase_service.dart';
+
+class BranchTimeHelper {
+  BranchTimeHelper._();
+
+  /// Computes Egypt / Cairo timezone offset for [date] (defaults to current instant).
+  /// Egypt DST: Starts last Friday of April, ends last Thursday of October (UTC+3 summer, UTC+2 winter).
+  static Duration cairoOffset([DateTime? date]) {
+    final d = (date ?? DateTime.now()).toUtc();
+    final year = d.year;
+
+    // Last Friday of April
+    var lastFriApril = 30;
+    while (DateTime.utc(year, 4, lastFriApril).weekday != DateTime.friday) {
+      lastFriApril--;
+    }
+    final dstStart = DateTime.utc(year, 4, lastFriApril);
+
+    // Last Thursday of October
+    var lastThuOct = 31;
+    while (DateTime.utc(year, 10, lastThuOct).weekday != DateTime.thursday) {
+      lastThuOct--;
+    }
+    final dstEnd = DateTime.utc(year, 10, lastThuOct, 24);
+
+    final isDst = d.isAfter(dstStart) && d.isBefore(dstEnd);
+    return Duration(hours: isDst ? 3 : 2);
+  }
+
+  /// Current wall-clock time in Cairo
+  static DateTime cairoNow() {
+    final utc = DateTime.now().toUtc();
+    return utc.add(cairoOffset(utc));
+  }
+
+  /// Converts a branch local wall-clock [DateTime] or [slot] to exact ISO-8601 UTC string for Supabase RPC
+  static String toUtcIsoString(DateTime slot) {
+    if (slot.isUtc) return slot.toIso8601String();
+    final offset = cairoOffset(slot);
+    final utc = DateTime.utc(slot.year, slot.month, slot.day, slot.hour, slot.minute).subtract(offset);
+    return utc.toIso8601String();
+  }
+}
 
 class SlotModel {
   final DateTime start;
   final int free;
+  final String? localTime; // e.g. "09:00"
 
-  const SlotModel(this.start, this.free);
+  const SlotModel(this.start, this.free, {this.localTime});
 
   bool get fewLeft => free == 1;
+
+  String formattedTime() {
+    if (localTime != null && localTime!.contains(':')) {
+      final parts = localTime!.split(':');
+      final h = int.tryParse(parts[0]) ?? start.hour;
+      final m = parts[1];
+      final pm = h >= 12;
+      final displayH = h % 12 == 0 ? 12 : h % 12;
+      return FormatHelper.isAr ? '$displayH:$m ${pm ? 'م' : 'ص'}' : '$displayH:$m ${pm ? 'PM' : 'AM'}';
+    }
+    return FormatHelper.time(start);
+  }
 }
 
 class AvailabilityService {
@@ -23,6 +81,8 @@ class AvailabilityService {
     OrderStatus.waiting,
     OrderStatus.inService,
   ];
+
+  static String toUtcIsoString(DateTime slot) => BranchTimeHelper.toUtcIsoString(slot);
 
   bool isOpenNow(BranchModel branch, [DateTime? now]) {
     final ref = now ?? DateTime.now();
@@ -64,9 +124,45 @@ class AvailabilityService {
       final end = start.add(Duration(minutes: durationMin));
       final used = _overlapping(branch.id, start, end, excludeOrderId);
       final free = branch.capacity - used;
-      if (free > 0) result.add(SlotModel(start, free));
+      if (free > 0) {
+        final hh = (m ~/ 60).toString().padLeft(2, '0');
+        final mm = (m % 60).toString().padLeft(2, '0');
+        result.add(SlotModel(start, free, localTime: '$hh:$mm'));
+      }
     }
     return result;
+  }
+
+  /// Live remote check against Postgres checking branch operating hours, blocked slots, and existing orders
+  Future<List<SlotModel>> fetchRemoteSlots(
+    BranchModel branch,
+    DateTime day, {
+    int durationMin = 30,
+    String? excludeOrderId,
+  }) async {
+    if (!branch.bookable) return const [];
+    try {
+      final dateStr = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+      final res = await SupabaseService.client.rpc('get_branch_slots', params: {
+        'p_branch_id': branch.id,
+        'p_date': dateStr,
+        'p_duration': durationMin,
+        'p_exclude_order': excludeOrderId,
+      });
+      if (res is List) {
+        final list = res.map((row) {
+          final m = Map<String, dynamic>.from(row as Map);
+          final startAt = DateTime.parse(m['start_at'].toString()).toUtc();
+          final free = (m['free_capacity'] as num?)?.toInt() ?? 1;
+          final localTime = m['local_time']?.toString();
+          return SlotModel(startAt, free, localTime: localTime);
+        }).toList();
+        return list;
+      }
+    } catch (e) {
+      dev.log('[AvailabilityService] fetchRemoteSlots RPC failed, using local: $e');
+    }
+    return slotsFor(branch, day, durationMin: durationMin, excludeOrderId: excludeOrderId);
   }
 
   bool isAvailable(BranchModel branch, DateTime start, int durationMin, {String? excludeOrderId}) {

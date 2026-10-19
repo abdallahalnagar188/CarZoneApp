@@ -29,6 +29,7 @@ class BookingController extends GetxController {
   final day = DateTime.now().obs;
   final slot = Rxn<DateTime>();
   final slots = <SlotModel>[].obs;
+  final loadingSlots = false.obs;
   final confirming = false.obs;
   final createdOrder = Rxn<OrderModel>();
   final rescheduleOrder = Rxn<OrderModel>();
@@ -183,16 +184,43 @@ class BookingController extends GetxController {
     loadSlots();
   }
 
-  void loadSlots() {
+  Future<void> loadSlots() async {
     final b = branch;
     if (b == null) return;
+    loadingSlots.value = true;
+    // Immediate fallback slots so UI is never blank
     slots.assignAll(_availability.slotsFor(
       b,
       day.value,
       durationMin: durationMin,
       excludeOrderId: rescheduleOrder.value?.id,
     ));
-    if (slot.value != null && !slots.any((s) => s.start == slot.value)) slot.value = null;
+
+    try {
+      final remote = await _availability.fetchRemoteSlots(
+        b,
+        day.value,
+        durationMin: durationMin,
+        excludeOrderId: rescheduleOrder.value?.id,
+      );
+      if (remote.isNotEmpty || slots.isEmpty) {
+        slots.assignAll(remote);
+      }
+    } catch (_) {
+    } finally {
+      loadingSlots.value = false;
+      if (slot.value != null &&
+          !slots.any((s) =>
+              s.start.isAtSameMomentAs(slot.value!) ||
+              s.start == slot.value ||
+              (s.start.year == slot.value!.year &&
+                  s.start.month == slot.value!.month &&
+                  s.start.day == slot.value!.day &&
+                  s.start.hour == slot.value!.hour &&
+                  s.start.minute == slot.value!.minute))) {
+        slot.value = null;
+      }
+    }
   }
 
   void seeTomorrow() {
@@ -219,6 +247,26 @@ class BookingController extends GetxController {
       confirming.value = false;
       Get.back();
       Utils.getSnakBar(message: 'reschedule.done'.tr, type: TosterTypes.sucsses);
+    } on SlotTooSoonException {
+      confirming.value = false;
+      slot.value = null;
+      loadSlots();
+      Utils.getSnakBar(
+        message: FormatHelper.isAr
+            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد قادم أو حجز ليوم غد.'
+            : 'The selected slot has passed or is too soon. Please select an upcoming slot or choose tomorrow.',
+        type: TosterTypes.warning,
+      );
+    } on SlotOutsideHoursException {
+      confirming.value = false;
+      slot.value = null;
+      loadSlots();
+      Utils.getSnakBar(
+        message: FormatHelper.isAr
+            ? 'الموعد المحدد خارج ساعات العمل للمغسلة. يرجى اختيار موعد متاح.'
+            : 'The selected slot is outside branch operating hours. Please pick an available time.',
+        type: TosterTypes.warning,
+      );
     } on SlotTakenException {
       confirming.value = false;
       loadSlots();
@@ -250,6 +298,28 @@ class BookingController extends GetxController {
         Routes.bookSuccessRoute,
         (r) => r.settings.name == Routes.mainRoute || r.settings.name == Routes.washDetailsRoute,
       );
+    } on SlotTooSoonException {
+      confirming.value = false;
+      slot.value = null;
+      loadSlots();
+      Utils.getSnakBar(
+        message: FormatHelper.isAr
+            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد قادم أو حجز ليوم غد.'
+            : 'The selected slot has passed or is too soon. Please select an upcoming slot or choose tomorrow.',
+        type: TosterTypes.warning,
+      );
+      Get.until((r) => r.settings.name == Routes.bookSlotRoute);
+    } on SlotOutsideHoursException {
+      confirming.value = false;
+      slot.value = null;
+      loadSlots();
+      Utils.getSnakBar(
+        message: FormatHelper.isAr
+            ? 'الموعد المحدد خارج ساعات العمل للمغسلة. يرجى اختيار موعد متاح.'
+            : 'The selected slot is outside branch operating hours. Please pick an available time.',
+        type: TosterTypes.warning,
+      );
+      Get.until((r) => r.settings.name == Routes.bookSlotRoute);
     } on SlotTakenException {
       confirming.value = false;
       slot.value = null;

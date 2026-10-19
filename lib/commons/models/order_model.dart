@@ -178,7 +178,7 @@ class OrderModel {
     'offer_id': offerId,
     'total': total,
     'duration_min': durationMin,
-    'scheduled_at': scheduledAt.toIso8601String(),
+    'scheduled_at': scheduledAt.toUtc().toIso8601String(),
     'status': status.key,
     'payment_status': paymentStatus.name,
     'note': note,
@@ -186,6 +186,6 @@ class OrderModel {
     'cancel_reason': cancelReason,
     'late_cancel': lateCancel,
     'complaint_id': complaintId,
-    'created_at': createdAt.toIso8601String(),
+    'created_at': createdAt.toUtc().toIso8601String(),
   };
 }

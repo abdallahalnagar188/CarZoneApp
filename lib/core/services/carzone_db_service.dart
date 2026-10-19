@@ -34,7 +34,6 @@ class CarzoneDbService extends GetxService {
   final hasError = false.obs;
   final errorMessage = ''.obs;
 
-  int _nextTicket = 501;
 
   static const AreaModel defaultArea = AreaModel(
     id: 'nasr',
@@ -127,23 +126,14 @@ class CarzoneDbService extends GetxService {
   }
 
   // Complaint ticket generator (order numbers and codes come from the server)
-  String nextTicket() => 'TK-${_nextTicket++}';
-
-  void _initCounters() {
-    // Dynamically calculate next complaint ticket
-    var maxTicket = 500;
-    for (final c in complaints) {
-      final ticketStr = c['ticket_number']?.toString() ?? '';
-      final parts = ticketStr.split('-');
-      if (parts.length == 2) {
-        final parsed = int.tryParse(parts[1]);
-        if (parsed != null && parsed > maxTicket) {
-          maxTicket = parsed;
-        }
-      }
-    }
-    _nextTicket = maxTicket + 1;
+  static int _ticketCounter = 0;
+  String nextTicket() {
+    final seq = ++_ticketCounter;
+    final now = DateTime.now().microsecondsSinceEpoch;
+    return 'TK-${now % 10000000}$seq';
   }
+
+    // Tickets are generated with unique timestamp sequence via nextTicket()
 
   /// 1. Home Page startup fetch: lightweight call loading ONLY areas, active offers (limit 6),
   /// and top branches (limit 10) for the user's selected area.
@@ -188,6 +178,7 @@ class CarzoneDbService extends GetxService {
       final currentUser = client.auth.currentUser;
       if (currentUser != null) {
         try {
+          String? customerId;
           final custRes = await client.from('customers').select().eq('user_id', currentUser.id).limit(1);
           if (custRes.isNotEmpty) {
             final cust = CustomerModel.fromJson(Map<String, dynamic>.from(custRes.first as Map));
@@ -197,9 +188,11 @@ class CarzoneDbService extends GetxService {
             } else {
               customers.add(cust);
             }
+            customerId = cust.id;
             fetchVehicles(cust.id);
           }
-          final orderRes = await client.from('orders').select().eq('customer_id', currentUser.id).order('scheduled_at', ascending: false).limit(5);
+          final lookupId = customerId ?? currentUser.id;
+          final orderRes = await client.from('orders').select().eq('customer_id', lookupId).order('scheduled_at', ascending: false).limit(5);
           final remoteOrders = (orderRes as List)
               .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList();
@@ -207,7 +200,6 @@ class CarzoneDbService extends GetxService {
         } catch (_) {}
       }
 
-      _initCounters();
       isSynced.value = true;
       return true;
     } catch (e) {
@@ -498,7 +490,8 @@ class CarzoneDbService extends GetxService {
 
       final authUser = SupabaseService.client.auth.currentUser;
       if (authUser != null) {
-        if (token != null && token.isNotEmpty) {
+        // Only store real device push tokens (never Supabase JWTs which start with 'eyJ')
+        if (token != null && token.isNotEmpty && !token.startsWith('eyJ')) {
           final platformStr = GetPlatform.isIOS ? 'ios' : 'android';
           await SupabaseService.client.from('push_devices').upsert(
             {
@@ -506,11 +499,11 @@ class CarzoneDbService extends GetxService {
               'app': 'customer',
               'platform': platformStr,
               'token': token,
-              'last_seen_at': DateTime.now().toIso8601String(),
+              'last_seen_at': DateTime.now().toUtc().toIso8601String(),
             },
             onConflict: 'token',
           );
-        } else {
+        } else if (token == null) {
           await SupabaseService.client
               .from('push_devices')
               .delete()
