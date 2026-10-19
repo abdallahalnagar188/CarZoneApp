@@ -1,0 +1,26 @@
+{
+  "name": "carzone-qa",
+  "private": true,
+  "description": "Load, profiling and RLS tests for the CarZone customer app's Supabase backend",
+  "scripts": {
+    "k6:smoke": "k6 run -e PROFILE=smoke load/k6_app_journeys.js",
+    "k6:light": "k6 run -e PROFILE=light --summary-export reports/k6_light_summary.json load/k6_app_journeys.js",
+    "k6:stress": "k6 run -e PROFILE=stress load/k6_app_journeys.js",
+    "bench": "node load/autocannon_endpoints.js",
+    "clinic:doctor": "NO_INSIGHT=1 clinic doctor --open=false --dest reports/clinic --on-port 'autocannon -c 10 -d 20 http://localhost:3999/home' -- node profiling/app_data_layer_server.js",
+    "clinic:flame": "NO_INSIGHT=1 clinic flame --open=false --dest reports/clinic --on-port 'autocannon -c 10 -d 20 http://localhost:3999/home' -- node profiling/app_data_layer_server.js",
+    "test:anon": "node --test rls/anon_access.test.mjs",
+    "test:rls": "node --test rls/customer_rls.test.mjs",
+    "token": "node rls/get_token.mjs",
+    "test:db": "node --test db/security_phase1.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.16",
+    "@supabase/supabase-js": "^2.58.0",
+    "autocannon": "^8.0.0",
+    "clinic": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
