@@ -223,6 +223,9 @@ class BookingController extends GetxController {
       confirming.value = false;
       loadSlots();
       Utils.getSnakBar(message: 'book.slotTaken'.tr, type: TosterTypes.warning);
+    } catch (e) {
+      confirming.value = false;
+      Utils.getSnakBar(message: _bookingError(e, 'reschedule.failed'), type: TosterTypes.failed);
     }
   }
 
@@ -234,7 +237,6 @@ class BookingController extends GetxController {
     confirming.value = true;
     try {
       final order = await _orders.create(
-        customerId: uid,
         branchId: branchId.value,
         primaryId: primaryId.value!,
         addonIds: addonIds.toList(),
@@ -254,8 +256,17 @@ class BookingController extends GetxController {
       loadSlots();
       Utils.getSnakBar(message: '${'book.slotTaken'.tr}\n${'book.slotTakenBody'.tr}', type: TosterTypes.warning);
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
+    } catch (e) {
+      confirming.value = false;
+      Utils.getSnakBar(message: _bookingError(e, 'book.failed'), type: TosterTypes.failed);
     }
   }
+
+  String _bookingError(Object e, String fallbackKey) => switch (e) {
+        BookingException(code: 'branch_unavailable') => 'book.unavailable'.tr,
+        BookingException(code: 'account_suspended') => 'book.suspended'.tr,
+        _ => fallbackKey.tr,
+      };
 
   void viewCreated() {
     final order = createdOrder.value;

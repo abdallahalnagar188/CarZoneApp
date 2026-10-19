@@ -44,8 +44,8 @@ class TimelineEntry {
 
   factory TimelineEntry.fromJson(Map<String, dynamic> json) {
     return TimelineEntry(
-      json['key']?.toString() ?? '',
-      DateTime.tryParse(json['at']?.toString() ?? '') ?? DateTime.now(),
+      (json['key'] ?? json['status'])?.toString() ?? '',
+      DateTime.tryParse(json['at']?.toString() ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 
@@ -153,7 +153,7 @@ class OrderModel {
       offerId: json['offer_id']?.toString() ?? json['offerId']?.toString(),
       total: (json['total'] as num?)?.toInt() ?? 0,
       durationMin: (json['duration_min'] ?? json['durationMin'] as num?)?.toInt() ?? 30,
-      scheduledAt: DateTime.tryParse(json['scheduled_at'] ?? json['scheduledAt'] ?? '') ?? DateTime.now(),
+      scheduledAt: DateTime.tryParse(json['scheduled_at'] ?? json['scheduledAt'] ?? '')?.toLocal() ?? DateTime.now(),
       status: status,
       paymentStatus: paymentStatus,
       note: json['note']?.toString(),
@@ -161,43 +161,8 @@ class OrderModel {
       cancelReason: json['cancel_reason']?.toString() ?? json['cancelReason']?.toString(),
       lateCancel: json['late_cancel'] ?? json['lateCancel'] ?? false,
       complaintId: json['complaint_id']?.toString() ?? json['complaintId']?.toString(),
-      createdAt: DateTime.tryParse(json['created_at'] ?? json['createdAt'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? json['createdAt'] ?? '')?.toLocal() ?? DateTime.now(),
     );
-  }
-
-  /// Database representation for public.orders table in Supabase
-  Map<String, dynamic> toDbMap({
-    required String businessId,
-    required String plate,
-  }) {
-    final hasDiscount = discount > 0;
-    return {
-      'id': id,
-      'number': number,
-      'code': code,
-      'source': 'app',
-      'customer_id': customerId,
-      'vehicle_id': vehicleId,
-      'plate': plate,
-      'business_id': businessId,
-      'branch_id': branchId,
-      if (offerId != null) 'offer_id': offerId,
-      'subtotal': subtotal,
-      if (hasDiscount) 'discount_amount': discount,
-      if (hasDiscount) 'discount_reason': 'offer',
-      'total': total,
-      'duration_min': durationMin,
-      'scheduled_at': scheduledAt.toIso8601String(),
-      'status': status.key,
-      'payment_status': paymentStatus.name,
-      if (status == OrderStatus.cancelled) ...{
-        'cancel_reason': cancelReason ?? 'Cancelled by user',
-        'cancelled_at': DateTime.now().toIso8601String(),
-        'cancelled_by_type': 'customer',
-        'cancelled_by_id': customerId,
-      },
-      'created_at': createdAt.toIso8601String(),
-    };
   }
 
   Map<String, dynamic> toJson() => {

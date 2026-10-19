@@ -74,10 +74,21 @@ class BookingDetailsController extends GetxController {
     final o = order.value;
     if (o == null) return;
     cancelling.value = true;
-    await _orders.cancel(o, cancelReason.value);
-    cancelling.value = false;
-    Get.back();
-    Utils.getSnakBar(message: 'toast.cancelled'.tr, type: TosterTypes.sucsses);
+    try {
+      await _orders.cancel(o, cancelReason.value);
+      Get.back();
+      Utils.getSnakBar(message: 'toast.cancelled'.tr, type: TosterTypes.sucsses);
+    } on BookingException catch (e) {
+      Get.back();
+      Utils.getSnakBar(
+        message: (e.code == 'order_not_cancellable' ? 'cancel.notAllowed' : 'cancel.failed').tr,
+        type: TosterTypes.failed,
+      );
+    } catch (_) {
+      Utils.getSnakBar(message: 'cancel.failed'.tr, type: TosterTypes.failed);
+    } finally {
+      cancelling.value = false;
+    }
   }
 
   void reschedule() {

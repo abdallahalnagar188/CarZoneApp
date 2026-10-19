@@ -1,19 +1,29 @@
+import 'dart:developer' as dev;
+
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../commons/models/localized_text.dart';
 import '../../commons/models/order_model.dart';
 import '../../commons/models/review_model.dart';
 import '../enums/enums.dart';
-import 'availability_service.dart';
 import 'carzone_db_service.dart';
-import 'pricing_service.dart';
+import 'supabase_service.dart';
 
 class SlotTakenException implements Exception {}
 
-class OrderService {
-  final _availability = AvailabilityService();
-  final _pricing = PricingService();
+/// A booking RPC refused the request. [code] is the server's reason,
+/// e.g. `branch_unavailable`, `order_not_cancellable` (see migration 20261019120000).
+class BookingException implements Exception {
+  final String code;
 
+  const BookingException(this.code);
+
+  @override
+  String toString() => 'BookingException($code)';
+}
+
+class OrderService {
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
 
   static const _toasts = {
@@ -24,50 +34,59 @@ class OrderService {
     OrderStatus.cancelled: LocalizedText('تم إلغاء الحجز', 'Booking cancelled'),
   };
 
+  /// Orders are written only by server RPCs, which price, number and validate
+  /// the booking. Slot errors become [SlotTakenException], the rest [BookingException].
+  Future<Map<String, dynamic>> _rpc(String fn, Map<String, dynamic> params) async {
+    try {
+      final res = await SupabaseService.client.rpc(fn, params: params);
+      return Map<String, dynamic>.from(res as Map);
+    } on PostgrestException catch (e) {
+      dev.log('[OrderService] $fn refused: ${e.code} ${e.message}');
+      if (e.message.startsWith('slot_')) throw SlotTakenException();
+      throw BookingException(e.message);
+    }
+  }
+
+  /// Copies the server's view of an order onto the instance the UI holds.
+  void _applyServerState(OrderModel order, Map<String, dynamic> json) {
+    final fresh = OrderModel.fromJson(json);
+    order
+      ..status = fresh.status
+      ..paymentStatus = fresh.paymentStatus
+      ..scheduledAt = fresh.scheduledAt
+      ..cancelReason = fresh.cancelReason
+      ..timeline.clear()
+      ..timeline.addAll(fresh.timeline);
+    _db.orders.refresh();
+  }
+
   Future<OrderModel> create({
-    required String customerId,
     required String branchId,
     required String primaryId,
     required List<String> addonIds,
     required String vehicleId,
     required DateTime slot,
+    // Not stored yet: orders has no note column (QA-M7).
     String? note,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    final branch = _db.branch(branchId)!;
-    final quote = _pricing.quote(branchId: branchId, primaryId: primaryId, addonIds: addonIds);
-    if (!_availability.isAvailable(branch, slot, quote.durationMin)) throw SlotTakenException();
-    final now = DateTime.now();
-    final auto = branch.settings.autoConfirm;
-    final order = OrderModel(
-      id: 'ord_${now.microsecondsSinceEpoch}',
-      number: _db.nextNumber(),
-      code: _db.nextCode(),
-      customerId: customerId,
-      vehicleId: vehicleId,
-      branchId: branchId,
-      items: quote.items,
-      subtotal: quote.subtotal,
-      discount: quote.discount,
-      offerId: quote.offer?.id,
-      total: quote.total,
-      durationMin: quote.durationMin,
-      scheduledAt: slot,
-      status: auto ? OrderStatus.confirmed : OrderStatus.pending,
-      note: note,
-      createdAt: now,
-      timeline: [
-        TimelineEntry('pending', now),
-        if (auto) TimelineEntry('confirmed', now),
-      ],
-    );
-    _db.orders.add(order);
-    await _db.saveOrder(order);
+    final json = await _rpc('create_order', {
+      'p_branch_id': branchId,
+      'p_vehicle_id': vehicleId,
+      'p_primary_service_id': primaryId,
+      'p_scheduled_at': slot.toUtc().toIso8601String(),
+      'p_addon_service_ids': addonIds,
+    });
+    final order = OrderModel.fromJson(json);
+    _db.upsertOrders([order]);
+    final branch = _db.branch(order.branchId);
     _db.notify(
-      userId: customerId,
+      userId: order.customerId,
       type: 'created',
       title: const LocalizedText('تم إنشاء الحجز', 'Booking created'),
-      body: LocalizedText('${order.number} · ${branch.name.ar}', '${order.number} · ${branch.name.en}'),
+      body: LocalizedText(
+        branch == null ? order.number : '${order.number} · ${branch.name.ar}',
+        branch == null ? order.number : '${order.number} · ${branch.name.en}',
+      ),
       orderId: order.id,
     );
     return order;
@@ -80,14 +99,9 @@ class OrderService {
   }
 
   Future<void> cancel(OrderModel order, String reason) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    order
-      ..lateCancel = insideFreeWindow(order)
-      ..cancelReason = reason
-      ..status = OrderStatus.cancelled
-      ..timeline.add(TimelineEntry('cancelled', DateTime.now()));
-    _db.orders.refresh();
-    await _db.saveOrder(order);
+    final json = await _rpc('cancel_order', {'p_order_id': order.id, 'p_reason': reason});
+    _applyServerState(order, json);
+    order.lateCancel = json['late_cancel'] == true;
     _db.notify(
       userId: order.customerId,
       type: 'cancelled',
@@ -98,16 +112,12 @@ class OrderService {
   }
 
   Future<void> reschedule(OrderModel order, DateTime slot) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final branch = _db.branch(order.branchId)!;
-    if (!_availability.isAvailable(branch, slot, order.durationMin, excludeOrderId: order.id)) {
-      throw SlotTakenException();
-    }
-    order
-      ..scheduledAt = slot
-      ..timeline.add(TimelineEntry('rescheduled', DateTime.now()));
-    _db.orders.refresh();
-    await _db.saveOrder(order);
+    final json = await _rpc('reschedule_order', {
+      'p_order_id': order.id,
+      'p_scheduled_at': slot.toUtc().toIso8601String(),
+    });
+    _applyServerState(order, json);
+    order.timeline.add(TimelineEntry('rescheduled', DateTime.now()));
   }
 
   Future<void> review(OrderModel order, int stars, List<String> tags, String comment) async {
@@ -145,10 +155,11 @@ class OrderService {
     _db.saveComplaint(row);
     order.complaintId = ticket;
     _db.orders.refresh();
-    _db.saveOrder(order);
     return ticket;
   }
 
+  /// Debug-only simulation of the car wash moving an order along. It changes
+  /// the local copy only: on the server, only staff can change an order's status.
   void advance(OrderModel order) {
     final next = switch (order.status) {
       OrderStatus.pending => OrderStatus.confirmed,
@@ -161,7 +172,6 @@ class OrderService {
       if (order.status == OrderStatus.completed && order.paymentStatus == PaymentStatus.pending) {
         order.paymentStatus = PaymentStatus.paid;
         _db.orders.refresh();
-        _db.saveOrder(order);
       }
       return;
     }
@@ -169,7 +179,6 @@ class OrderService {
       ..status = next
       ..timeline.add(TimelineEntry(next.key, DateTime.now()));
     _db.orders.refresh();
-    _db.saveOrder(order);
     final title = _toasts[next];
     if (title != null) {
       _db.notify(

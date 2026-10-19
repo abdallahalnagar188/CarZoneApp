@@ -3,32 +3,25 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+// Live check against the deployed send-sms-whatsapp hook (QA-C2).
+// Only Supabase Auth, signing with SEND_SMS_HOOK_SECRET, may call it:
+// an unsigned request must be refused and must not send any message.
+// Logic is unit-tested offline in supabase/functions/send-sms-whatsapp/handler_test.ts.
 void main() {
-  test('Test send-sms-whatsapp Edge Function invocation', () async {
+  test('send-sms-whatsapp rejects unsigned requests', () async {
     final client = HttpClient();
     final request = await client.postUrl(
-      Uri.parse(
-        'https://tbcmgdwzarfdgzzmmele.supabase.co/functions/v1/send-sms-whatsapp',
-      ),
+      Uri.parse('https://tbcmgdwzarfdgzzmmele.supabase.co/functions/v1/send-sms-whatsapp'),
     );
     request.headers.set('Content-Type', 'application/json');
-
-    final payload = {
-      'user': {
-        'id': 'test-customer-001',
-        'phone': '+201001234567',
-      },
-      'sms': {
-        'otp': '654321',
-      },
-    };
-
-    request.write(jsonEncode(payload));
+    request.write(jsonEncode({
+      'user': {'id': 'qa-unsigned', 'phone': '+201001234567'},
+      'sms': {'otp': '654321'},
+    }));
     final response = await request.close();
-    final responseBody = await response.transform(utf8.decoder).join();
+    await response.drain<void>();
+    client.close();
 
-    expect(response.statusCode, equals(200));
-    final json = jsonDecode(responseBody);
-    expect(json['simulated'], isTrue);
+    expect(response.statusCode, anyOf(401, 500), reason: 'unsigned request was accepted');
   });
 }

@@ -1,5 +1,4 @@
 import 'dart:developer' as dev;
-import 'dart:math' as math;
 
 import 'package:get/get.dart';
 
@@ -13,7 +12,6 @@ import '../../commons/models/order_model.dart';
 import '../../commons/models/review_model.dart';
 import '../../commons/models/vehicle_model.dart';
 import '../../commons/models/wash_service_model.dart';
-import '../enums/enums.dart';
 import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
@@ -36,10 +34,7 @@ class CarzoneDbService extends GetxService {
   final hasError = false.obs;
   final errorMessage = ''.obs;
 
-  int _nextNumber = 10001;
   int _nextTicket = 501;
-  static const _codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  final _rnd = math.Random();
 
   static const AreaModel defaultArea = AreaModel(
     id: 'nasr',
@@ -131,29 +126,10 @@ class CarzoneDbService extends GetxService {
     return (rating: avg, count: list.length);
   }
 
-  // Next order number, code, and ticket generators
-  String nextNumber() => 'CZ-${_nextNumber++}';
-
-  String nextCode() {
-    return List.generate(5, (_) => _codeChars[_rnd.nextInt(_codeChars.length)]).join();
-  }
-
+  // Complaint ticket generator (order numbers and codes come from the server)
   String nextTicket() => 'TK-${_nextTicket++}';
 
   void _initCounters() {
-    // Dynamically calculate next order number from existing orders in Supabase
-    var maxNum = 10000;
-    for (final o in orders) {
-      final parts = o.number.split('-');
-      if (parts.length == 2) {
-        final parsed = int.tryParse(parts[1]);
-        if (parsed != null && parsed > maxNum) {
-          maxNum = parsed;
-        }
-      }
-    }
-    _nextNumber = maxNum + 1;
-
     // Dynamically calculate next complaint ticket
     var maxTicket = 500;
     for (final c in complaints) {
@@ -469,84 +445,7 @@ class CarzoneDbService extends GetxService {
     }
   }
 
-  // Remote Write Operations
-  Future<void> saveOrder(OrderModel order) async {
-    try {
-      final b = branch(order.branchId);
-      final v = vehicle(order.vehicleId);
-
-      String businessId = b?.businessId ?? '';
-      if (businessId.isEmpty) {
-        final bRes = await SupabaseService.client
-            .from('branches')
-            .select('business_id')
-            .eq('id', order.branchId)
-            .maybeSingle();
-        businessId = bRes?['business_id']?.toString() ?? 'biz_carzen';
-      }
-
-      String plate = v?.plate ?? '';
-      if (plate.isEmpty) {
-        final vRes = await SupabaseService.client
-            .from('vehicles')
-            .select('plate')
-            .eq('id', order.vehicleId)
-            .maybeSingle();
-        plate = vRes?['plate']?.toString() ?? '';
-      }
-
-      final orderPayload = order.toDbMap(
-        businessId: businessId,
-        plate: plate,
-      );
-
-      await SupabaseService.client.from('orders').upsert(
-        orderPayload,
-        onConflict: 'id',
-      );
-
-      // Save order items if any
-      if (order.items.isNotEmpty) {
-        final itemsPayload = <Map<String, dynamic>>[];
-        for (int i = 0; i < order.items.length; i++) {
-          final it = order.items[i];
-          itemsPayload.add({
-            'id': 'oi_${order.id}_$i',
-            'order_id': order.id,
-            'service_id': it.serviceId.isEmpty ? null : it.serviceId,
-            'name': it.name.toJson(),
-            'type': it.type == ServiceType.addon ? 'addon' : 'primary',
-            'price': it.price,
-            'duration_min': it.durationMin,
-            'position': i,
-          });
-        }
-        await SupabaseService.client.from('order_items').upsert(
-          itemsPayload,
-          onConflict: 'id',
-          ignoreDuplicates: true,
-        );
-      }
-
-      // Save initial order event
-      final eventPayload = {
-        'id': 'oev_${order.id}_${order.status.key}',
-        'order_id': order.id,
-        'status': order.status.key,
-        'actor_type': 'customer',
-        'actor_id': order.customerId,
-        'at': order.createdAt.toIso8601String(),
-      };
-      await SupabaseService.client.from('order_events').upsert(
-        eventPayload,
-        onConflict: 'id',
-        ignoreDuplicates: true,
-      );
-    } catch (e) {
-      dev.log('[CarzoneDbService] Error saving order to Supabase: $e');
-    }
-  }
-
+  // Remote Write Operations (orders go through OrderService RPCs)
   Future<void> saveVehicle(VehicleModel vehicle) async {
     try {
       if (vehicle.isDefault) {

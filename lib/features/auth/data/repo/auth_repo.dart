@@ -9,6 +9,9 @@ import '../../../../core/constance/supabase_constants.dart';
 import '../../../../core/services/carzone_db_service.dart';
 import '../../../../core/services/supabase_service.dart';
 
+/// The phone number is already linked to a different account (sync_customer_profile).
+class PhoneInUseException implements Exception {}
+
 class AuthRepo {
   SupabaseClient get _client => SupabaseService.client;
 
@@ -155,6 +158,8 @@ class AuthRepo {
   }
 
   /// Atomically sync/find/create customer profile using Postgres RPC.
+  /// The server links an existing customer only through the OTP-verified phone.
+  /// Throws [PhoneInUseException] when the number belongs to another account.
   Future<CustomerModel?> syncProfile({
     required String phone,
     String? name,
@@ -183,57 +188,29 @@ class AuthRepo {
         }
         return cust;
       }
+    } on PostgrestException catch (e) {
+      dev.log('[AuthRepo] syncProfile refused: ${e.message}');
+      if (e.message == 'phone_in_use') throw PhoneInUseException();
     } catch (e) {
       dev.log('[AuthRepo] syncProfile error: $e');
     }
     return null;
   }
 
-  /// Register a new customer (atomic profile sync with Supabase).
+  /// Register a new customer through sync_customer_profile (the only way to
+  /// create one). Throws [PhoneInUseException] or [StateError] on failure,
+  /// never returns a local-only customer.
   Future<CustomerModel> register(
       String authId, String phone, String name, {String? token}) async {
-    final effectiveToken = token ?? _client.auth.currentSession?.accessToken;
-    final cleanPhone = phone.replaceAll(' ', '');
     final synced = await syncProfile(
-      phone: cleanPhone,
+      phone: phone.replaceAll(' ', ''),
       name: name,
-      token: effectiveToken,
+      token: token ?? _client.auth.currentSession?.accessToken,
     );
-    if (synced != null) {
-      return synced;
+    if (synced == null) {
+      throw StateError('sync_customer_profile returned no customer for $authId');
     }
-
-    // Fallback: direct insert with user_id letting Postgres generate id
-    try {
-      final res = await _client.from('customers').insert({
-        'user_id': authId,
-        'name': name.trim(),
-        'phone': cleanPhone,
-        'locale': Get.locale?.languageCode ?? 'ar',
-        'status': 'active',
-      }).select().single();
-
-      final cust = CustomerModel.fromJson(Map<String, dynamic>.from(res));
-      cust.accessToken = effectiveToken;
-      cust.tokenUpdatedAt = effectiveToken != null ? DateTime.now() : null;
-      _db.customers.add(cust);
-      return cust;
-    } catch (e) {
-      dev.log('[AuthRepo] register direct insert fallback error: $e');
-    }
-
-    final row = CustomerModel(
-      id: authId,
-      userId: authId,
-      name: name,
-      phone: cleanPhone,
-      locale: Get.locale?.languageCode ?? 'ar',
-      status: 'active',
-      accessToken: effectiveToken,
-      tokenUpdatedAt: effectiveToken != null ? DateTime.now() : null,
-    );
-    _db.customers.add(row);
-    return row;
+    return synced;
   }
 
   /// Sign out of Supabase Auth.

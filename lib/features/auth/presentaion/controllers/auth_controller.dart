@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../commons/models/customer_model.dart';
 import '../../../../core/constance/supabase_constants.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
@@ -222,8 +223,14 @@ class AuthController extends GetxController {
     }
 
     final token = _repo.currentSessionToken;
-    // Try atomic profile sync first (will link unlinked accounts with matching phone)
-    var existing = await _repo.syncProfile(phone: _e164Phone, token: token);
+    // Try atomic profile sync first (links an unlinked customer with the verified phone)
+    CustomerModel? existing;
+    try {
+      existing = await _repo.syncProfile(phone: _e164Phone, token: token);
+    } on PhoneInUseException {
+      Utils.getSnakBar(message: 'auth.phoneInUse'.tr, type: TosterTypes.failed);
+      return;
+    }
     existing ??= await _repo.findCustomerByAuthId(authUser.id);
     existing ??= await _repo.findCustomerByPhone(_e164Phone);
 
@@ -277,8 +284,18 @@ class AuthController extends GetxController {
 
     final token = _repo.currentSessionToken;
     saving.value = true;
-    final row = await _repo.register(authUser.id, effectivePhone, name, token: token);
-    saving.value = false;
+    final CustomerModel row;
+    try {
+      row = await _repo.register(authUser.id, effectivePhone, name, token: token);
+    } on PhoneInUseException {
+      Utils.getSnakBar(message: 'auth.phoneInUse'.tr, type: TosterTypes.failed);
+      return;
+    } catch (_) {
+      Utils.getSnakBar(message: 'profile.saveFailed'.tr, type: TosterTypes.failed);
+      return;
+    } finally {
+      saving.value = false;
+    }
     await _session.signIn(row, token: token);
     Utils.getSnakBar(message: 'otp.success'.tr, type: TosterTypes.sucsses);
     AuthGuard.completeLogin();

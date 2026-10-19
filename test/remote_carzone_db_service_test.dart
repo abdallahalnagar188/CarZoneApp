@@ -73,15 +73,7 @@ void main() {
     expect(paged.length, greaterThan(0));
     expect(paged.length, lessThanOrEqualTo(5));
 
-    // Verify dynamic numbering
-    final num1 = db.nextNumber();
-    final num2 = db.nextNumber();
-    expect(num1.startsWith('CZ-'), isTrue);
-    expect(num1, isNot(equals(num2)));
-
-    final code = db.nextCode();
-    expect(code.length, equals(5));
-
+    // Order numbers and check-in codes are assigned by the server (create_order).
     final ticket = db.nextTicket();
     expect(ticket.startsWith('TK-'), isTrue);
   });
