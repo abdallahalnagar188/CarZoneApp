@@ -22,6 +22,34 @@
 
 ---
 
+## الحالة الحالية
+
+> **آخر تحديث: 19 أكتوبر 2026.** مرحلة الأمان الأولى (C1 و C2 و C3) اتصلّحت في الكود في commit `528e1df` على فرع `Work`، لكنها **لسه ماتعملهاش push ولا deploy**، فالثغرات لسه مفتوحة على السيرفر الـ live. من 37 مشكلة: 8 اتصلّحوا، و 6 اتصلّح جزء منهم، و 23 لسه. أول خطوة مطلوبة هي الـ deploy (القسم 6).
+
+| ID | الحالة | اللي اتعمل | اللي فاضل |
+|---|---|---|---|
+| C1 | ✅ اتصلّحت | الربط بالرقم اللي اتأكد بالـ OTP بس، والعميل مايقدرش يغيّر رقمه أو حالته | الـ deploy، والتحقق من الرقم بالـ OTP لمستخدمي Google |
+| C2 | ✅ اتصلّحت | توقيع إجباري، fail closed، فحص الـ OTP والرقم | الـ deploy بعد ضبط `SEND_SMS_HOOK_SECRET` |
+| C3 | ✅ اتصلّحت | RPCs للحجز والإلغاء وإعادة الجدولة، وRESTRICTIVE policies | الـ deploy + نسخة تطبيق جديدة |
+| C4 | ✅ اتصلّحت | السيرفر بيولّد رقم الطلب | الـ deploy |
+| H12 | ✅ اتصلّحت | العميل الوهمي اتشال، والخطأ بيظهر للمستخدم | — |
+| M6 | ✅ اتصلّحت | trigger بيمنع العميل يغيّر `status` | الـ deploy |
+| M8 | ✅ اتصلّحت | مفيش `branch!` في الحجز، والـ spinner بيقف مع أي خطأ | — |
+| Low | ✅ اتصلّحت | `sync_customer_profile` مابقاش يتنفّذ من anon | الـ deploy |
+| H8 | ◐ جزئي | السيرفر بيرفض أي حجز مخالف، فمفيش overbooking | قايمة المواعيد اللي بتظهر لسه بتتحسب على الموبايل |
+| H9 | ◐ جزئي | السيرفر بيطبّق الخصم وقت الحجز | الشاشة بتعرض السعر من غير خصم |
+| H10 | ◐ جزئي | الحجوزات الجديدة بتتسجّل وتتعرض صح | تصحيح الحجوزات القديمة في الداتابيز |
+| H11 | ◐ جزئي | الإلغاء وإعادة الجدولة بيعدّلوا الأعمدة المطلوبة بس | Realtime |
+| M7 | ◐ جزئي | الـ timeline بيتقري صح | ملاحظة الحجز لسه بتضيع |
+| M13 | ◐ جزئي | الـ OTP مابقاش بيتسجّل، والـ simulation بإذن صريح | rate limit |
+
+**لسه ماتعملش (23):** H5، H6، H7، M1، M2، M3، M4، M5، M9، M10، M11، M12، M14، M15، M16، و 8 من الـ Low.
+
+**التستات الحالية:** تستات الـ migration على PGlite نجحت 22/22 (`npm run test:db`)، وتستات الـ SMS hook نجحت 12/12 (`deno test`)، وفي `test/qa` 19 نجحوا و 4 فشلوا (H6 و H7 و H9).
+
+---
+
+
 ## 2. اللي اتعمل
 
 | # | النشاط | الأداة | النتيجة |
@@ -198,39 +226,54 @@ flutter test test/qa
 
 ---
 
-## 6. اللي فاضل
+## 6. المطلوب دلوقتي بالترتيب
 
-| # | المهمة | ليه ماتعملتش | المطلوب منك |
-|---|---|---|---|
-| 1 | **تشغيل تستات RLS للعميل المسجّل** | مقدرش أعمل حساب أو أسجّل دخول على مشروع live | فعّل "Phone numbers for testing" في Supabase Auth لرقمين وهميين، وسجّل بيهم مرة من التطبيق، وبعدين: `npm run token -- +20100... 123456` → `export CZ_TEST_JWT=...` (ولو عايز `CZ_TEST_JWT_B` و`CZ_ALLOW_WRITES=1`) → `npm run test:rls` |
-| 2 | تست C1 (سرقة الحساب) عمليًا | destructive، بيغيّر ربط حساب | بحسابين disposable بس، بعد ما تصلّح الـ RPC |
-| 3 | فحص الكتابة للزائر (INSERT/UPDATE كـ anon) | الـ auto-mode رفض كتابة على production، وده صح | على staging أو local Supabase |
-| 4 | Stress test (200 VU) | اخترت light بس | `npm run k6:stress` على staging |
-| 5 | Supabase Advisors (security + performance) | المشروع على حساب Supabase تاني غير اللي متوصل بالـ MCP | وصّل الحساب الصح، أو شغّلها من الـ Dashboard |
-| 6 | تستات الـ Edge Functions | Deno مش متسطّب، والتست الموجود بيبعت رسايل حقيقية | `supabase functions serve` محلي |
-| 7 | E2E / UI على المحاكي | خارج نطاق المرحلة دي | `integration_test` لرحلة الحجز كاملة |
-| 8 | تستات موجودة بتكتب على production | `seed_supabase_test.dart` بيعمل upsert على production، و`supabase_phone_auth_test.dart` بيبعت SMS حقيقي | انقلهم لـ staging أو احذفهم |
+أول خطوة هي deploy مرحلة الأمان الأولى، لأن التصليحات مالهاش أي تأثير لحد ما توصل للسيرفر. بعدها نكمّل الأمان، وبعدين الحجز، وبعدين الجودة.
 
----
+### 1. Deploy مرحلة الأمان الأولى (الترتيب مهم)
 
-## 7. خطة الإصلاح المقترحة
+- [ ] في SQL Editor: اتأكد إن `staff.user_id` و `admin_users.user_id` بيشاوروا على `auth.users`، وراجع تعريف `next_order_number()`. الـ migration مبني من الـ types مش من الـ SQL الحقيقي
+- [ ] طبّق `supabase/migrations/20261019120000_security_phase1.sql`
+- [ ] حط `SEND_SMS_HOOK_SECRET` في secrets الـ function (من Auth ← Hooks). من غيره الـ function هترفض كل الطلبات
+- [ ] Deploy لـ `send-sms-whatsapp`
+- [ ] طلّع نسخة التطبيق الجديدة بعد الـ migration على طول، لأن النسخ القديمة هيفشل معاها الحجز
+- [ ] اتأكد من اللي اتطبّق: `npm run test:rls` بحسابين test، و `flutter test test/edge_function_test.dart`
+- [ ] رجّع `pubspec.lock` (اتغيّر من التستات وبينزّل 38 package)، واعمل push لفرع `Work`
 
-**المرحلة 1: أمان (قبل أي release)**
-1. C1: تصليح `sync_customer_profile`.
-2. C2: توقيع إجباري للـ SMS hook وفحص الـ OTP.
-3. C3: شيل `UPDATE` من العميل على `orders`، والاعتماد على RPCs.
-4. M15: `branch_shares` يبقى `security_invoker` من غير `user_id`، وشيل الـ INSERT من anon.
-5. H5: وقف تخزين الـ JWT في `push_devices`، ومسح الصفوف الموجودة.
+### 2. نكمّل الأمان
 
-**المرحلة 2: الحجز يشتغل صح**
-6. RPC `create_order` يعمل الترقيم والتسعير والعرض والـ availability على السيرفر (يحل C3 و C4 و H8 و H9).
-7. H10: الـ timezones.
-8. إظهار أخطاء الحفظ للمستخدم بدل ما تتبلع، في كل `catch` في `carzone_db_service.dart`.
-9. H6 و H7: الـ reviews والـ complaints.
+- [ ] H5: وقف تخزين الـ JWT في `push_devices`، وامسح الصفوف الموجودة
+- [ ] M15: `branch_shares` يبقى `security_invoker` من غير `user_id`، وشيل الـ INSERT من anon
+- [ ] M12: XSS في `share-wash`
+- [ ] التحقق من الرقم بالـ OTP لمستخدمي Google (باقي C1)
+- [ ] M13: rate limit لطلبات الـ OTP
+- [ ] M14: امسح أو صلّح migration `20261015140100` المكسور قبل ما حد يطبّقه
 
-**المرحلة 3: الجودة والأداء**
-10. H11: Realtime على `orders` و`customer_notifications` (M2).
-11. Index `reviews(branch_id, created_at)`، وتحديد الأعمدة بدل `select=*`، وRPC للـ Home.
-12. مشاكل الـ Medium المتبقية والـ crashes (M8، M9).
+### 3. الحجز يشتغل صح
 
-**معيار النجاح:** `flutter test test/qa` كله أخضر، و`npm run test:anon` و`npm run test:rls` كلهم أخضر.
+- [ ] H8: RPC `get_available_slots`، والشاشة تعرض المواعيد من السيرفر
+- [ ] H9: الشاشة تعرض السعر والخصم زي السيرفر بالظبط
+- [ ] H6 و H7: RPCs للتقييم والشكوى
+- [ ] H10: تصحيح الحجوزات القديمة اللي اتسجّلت بتوقيت غلط
+- [ ] M1 و M2: الحجز النشط في الـ Home، والإشعارات من السيرفر
+- [ ] M7: ملاحظة الحجز في `order_notes`
+
+### 4. الجودة والأداء
+
+- [ ] H11: Realtime على `orders` و `customer_notifications`
+- [ ] Index على `reviews(branch_id, created_at)`، وتحديد الأعمدة، وRPC للـ Home، وشيل التحميل المكرر
+- [ ] M3 و M4 و M5 و M9 و M10 و M11 و M16
+- [ ] الـ Low الباقيين (8)
+
+### 5. فجوات التستات
+
+| المهمة | ليه ماتعملتش | المطلوب |
+|---|---|---|
+| Stress test (200 VU) | اخترت light بس | `npm run k6:stress` على staging |
+| Supabase Advisors | المشروع على حساب غير اللي متوصل بالـ MCP | وصّل الحساب الصح أو شغّلها من الـ Dashboard |
+| فحص الكتابة كـ anon | الـ auto-mode رفض الكتابة على production | على staging أو local Supabase |
+| E2E على المحاكي | خارج نطاق المرحلة دي | `integration_test` لرحلة الحجز |
+| تستات بتكتب على production | `seed_supabase_test` و `supabase_phone_auth_test` | انقلهم لـ staging أو احذفهم |
+| تستات `share-wash` | ماتعملتش في المرحلة دي | تبقى مع تصليح M12 |
+
+**معيار النجاح:** `flutter test test/qa` و `npm run test:anon` و `npm run test:db` و `npm run test:rls` كلهم أخضر على السيرفر الـ live.
