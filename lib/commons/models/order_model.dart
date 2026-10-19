@@ -104,9 +104,18 @@ class OrderModel {
 
   DateTime get endsAt => scheduledAt.add(Duration(minutes: durationMin));
 
-  OrderItem get primary =>
-      items.firstWhere((i) => i.type == ServiceType.primary,
-          orElse: () => items.first);
+  static const fallbackItem = OrderItem(
+    serviceId: '',
+    name: LocalizedText('خدمة غسيل', 'Car Wash'),
+    type: ServiceType.primary,
+    price: 0,
+    durationMin: 30,
+  );
+
+  OrderItem get primary => items.firstWhere(
+        (i) => i.type == ServiceType.primary,
+        orElse: () => items.isNotEmpty ? items.first : fallbackItem,
+      );
 
   List<OrderItem> get addons =>
       items.where((i) => i.type == ServiceType.addon).toList();

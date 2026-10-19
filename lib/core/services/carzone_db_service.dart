@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:developer' as dev;
 
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../commons/models/area_model.dart';
 import '../../commons/models/branch_model.dart';
@@ -12,9 +14,12 @@ import '../../commons/models/order_model.dart';
 import '../../commons/models/review_model.dart';
 import '../../commons/models/vehicle_model.dart';
 import '../../commons/models/wash_service_model.dart';
+import 'notification_service.dart';
 import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
+  RealtimeChannel? _notificationsChannel;
+
   // Remote reactive collections
   final areas = <AreaModel>[].obs;
   final branches = <BranchModel>[].obs;
@@ -192,11 +197,19 @@ class CarzoneDbService extends GetxService {
             fetchVehicles(cust.id);
           }
           final lookupId = customerId ?? currentUser.id;
-          final orderRes = await client.from('orders').select().eq('customer_id', lookupId).order('scheduled_at', ascending: false).limit(5);
+          final orderRes = await client
+              .from('orders')
+              .select('*, order_items(*)')
+              .eq('customer_id', lookupId)
+              .order('scheduled_at', ascending: false)
+              .limit(5);
           final remoteOrders = (orderRes as List)
               .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList();
           upsertOrders(remoteOrders);
+
+          await fetchNotifications(lookupId);
+          subscribeToCustomerNotifications(lookupId);
         } catch (_) {}
       }
 
@@ -567,6 +580,66 @@ class CarzoneDbService extends GetxService {
     return row;
   }
 
+  Future<List<NotificationModel>> fetchNotifications(String customerId) async {
+    try {
+      final client = SupabaseService.client;
+      final res = await client
+          .from('customer_notifications')
+          .select()
+          .eq('customer_id', customerId)
+          .order('created_at', ascending: false)
+          .limit(50);
+      final list = (res as List)
+          .map((e) => NotificationModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      notifications.assignAll(list);
+      return list;
+    } catch (e) {
+      dev.log('[CarzoneDbService] fetchNotifications error: $e');
+      return [];
+    }
+  }
+
+  void subscribeToCustomerNotifications(String customerId) {
+    if (_notificationsChannel != null) return;
+    try {
+      _notificationsChannel = SupabaseService.client
+          .channel('public:customer_notifications:$customerId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'customer_notifications',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'customer_id',
+              value: customerId,
+            ),
+            callback: (payload) {
+              try {
+                final newRecord = payload.newRecord;
+                final notif = NotificationModel.fromJson(newRecord);
+                if (!notifications.any((n) => n.id == notif.id)) {
+                  notifications.insert(0, notif);
+                  if (Get.isRegistered<NotificationService>()) {
+                    final isArabic = Get.locale?.languageCode == 'ar';
+                    NotificationService.to.showLocalNotification(
+                      title: isArabic ? notif.title.ar : notif.title.en,
+                      body: isArabic ? notif.body.ar : notif.body.en,
+                      payload: jsonEncode({'order_id': notif.orderId, 'type': notif.type}),
+                    );
+                  }
+                }
+              } catch (e) {
+                dev.log('[CarzoneDbService] Realtime notification parse error: $e');
+              }
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      dev.log('[CarzoneDbService] subscribeToCustomerNotifications error: $e');
+    }
+  }
+
   void notify({
     required String userId,
     required String type,
@@ -575,7 +648,7 @@ class CarzoneDbService extends GetxService {
     String? orderId,
   }) {
     final notif = NotificationModel(
-      id: 'nt_${DateTime.now().microsecondsSinceEpoch}',
+      id: 'cn_${DateTime.now().microsecondsSinceEpoch}',
       userId: userId,
       type: type,
       title: title,
@@ -585,5 +658,24 @@ class CarzoneDbService extends GetxService {
     );
     notifications.insert(0, notif);
     saveNotification(notif);
+
+    try {
+      if (Get.isRegistered<NotificationService>()) {
+        final isArabic = Get.locale?.languageCode == 'ar';
+        NotificationService.to.showLocalNotification(
+          title: isArabic ? title.ar : title.en,
+          body: isArabic ? body.ar : body.en,
+          payload: jsonEncode({'order_id': orderId, 'type': type}),
+        );
+      }
+    } catch (e) {
+      dev.log('[CarzoneDbService] Local notification alert error: $e');
+    }
+  }
+
+  @override
+  void onClose() {
+    _notificationsChannel?.unsubscribe();
+    super.onClose();
   }
 }

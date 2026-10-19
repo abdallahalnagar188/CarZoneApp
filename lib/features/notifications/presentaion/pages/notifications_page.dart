@@ -20,20 +20,45 @@ class NotificationsPage extends StatelessWidget {
         actions: [AppIconButton(glass: true, icon: const Icon(Iconsax.tick_square), onTap: controller.markAllRead)],
       ),
       body: Obx(() {
+        if (controller.isLoading.value && controller.items.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         final groups = controller.grouped;
         if (groups.isEmpty) {
-          return CustomEmptyState(icon: Iconsax.notification, title: 'empty.notif'.tr);
+          return RefreshIndicator(
+            onRefresh: controller.refreshNotifications,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(height: 120.h),
+                CustomEmptyState(icon: Iconsax.notification, title: 'empty.notif'.tr),
+              ],
+            ),
+          );
         }
-        return ListView(
-          padding: EdgeInsets.all(20.r),
-          children: [
-            for (final e in groups.entries) ...[
-              Text(e.key, style: Theme.of(context).textTheme.titleSmall),
-              10.height,
-              ...e.value.map((n) => NotificationTile(item: n, onTap: () => controller.open(n))),
-              10.height,
+
+        return RefreshIndicator(
+          onRefresh: controller.refreshNotifications,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.all(20.r),
+            children: [
+              for (final e in groups.entries) ...[
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10.h, top: 4.h),
+                  child: Text(
+                    e.key,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                ...e.value.map((n) => NotificationTile(item: n, onTap: () => controller.open(n))),
+                10.height,
+              ],
             ],
-          ],
+          ),
         );
       }),
     );

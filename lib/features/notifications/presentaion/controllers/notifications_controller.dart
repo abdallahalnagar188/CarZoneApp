@@ -10,10 +10,38 @@ class NotificationsController extends GetxController {
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
   SessionService get _session => Get.find<SessionService>();
 
-  List<NotificationModel> get items => _db.notifications
-      .where((n) => n.userId == _session.userId)
-      .toList()
-    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  final isLoading = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    refreshNotifications();
+  }
+
+  Future<void> refreshNotifications() async {
+    final custId = _session.user.value?.id ?? _session.userId;
+    if (custId != null && custId.isNotEmpty) {
+      isLoading.value = true;
+      try {
+        await _db.fetchNotifications(custId);
+      } finally {
+        isLoading.value = false;
+      }
+    }
+  }
+
+  List<NotificationModel> get items {
+    final currentCustId = _session.user.value?.id;
+    final currentAuthId = _session.userId;
+    return _db.notifications
+        .where((n) =>
+            (currentCustId != null && n.userId == currentCustId) ||
+            (currentAuthId != null && n.userId == currentAuthId))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  int get unreadCount => items.where((n) => !n.read).length;
 
   Map<String, List<NotificationModel>> get grouped {
     final map = <String, List<NotificationModel>>{};
@@ -28,7 +56,7 @@ class NotificationsController extends GetxController {
       n.read = true;
     }
     _db.notifications.refresh();
-    final uid = _session.userId;
+    final uid = _session.user.value?.id ?? _session.userId;
     if (uid != null) {
       _db.markAllNotificationsRead(uid);
     }
@@ -50,3 +78,4 @@ class NotificationsController extends GetxController {
     }
   }
 }
+

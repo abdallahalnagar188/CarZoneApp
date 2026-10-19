@@ -15,13 +15,18 @@ class NotificationTile extends StatelessWidget {
   const NotificationTile({super.key, required this.item, required this.onTap});
 
   IconData get _icon => switch (item.type) {
-        'offer' => Iconsax.ticket_discount,
-        'review_reminder' => Iconsax.star_1,
-        'cancelled' => Iconsax.close_circle,
-        'completed' => Iconsax.tick_circle,
+        'created' => Iconsax.document_text,
+        'confirmed' || 'booking_confirmed' => Iconsax.verify,
+        'waiting' => Iconsax.clock,
         'in_service' => Iconsax.timer_1,
-        'reminder' => Iconsax.clock,
-        _ => Iconsax.calendar_tick,
+        'completed' || 'order_ready' => Iconsax.tick_circle,
+        'cancelled' || 'booking_cancelled' => Iconsax.close_circle,
+        'booking_reminder' || 'reminder' => Iconsax.notification_bing,
+        'review_reminder' => Iconsax.star_1,
+        'offer' => Iconsax.discount_shape,
+        'complaint_update' => Iconsax.message_question,
+        'system' => Iconsax.info_circle,
+        _ => Iconsax.notification,
       };
 
   @override

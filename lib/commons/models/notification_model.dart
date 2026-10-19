@@ -41,6 +41,7 @@ class NotificationModel {
     'title': title.toJson(),
     'body': body.toJson(),
     'order_id': orderId,
+    'href': orderId != null ? '/booking_details?id=$orderId' : '/notifications',
     'read': read,
     'created_at': createdAt.toIso8601String(),
   };
