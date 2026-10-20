@@ -62,10 +62,11 @@ class AuthController extends GetxController {
         }
       }
     } on AuthException catch (e) {
-      dev.log('[AuthController] signInWithGoogle AuthException: ${e.message}');
-      Utils.getSnakBar(message: _repo.mapAuthError(e), type: TosterTypes.failed);
+      // Not an OTP failure: show the Google message, keep the raw cause in the log.
+      debugPrint('[AuthController] signInWithGoogle AuthException: ${e.message} (status: ${e.statusCode}, code: ${e.code})');
+      Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
     } catch (e) {
-      dev.log('[AuthController] signInWithGoogle unexpected error: $e');
+      debugPrint('[AuthController] signInWithGoogle unexpected error: $e');
       Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
     } finally {
       googleSigningIn.value = false;

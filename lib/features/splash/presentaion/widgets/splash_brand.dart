@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../commons/widgets/logo/app_logo.dart';
+import '../../../../commons/widgets/logo/app_wordmark.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../controllers/splash_controller.dart';
 
@@ -21,7 +22,7 @@ class SplashBrand extends StatelessWidget {
           opacity: controller.logoFade,
           child: ScaleTransition(
             scale: controller.logoScale,
-            child: AppLogo(size: 104.r),
+            child: AppLogo(size: 120.r, onBrand: true),
           ),
         ),
         24.height,
@@ -31,9 +32,9 @@ class SplashBrand extends StatelessWidget {
             position: controller.textSlide,
             child: Column(
               children: [
-                Text(
-                  'app.name'.tr,
-                  style: theme.headlineLarge?.copyWith(color: Colors.white, fontSize: 34.sp),
+                AppWordmark(
+                  onBrand: true,
+                  style: theme.headlineLarge?.copyWith(fontSize: 34.sp),
                 ),
                 6.height,
                 Text(

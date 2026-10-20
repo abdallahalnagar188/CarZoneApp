@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../commons/widgets/logo/app_logo.dart';
+import '../../../../commons/widgets/logo/app_wordmark.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 
@@ -17,15 +18,15 @@ class AuthBrandCard extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFFDF5), Color(0xFFFEF3C7)],
+          colors: [Color(0xFFF7FCFF), Color(0xFFDDF3FD)],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
         ),
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        border: Border.all(color: const Color(0xFFBDE7FA), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFD97706).withValues(alpha: 0.08),
+            color: AppColors.brand.withValues(alpha: 0.08),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -54,19 +55,12 @@ class AuthBrandCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'app.name'.tr,
-                  style: theme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.brandNight,
-                    fontSize: 17.sp,
-                  ),
-                ),
+                AppWordmark(style: theme.titleLarge?.copyWith(fontSize: 17.sp)),
                 2.height,
                 Text(
                   'app.tagline'.tr,
                   style: theme.bodyMedium?.copyWith(
-                    color: const Color(0xFF92400E),
+                    color: AppColors.brandDeep,
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
                   ),
@@ -79,17 +73,17 @@ class AuthBrandCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: const Color(0xFFFDE68A)),
+              border: Border.all(color: const Color(0xFFBDE7FA)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Iconsax.flash_1, size: 13.sp, color: const Color(0xFFD97706)),
+                Icon(Iconsax.flash_1, size: 13.sp, color: AppColors.brandSky),
                 4.width,
                 Text(
                   'حجز فوري',
                   style: theme.labelSmall?.copyWith(
-                    color: const Color(0xFF92400E),
+                    color: AppColors.brandDeep,
                     fontWeight: FontWeight.w700,
                     fontSize: 11.sp,
                   ),

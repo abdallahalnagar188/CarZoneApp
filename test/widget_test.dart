@@ -29,7 +29,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.byType(MyApp), findsOneWidget);
-    expect(find.text('كارزن'), findsOneWidget);
+    expect(find.text('كار زون'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();

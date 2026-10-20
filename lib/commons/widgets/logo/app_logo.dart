@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/constance/app_assets.dart';
 
 class AppLogo extends StatelessWidget {
   final double size;
 
-  const AppLogo({super.key, this.size = 56});
+  /// White mark for blue / dark brand surfaces.
+  final bool onBrand;
+
+  const AppLogo({super.key, this.size = 56, this.onBrand = false});
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(AppRes.logo, width: size, height: size);
+    return Image.asset(
+      onBrand ? AppRes.logoWhite : AppRes.logo,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
+    );
   }
 }

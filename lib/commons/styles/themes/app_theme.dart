@@ -17,7 +17,7 @@ class MyAppTheme {
     final isDark = brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF03111C) : const Color(0xFFF5F8FB);
     final surface = isDark ? const Color(0xFF0A1E2D) : const Color(0xFFFFFFFF);
-    final primary = isDark ? const Color(0xFF4CC3F5) : const Color(0xFF0B6BA8);
+    final primary = isDark ? const Color(0xFF4CC3F5) : const Color(0xFF0075C4);
     final onSurface = isDark ? const Color(0xFFEEF6FB) : const Color(0xFF0B1F2E);
     final line = isDark ? const Color(0xFF17344A) : const Color(0xFFE1EBF2);
 
@@ -51,8 +51,8 @@ class MyAppTheme {
         brightness: brightness,
         primary: primary,
         onPrimary: Colors.white,
-        secondary: const Color(0xFFF8E7C9),
-        onSecondary: const Color(0xFF7A5320),
+        secondary: const Color(0xFFDDF3FD),
+        onSecondary: const Color(0xFF03477E),
         error: const Color(0xFFE5484D),
         onError: Colors.white,
         surface: surface,

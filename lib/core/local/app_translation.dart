@@ -4,8 +4,10 @@ class AppTranslations extends Translations {
   @override
   Map<String, Map<String, String>> get keys => {
         'ar': {
-          'app.name': 'كارزن',
-          'app.tagline': 'مغسلتك، في وقتك',
+          'app.name': 'كار زون',
+          'app.name_lead': 'كار ',
+          'app.name_tail': 'زون',
+          'app.tagline': 'احجز • اغسل • انطلق نظيفًا',
           'nav.home': 'الرئيسية',
           'nav.map': 'الخريطة',
           'nav.bookings': 'حجوزاتي',
@@ -340,8 +342,10 @@ class AppTranslations extends Translations {
           'legal.privacyBody': 'نجمع الحد الأدنى من البيانات اللازمة لتقديم الخدمة: الاسم ورقم الموبايل وبيانات السيارة وسجل الحجوزات. نشارك اسمك وبيانات سيارتك مع المغسلة التي تحجز لديها فقط. لا نبيع بياناتك لأي طرف ثالث، ويمكنك طلب حذف حسابك في أي وقت من خلال فريق المساعدة.',
         },
         'en': {
-          'app.name': 'Carzen',
-          'app.tagline': 'Your wash, on your time',
+          'app.name': 'CarZone',
+          'app.name_lead': 'Car',
+          'app.name_tail': 'Zone',
+          'app.tagline': 'Book • Wash • Drive Clean',
           'nav.home': 'Home',
           'nav.map': 'Map',
           'nav.bookings': 'Bookings',

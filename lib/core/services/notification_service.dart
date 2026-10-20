@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
 
 import '../../commons/models/localized_text.dart';
+import '../constance/app_colors.dart';
 import '../../commons/models/notification_model.dart';
 import '../routing/app_routes.dart';
 import 'app_ready_gate.dart';
@@ -111,7 +112,7 @@ class NotificationService extends GetxService {
   }
 
   Future<void> _initLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@drawable/ic_notification');
     // Permission is requested later by requestPermissions(), not on initialize.
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -293,7 +294,8 @@ class NotificationService extends GetxService {
       channelDescription: channelDesc,
       importance: Importance.max,
       priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
+      color: AppColors.brand,
       playSound: true,
       enableVibration: true,
     );

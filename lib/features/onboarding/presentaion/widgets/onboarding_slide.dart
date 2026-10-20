@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../../commons/widgets/images/app_network_image.dart';
 import '../../../../commons/widgets/logo/app_logo.dart';
+import '../../../../commons/widgets/logo/app_wordmark.dart';
 import '../../../../core/constance/app_assets.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
@@ -98,12 +99,9 @@ class _TopRow extends StatelessWidget {
     final controller = Get.find<OnboardingController>();
     return Row(
       children: [
-        AppLogo(size: 30.r),
+        AppLogo(size: 30.r, onBrand: true),
         8.width,
-        Text(
-          'app.name'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
-        ),
+        AppWordmark(onBrand: true, style: Theme.of(context).textTheme.titleLarge),
         const Spacer(),
         Obx(
           () => AnimatedOpacity(

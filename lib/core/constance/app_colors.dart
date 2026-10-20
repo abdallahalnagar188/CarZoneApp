@@ -11,23 +11,23 @@ class AppColors {
     _isDark = value;
   }
 
-  static const Color brand = Color(0xFF0B6BA8);
-  static const Color brandDeep = Color(0xFF063E66);
-  static const Color brandNight = Color(0xFF062A45);
-  static const Color brandSky = Color(0xFF1FA2E0);
+  static const Color brand = Color(0xFF0075C4);
+  static const Color brandDeep = Color(0xFF03477E);
+  static const Color brandNight = Color(0xFF02325F);
+  static const Color brandSky = Color(0xFF0BA9E8);
   static const Color glow = Color(0xFF7FE3FF);
-  static const Color sand = Color(0xFFF8E7C9);
-  static const Color sandInk = Color(0xFF7A5320);
+  static const Color sand = Color(0xFFDDF3FD);
+  static const Color sandInk = Color(0xFF03477E);
   static const Color onPrimary = Color(0xFFFFFFFF);
 
   static Color get primary =>
-      _isDark ? const Color(0xFF4CC3F5) : const Color(0xFF0B6BA8);
+      _isDark ? const Color(0xFF4CC3F5) : const Color(0xFF0075C4);
 
   static Color get primaryDark =>
-      _isDark ? const Color(0xFF7FE3FF) : const Color(0xFF08548A);
+      _isDark ? const Color(0xFF7FE3FF) : const Color(0xFF03528C);
 
   static Color get primary500 =>
-      _isDark ? const Color(0xFF2AA8E0) : const Color(0xFF1689C9);
+      _isDark ? const Color(0xFF2AA8E0) : const Color(0xFF038CDB);
 
   static Color get primarySoft =>
       _isDark ? const Color(0xFF0C2638) : const Color(0xFFE6F5FC);
@@ -35,15 +35,15 @@ class AppColors {
   static Color get primarySoft2 =>
       _isDark ? const Color(0xFF11334A) : const Color(0xFFC4E7F8);
 
-  static Color get accent => const Color(0xFF2CC6F2);
+  static Color get accent => const Color(0xFF07B1EE);
 
   static Color get secondary => sand;
 
   static Color get secondarySoft =>
-      _isDark ? const Color(0xFF2A2216) : const Color(0xFFFDF6EA);
+      _isDark ? const Color(0xFF0B2A3C) : const Color(0xFFEEF9FE);
 
   static Color get secondaryStrong =>
-      _isDark ? const Color(0xFFE8C48A) : const Color(0xFFD9A55A);
+      _isDark ? const Color(0xFF5FD0F7) : const Color(0xFF07B1EE);
 
   static Color get bg =>
       _isDark ? const Color(0xFF03111C) : const Color(0xFFF5F8FB);
@@ -85,7 +85,7 @@ class AppColors {
   static Color get statusPending => const Color(0xFFF59E0B);
 
   static Color get statusConfirmed =>
-      _isDark ? const Color(0xFF4CC3F5) : const Color(0xFF1689C9);
+      _isDark ? const Color(0xFF4CC3F5) : const Color(0xFF038CDB);
 
   static Color get statusWaiting => const Color(0xFF7C5CFC);
 
@@ -143,21 +143,21 @@ class AppColors {
       );
 
   static LinearGradient get headerGradient => const LinearGradient(
-        colors: [brandDeep, brand, Color(0xFF1484C4)],
+        colors: [brandDeep, brand, Color(0xFF0A93DC)],
         stops: [0, 0.45, 1],
         begin: AlignmentDirectional.centerEnd,
         end: AlignmentDirectional.centerStart,
       );
 
   static LinearGradient get heroGradient => const LinearGradient(
-        colors: [Color(0xFF0F7BBD), brand, brandNight],
+        colors: [Color(0xFF0A93DC), brand, brandNight],
         stops: [0, 0.5, 1],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );
 
   static LinearGradient get sandGradient => const LinearGradient(
-        colors: [Color(0xFFFDF6EA), sand, Color(0xFFF1D5A6)],
+        colors: [Color(0xFFEEF9FE), sand, Color(0xFFBDE7FA)],
         stops: [0, 0.6, 1],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,

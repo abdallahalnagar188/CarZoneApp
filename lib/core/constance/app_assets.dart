@@ -1,7 +1,8 @@
 class AppRes {
   AppRes._();
 
-  static const String logo = 'assets/logo/logo.svg';
+  static const String logo = 'assets/logo/logo.png';
+  static const String logoWhite = 'assets/logo/logo_white.png';
 
   static String photo(String id, {int width = 800, int? height}) =>
       'https://images.unsplash.com/$id?auto=format&fit=crop&q=70&w=$width${height != null ? '&h=$height' : ''}';

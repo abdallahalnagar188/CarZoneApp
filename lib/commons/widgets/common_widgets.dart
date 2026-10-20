@@ -15,6 +15,7 @@ export 'images/app_network_image.dart';
 export 'images/initials_avatar.dart';
 export 'loading/app_shimmer.dart';
 export 'logo/app_logo.dart';
+export 'logo/app_wordmark.dart';
 export 'rating/rating_stars.dart';
 export 'sheets/app_bottom_sheet.dart';
 export 'snack_bar/snack_bar.dart';
