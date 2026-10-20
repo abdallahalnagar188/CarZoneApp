@@ -36,17 +36,27 @@ class SlotGrid extends StatelessWidget {
         return _buildShimmerGrid();
       }
 
-      // Empty state when no slots exist for the selected day
-      if (slots.isEmpty) {
+      // Filter only available slots (not full and not too soon)
+      final availableSlots = slots.where((s) {
+        if (s.full) return false;
+        if (controller.branch != null &&
+            BranchTimeHelper.isSlotTooSoon(s.start, controller.branch!.settings.leadTimeMin)) {
+          return false;
+        }
+        return true;
+      }).toList();
+
+      // Empty state when no available slots exist for the selected day
+      if (availableSlots.isEmpty) {
         return _buildEmptyState(context, controller);
       }
 
-      final morningSlots = slots.where((s) => _slotHour(s) < 12).toList();
-      final afternoonSlots = slots.where((s) {
+      final morningSlots = availableSlots.where((s) => _slotHour(s) < 12).toList();
+      final afternoonSlots = availableSlots.where((s) {
         final h = _slotHour(s);
         return h >= 12 && h < 17;
       }).toList();
-      final eveningSlots = slots.where((s) => _slotHour(s) >= 17).toList();
+      final eveningSlots = availableSlots.where((s) => _slotHour(s) >= 17).toList();
 
       final sections = <_SlotGroupData>[
         if (morningSlots.isNotEmpty)
@@ -166,6 +176,7 @@ class SlotGrid extends StatelessWidget {
 
   Widget _buildEmptyState(BuildContext context, BookingController controller) {
     final theme = Theme.of(context).textTheme;
+    final isToday = FormatHelper.sameDay(controller.day.value, DateTime.now());
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
@@ -190,15 +201,21 @@ class SlotGrid extends StatelessWidget {
           ),
           16.height,
           Text(
-            FormatHelper.isAr ? 'انتهت مواعيد اليوم' : 'No available slots today',
+            isToday
+                ? (FormatHelper.isAr ? 'انتهت مواعيد اليوم' : 'No available slots today')
+                : (FormatHelper.isAr ? 'لا توجد مواعيد متاحة في هذا اليوم' : 'No available slots on this day'),
             style: theme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           8.height,
           Text(
-            FormatHelper.isAr
-                ? 'جميع مواعيد هذا اليوم مكتملة أو انتهت ساعات العمل. يمكنك الحجز ليوم غد بكل سهولة.'
-                : 'All slots for this date are booked or outside working hours. You can easily book for tomorrow.',
+            isToday
+                ? (FormatHelper.isAr
+                    ? 'جميع مواعيد اليوم محجوزة أو انتهت ساعات العمل. يرجى اختيار موعد ليوم غد أو اختيار يوم آخر.'
+                    : 'All slots for today are booked or outside working hours. Please choose tomorrow or select another day.')
+                : (FormatHelper.isAr
+                    ? 'جميع مواعيد هذا اليوم محجوزة أو غير متاحة. يرجى اختيار يوم آخر للحجز.'
+                    : 'All slots for this day are unavailable. Please select another day to book.'),
             style: theme.bodySmall?.copyWith(color: AppColors.ink500),
             textAlign: TextAlign.center,
           ),
@@ -219,7 +236,9 @@ class SlotGrid extends StatelessWidget {
                   Icon(Iconsax.calendar_1, size: 18.sp, color: Colors.white),
                   8.width,
                   Text(
-                    'book.seeTomorrow'.tr,
+                    isToday
+                        ? (FormatHelper.isAr ? 'الحجز ليوم غد' : 'Book for tomorrow')
+                        : (FormatHelper.isAr ? 'اختيار يوم آخر' : 'Choose another day'),
                     style: theme.titleSmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,

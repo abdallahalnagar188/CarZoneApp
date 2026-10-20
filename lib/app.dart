@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-
 import 'binding/app_binding.dart';
 import 'commons/styles/themes/app_theme.dart';
 import 'core/local/app_translation.dart';
