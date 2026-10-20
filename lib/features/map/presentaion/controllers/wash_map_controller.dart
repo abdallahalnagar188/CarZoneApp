@@ -44,6 +44,10 @@ class WashMapController extends GetxController {
       _resetSelection();
       recenter();
     });
+    ever(session.position, (_) {
+      _compute();
+      recenter();
+    });
     ever(Get.find<CarzoneDbService>().orders, (_) => _compute());
     ever(Get.find<CarzoneDbService>().branches, (_) => _compute());
     ever(Get.find<ThemeController>().isDarkMode, (_) => _loadStyle());

@@ -131,7 +131,7 @@ class SlotGrid extends StatelessWidget {
                   border: Border.all(color: AppColors.primary500.withValues(alpha: 0.2)),
                 ),
                 child: Text(
-                  FormatHelper.isAr ? '${sec.slots.length} متاح' : '${sec.slots.length} available',
+                  FormatHelper.isAr ? '${sec.available} متاح' : '${sec.available} available',
                   style: theme.labelSmall?.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -276,6 +276,8 @@ class _SlotCard extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final timeStr = slot.formattedTime();
 
+    if (slot.full) return _buildFull(theme, timeStr);
+
     return Obx(() {
       final selected = controller.slot.value;
       final isSelected = selected != null &&
@@ -359,6 +361,43 @@ class _SlotCard extends StatelessWidget {
       );
     });
   }
+
+  Widget _buildFull(TextTheme theme, String timeStr) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.line.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.line, width: 1.4),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            timeStr,
+            style: theme.titleSmall?.copyWith(
+              fontSize: 12.5.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink300,
+              letterSpacing: -0.2,
+              decoration: TextDecoration.lineThrough,
+              decorationColor: AppColors.ink300,
+            ),
+          ),
+          2.height,
+          Text(
+            'book.full'.tr,
+            style: theme.labelSmall?.copyWith(
+              fontSize: 8.5.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SlotGroupData {
@@ -377,4 +416,6 @@ class _SlotGroupData {
     required this.iconBg,
     required this.slots,
   });
+
+  int get available => slots.where((s) => !s.full).length;
 }

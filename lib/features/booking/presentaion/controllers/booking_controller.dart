@@ -194,6 +194,7 @@ class BookingController extends GetxController {
       day.value,
       durationMin: durationMin,
       excludeOrderId: rescheduleOrder.value?.id,
+      includeFull: true,
     ));
 
     try {
@@ -202,6 +203,7 @@ class BookingController extends GetxController {
         day.value,
         durationMin: durationMin,
         excludeOrderId: rescheduleOrder.value?.id,
+        includeFull: true,
       );
       if (remote.isNotEmpty || slots.isEmpty) {
         slots.assignAll(remote);
@@ -211,13 +213,14 @@ class BookingController extends GetxController {
       loadingSlots.value = false;
       if (slot.value != null &&
           !slots.any((s) =>
-              s.start.isAtSameMomentAs(slot.value!) ||
+              !s.full &&
+              (s.start.isAtSameMomentAs(slot.value!) ||
               s.start == slot.value ||
               (s.start.year == slot.value!.year &&
                   s.start.month == slot.value!.month &&
                   s.start.day == slot.value!.day &&
                   s.start.hour == slot.value!.hour &&
-                  s.start.minute == slot.value!.minute))) {
+                  s.start.minute == slot.value!.minute)))) {
         slot.value = null;
       }
     }

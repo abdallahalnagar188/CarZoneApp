@@ -8,6 +8,7 @@ import '../../../../core/helpers/format_helper.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
 import '../../../../core/services/discovery_service.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../../core/services/pricing_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
@@ -53,6 +54,7 @@ class HomeController extends GetxController {
       _db.notifications,
       session.user,
       session.areaId,
+      session.position,
     ], (_) => _compute());
   }
 
@@ -147,8 +149,10 @@ class HomeController extends GetxController {
   void useMyLocation() async {
     Get.back();
     final allow = await Utils.confirm(title: 'loc.ask'.tr, okText: 'loc.allow'.tr, cancelText: 'loc.deny'.tr);
-    if (allow) {
-      await session.setArea('nasr');
+    if (!allow) return pickArea();
+    if (await session.locate()) return;
+    if (await LocationService.isDeniedForever()) {
+      await LocationService.openSettings();
     } else {
       pickArea();
     }

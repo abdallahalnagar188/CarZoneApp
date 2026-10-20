@@ -1,6 +1,7 @@
 import 'dart:developer' as dev;
 
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../commons/models/branch_model.dart';
 import '../enums/enums.dart';
@@ -59,6 +60,9 @@ class SlotModel {
 
   bool get fewLeft => free == 1;
 
+  /// Every bay is booked at this time.
+  bool get full => free <= 0;
+
   String formattedTime() {
     if (localTime != null && localTime!.contains(':')) {
       final parts = localTime!.split(':');
@@ -108,6 +112,7 @@ class AvailabilityService {
     DateTime day, {
     int durationMin = 30,
     String? excludeOrderId,
+    bool includeFull = false,
   }) {
     if (!branch.bookable) return const [];
     final hours = branch.hoursFor(day);
@@ -124,31 +129,46 @@ class AvailabilityService {
       final end = start.add(Duration(minutes: durationMin));
       final used = _overlapping(branch.id, start, end, excludeOrderId);
       final free = branch.capacity - used;
-      if (free > 0) {
+      if (free > 0 || includeFull) {
         final hh = (m ~/ 60).toString().padLeft(2, '0');
         final mm = (m % 60).toString().padLeft(2, '0');
-        result.add(SlotModel(start, free, localTime: '$hh:$mm'));
+        result.add(SlotModel(start, free > 0 ? free : 0, localTime: '$hh:$mm'));
       }
     }
     return result;
   }
 
-  /// Live remote check against Postgres checking branch operating hours, blocked slots, and existing orders
+  /// Live remote check against Postgres checking branch operating hours, blocked slots, and existing orders.
+  /// Fully booked slots are returned too (free = 0) when [includeFull] is true.
   Future<List<SlotModel>> fetchRemoteSlots(
     BranchModel branch,
     DateTime day, {
     int durationMin = 30,
     String? excludeOrderId,
+    bool includeFull = false,
   }) async {
     if (!branch.bookable) return const [];
     try {
       final dateStr = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
-      final res = await SupabaseService.client.rpc('get_branch_slots', params: {
+      final params = {
         'p_branch_id': branch.id,
         'p_date': dateStr,
         'p_duration': durationMin,
         'p_exclude_order': excludeOrderId,
-      });
+      };
+      dynamic res;
+      if (includeFull) {
+        try {
+          res = await SupabaseService.client
+              .rpc('get_branch_slots', params: {...params, 'p_include_full': true});
+        } on PostgrestException catch (e) {
+          // Older database without p_include_full: full slots stay hidden.
+          if (e.code != 'PGRST202') rethrow;
+          res = await SupabaseService.client.rpc('get_branch_slots', params: params);
+        }
+      } else {
+        res = await SupabaseService.client.rpc('get_branch_slots', params: params);
+      }
       if (res is List) {
         final list = res.map((row) {
           final m = Map<String, dynamic>.from(row as Map);
@@ -162,7 +182,8 @@ class AvailabilityService {
     } catch (e) {
       dev.log('[AvailabilityService] fetchRemoteSlots RPC failed, using local: $e');
     }
-    return slotsFor(branch, day, durationMin: durationMin, excludeOrderId: excludeOrderId);
+    return slotsFor(branch, day,
+        durationMin: durationMin, excludeOrderId: excludeOrderId, includeFull: includeFull);
   }
 
   bool isAvailable(BranchModel branch, DateTime start, int durationMin, {String? excludeOrderId}) {

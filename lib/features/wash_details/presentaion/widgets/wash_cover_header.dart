@@ -29,7 +29,16 @@ class WashCoverHeader extends StatelessWidget {
         children: [
           AppIconButton(glass: true, icon: const DirIcon(Iconsax.arrow_left_2), onTap: Get.back),
           const Spacer(),
-          AppIconButton(glass: true, icon: const Icon(Iconsax.share), onTap: controller.share),
+          Builder(
+            builder: (buttonContext) => AppIconButton(
+              glass: true,
+              icon: const Icon(Iconsax.share),
+              onTap: () {
+                final box = buttonContext.findRenderObject() as RenderBox?;
+                controller.share(box == null ? null : box.localToGlobal(Offset.zero) & box.size);
+              },
+            ),
+          ),
           10.width,
           Obx(
             () => AppIconButton(

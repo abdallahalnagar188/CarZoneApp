@@ -1,5 +1,6 @@
 import 'dart:developer' as dev;
 
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -18,6 +19,7 @@ import '../../../../core/services/maps_service.dart';
 import '../../../../core/services/pricing_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/services/supabase_service.dart';
+import '../../../../core/utils/utils.dart';
 import '../../../booking/presentaion/controllers/booking_controller.dart';
 import '../../../favorites/presentaion/controllers/favorites_controller.dart';
 
@@ -100,7 +102,9 @@ class WashDetailsController extends GetxController {
     if (branch != null) MapsService.openDirections(branch!.lat, branch!.lng);
   }
 
-  Future<void> share() async {
+  /// [origin] is the share button's on-screen rect; iOS 26 and iPad anchor the
+  /// share sheet to it and refuse to open without one.
+  Future<void> share([Rect? origin]) async {
     final b = branch;
     final name = b?.name.value ?? 'CarZone Wash';
     final address = b?.address.value ?? '';
@@ -117,10 +121,12 @@ class WashDetailsController extends GetxController {
       await Share.share(
         text,
         subject: name,
+        sharePositionOrigin: origin,
       );
       _recordShareAnalytics();
     } catch (e) {
       dev.log('[WashDetailsController] Share error: $e');
+      Utils.getSnakBar(message: 'error.title'.tr, type: TosterTypes.failed);
     }
   }
 

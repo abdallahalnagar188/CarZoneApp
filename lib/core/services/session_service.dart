@@ -2,6 +2,8 @@ import 'dart:developer' as dev;
 
 import 'package:get/get.dart';
 
+import 'package:geolocator/geolocator.dart';
+
 import '../../commons/models/area_model.dart';
 import '../../commons/models/customer_model.dart';
 import '../enums/enums.dart';
@@ -11,16 +13,21 @@ import '../network/dio_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../helpers/auth_guard.dart';
+import '../helpers/format_helper.dart';
 import '../routing/app_routes.dart';
 import '../../features/auth/presentaion/controllers/auth_controller.dart';
 
 import 'carzone_db_service.dart';
+import 'location_service.dart';
 import 'supabase_service.dart';
 
 class SessionService extends GetxService {
   final user = Rxn<CustomerModel>();
   final userToken = RxnString();
   final areaId = 'nasr'.obs;
+
+  /// Real device position; null until located or after a manual area pick.
+  final position = Rxn<Position>();
 
   String? returnRoute;
   dynamic returnArguments;
@@ -36,9 +43,9 @@ class SessionService extends GetxService {
 
   AreaModel get area => _db.area(areaId.value);
 
-  double get lat => area.lat;
+  double get lat => position.value?.latitude ?? area.lat;
 
-  double get lng => area.lng;
+  double get lng => position.value?.longitude ?? area.lng;
 
   SessionService init() {
     ensureValidSession();
@@ -98,6 +105,7 @@ class SessionService extends GetxService {
 
     final cachedArea = CacheController().getter(key: CacheKeys.areaId);
     if (cachedArea is String) areaId.value = cachedArea;
+    locate();
     return this;
   }
 
@@ -282,9 +290,36 @@ class SessionService extends GetxService {
     }
   }
 
+  /// Manual area pick: drops the device position so the area center is used.
   Future<void> setArea(String id) async {
+    position.value = null;
+    await _saveArea(id);
+  }
+
+  Future<void> _saveArea(String id) async {
     areaId.value = id;
     await CacheController().setter(key: CacheKeys.areaId, value: id);
+  }
+
+  /// Uses the device's real location and switches to the nearest area.
+  Future<bool> locate({bool request = true}) async {
+    final pos = await LocationService.current(request: request);
+    if (pos == null) return false;
+    position.value = pos;
+    if (_db.areas.isEmpty) {
+      once(_db.areas, (_) => _snapToNearestArea());
+    } else {
+      await _snapToNearestArea();
+    }
+    return true;
+  }
+
+  Future<void> _snapToNearestArea() async {
+    final pos = position.value;
+    if (pos == null || _db.areas.isEmpty) return;
+    double km(AreaModel a) => FormatHelper.haversineKm(pos.latitude, pos.longitude, a.lat, a.lng);
+    final nearest = _db.areas.reduce((a, b) => km(a) <= km(b) ? a : b);
+    if (nearest.id != areaId.value) await _saveArea(nearest.id);
   }
 
   void rememberReturn(String route, {dynamic arguments, void Function()? action}) {
