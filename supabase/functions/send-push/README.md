@@ -6,31 +6,28 @@ Called by the `trg_customer_notifications_send_push` trigger
 
 ## Secrets
 
-| Where | Name | Value |
+Stored in Vault (the CLI account cannot set Edge Function secrets). The function reads the first two
+through `public.send_push_config()` (service_role only); Edge Function secrets with the env names below win if set.
+
+| Vault name | Env name | Value |
 |---|---|---|
-| Function secret | `FIREBASE_SERVICE_ACCOUNT` | Firebase service account JSON (Firebase console → Project settings → Service accounts → Generate new private key). Raw JSON or base64. |
-| Function secret | `PUSH_WEBHOOK_SECRET` | Random string; the function rejects requests without it in `x-webhook-secret`. |
-| Vault | `send_push_webhook_secret` | Same value as `PUSH_WEBHOOK_SECRET`. |
-| Vault | `send_push_url` | `https://<project-ref>.supabase.co/functions/v1/send-push` |
+| `firebase_service_account` | `FIREBASE_SERVICE_ACCOUNT` | Firebase service account JSON for `chatapp-188` (Firebase console → Project settings → Service accounts → Generate new private key). Raw JSON or base64. |
+| `send_push_webhook_secret` | `PUSH_WEBHOOK_SECRET` | Random string. The trigger sends it in `x-webhook-secret`; the function rejects requests without it. |
+| `send_push_url` | — | `https://<project-ref>.supabase.co/functions/v1/send-push` (used by the trigger) |
 
 iOS delivery also needs the APNs auth key uploaded in Firebase console → Project settings → Cloud Messaging.
 
 ## Setup
 
 ```bash
-supabase secrets set FIREBASE_SERVICE_ACCOUNT="$(cat service-account.json)" PUSH_WEBHOOK_SECRET=<secret>
 supabase functions deploy send-push --no-verify-jwt
 supabase db query --linked -f supabase/migrations/20261020150000_customer_notifications_send_push.sql
 ```
 
-Then, in the SQL editor (do not commit the values):
-
-```sql
-select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/send-push', 'send_push_url');
-select vault.create_secret('<secret>', 'send_push_webhook_secret');
-```
-
-Until both Vault secrets exist the trigger does nothing.
+Then store the three Vault secrets from a SQL file outside the repo (do not commit the values), e.g.
+`select vault.create_secret($sa$<json>$sa$, 'firebase_service_account');`
+Until `send_push_url` and `send_push_webhook_secret` exist the trigger does nothing; until
+`firebase_service_account` exists the function answers 500 "FCM is not configured".
 
 ## Tests
 

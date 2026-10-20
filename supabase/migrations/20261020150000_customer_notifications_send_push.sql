@@ -3,10 +3,11 @@
 -- send-push Edge Function (Database Webhook payload), which sends it over FCM to
 -- the customer's devices in push_devices.
 --
--- Needs two Vault secrets (set once per project, never committed):
+-- Vault secrets (set once per project, never committed; see supabase/functions/send-push/README.md):
 --   send_push_url             https://<project-ref>.supabase.co/functions/v1/send-push
---   send_push_webhook_secret  same value as the PUSH_WEBHOOK_SECRET function secret
--- Until both exist the trigger does nothing, so inserts are never blocked.
+--   send_push_webhook_secret  random string; the trigger sends it, the function checks it
+--   firebase_service_account  Firebase service account JSON, read by the function
+-- Until the first two exist the trigger does nothing, so inserts are never blocked.
 -- pg_net is asynchronous: a slow or failing function never delays or fails the insert.
 
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
@@ -57,3 +58,20 @@ CREATE TRIGGER trg_customer_notifications_send_push
 AFTER INSERT ON public.customer_notifications
 FOR EACH ROW
 EXECUTE FUNCTION public.notify_customer_notification_push();
+
+-- The function's own config (Edge Function secrets would also work, but the CLI
+-- account cannot set them). Only service_role may read it.
+CREATE OR REPLACE FUNCTION public.send_push_config()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $func$
+  SELECT coalesce(jsonb_object_agg(name, decrypted_secret), '{}'::jsonb)
+  FROM vault.decrypted_secrets
+  WHERE name IN ('send_push_webhook_secret', 'firebase_service_account');
+$func$;
+
+REVOKE EXECUTE ON FUNCTION public.send_push_config() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.send_push_config() TO service_role;

@@ -12,9 +12,9 @@
 // Tokens FCM reports as UNREGISTERED are deleted from push_devices.
 //
 // Security: fails closed. Every request must carry the x-webhook-secret header
-// matching PUSH_WEBHOOK_SECRET (the same value is in Vault as
-// send_push_webhook_secret for the trigger). The function is deployed with
-// --no-verify-jwt, so this header is the only gate.
+// matching the webhook secret (Vault send_push_webhook_secret, which the trigger
+// also sends; see index.ts). The function is deployed with --no-verify-jwt, so
+// this header is the only gate.
 import type { FcmSend, SendResult } from "./fcm.ts";
 
 export interface NotificationRow {
@@ -100,7 +100,7 @@ export async function handleSendPush(req: Request, deps: Deps): Promise<Response
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   if (!deps.webhookSecret) {
-    console.error("[send-push] PUSH_WEBHOOK_SECRET is not configured; refusing all requests");
+    console.error("[send-push] webhook secret is not configured; refusing all requests");
     return json(500, { error: "Push webhook is not configured" });
   }
   if (!timingSafeEqual(req.headers.get("x-webhook-secret") ?? "", deps.webhookSecret)) {
@@ -121,7 +121,7 @@ export async function handleSendPush(req: Request, deps: Deps): Promise<Response
   }
 
   if (!deps.send) {
-    console.error("[send-push] FIREBASE_SERVICE_ACCOUNT is missing or invalid; cannot send", row.id);
+    console.error("[send-push] Firebase service account is missing or invalid; cannot send", row.id);
     return json(500, { error: "FCM is not configured" });
   }
 

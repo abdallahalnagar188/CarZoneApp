@@ -1,22 +1,45 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { createFcmSender, parseServiceAccount } from "./fcm.ts";
+import { createFcmSender, type FcmSend, parseServiceAccount } from "./fcm.ts";
 import { handleSendPush } from "./handler.ts";
 
-// Secrets (supabase secrets set …): PUSH_WEBHOOK_SECRET, FIREBASE_SERVICE_ACCOUNT.
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by the platform.
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false },
 });
-const serviceAccount = parseServiceAccount(Deno.env.get("FIREBASE_SERVICE_ACCOUNT"));
-// Module scope so the Google access token is reused while the worker is warm.
-const send = serviceAccount ? createFcmSender(serviceAccount) : null;
+
+interface Config {
+  webhookSecret: string | undefined;
+  send: FcmSend | null;
+}
+
+let cached: Config | null = null;
+
+// PUSH_WEBHOOK_SECRET / FIREBASE_SERVICE_ACCOUNT come from Edge Function secrets
+// when set, otherwise from Vault (send_push_webhook_secret / firebase_service_account)
+// through public.send_push_config(), which only service_role may call.
+// A complete config is kept for the life of the worker, so the Google access
+// token is reused; an incomplete one is re-read on the next request.
+async function loadConfig(): Promise<Config> {
+  if (cached) return cached;
+  let webhookSecret = Deno.env.get("PUSH_WEBHOOK_SECRET");
+  let serviceAccount = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
+  if (!webhookSecret || !serviceAccount) {
+    const { data, error } = await db.rpc("send_push_config");
+    if (error) console.error("[send-push] could not read Vault config:", error.message);
+    webhookSecret ||= data?.send_push_webhook_secret;
+    serviceAccount ||= data?.firebase_service_account;
+  }
+  const sa = parseServiceAccount(serviceAccount);
+  const config = { webhookSecret, send: sa ? createFcmSender(sa) : null };
+  if (config.webhookSecret && config.send) cached = config;
+  return config;
+}
 
 // Logic lives in handler.ts so it can be tested with `deno test` (handler_test.ts).
-Deno.serve((req: Request) =>
+Deno.serve(async (req: Request) =>
   handleSendPush(req, {
-    webhookSecret: Deno.env.get("PUSH_WEBHOOK_SECRET"),
-    send,
+    ...(await loadConfig()),
     getRecipient: async (customerId) => {
       const { data, error } = await db.from("customers").select("user_id, locale").eq("id", customerId).maybeSingle();
       if (error) throw error;
