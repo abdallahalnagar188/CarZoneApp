@@ -35,6 +35,28 @@ void main() {
         reason: 'Google Sign-In raises a native exception and the app crashes without this URL scheme');
   });
 
+  test('Firebase config is bundled and matches the app', () {
+    final file = File('ios/Runner/GoogleService-Info.plist');
+    expect(file.existsSync(), isTrue, reason: 'Firebase.initializeApp() fails on iOS without it');
+    expect(_valueAfterKey(file.readAsStringSync(), 'BUNDLE_ID'), '<string>com.example.carzone</string>');
+    // Only files in Copy Bundle Resources end up in the app.
+    final pbx = File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync();
+    expect(pbx, contains('GoogleService-Info.plist in Resources'));
+  });
+
+  test('push notifications: entitlement, background mode', () {
+    final pbx = File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync();
+    expect('CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements'.allMatches(pbx).length, 3,
+        reason: 'Debug, Release and Profile all need aps-environment');
+    expect(File('ios/Runner/Runner.entitlements').readAsStringSync(), contains('<key>aps-environment</key>'));
+    expect(_plist(), contains('<string>remote-notification</string>'));
+  });
+
+  test('foreground notifications: AppDelegate is the notification center delegate', () {
+    expect(File('ios/Runner/AppDelegate.swift').readAsStringSync(),
+        contains('UNUserNotificationCenter.current().delegate = self'));
+  });
+
   test('the Android client ID is never used as the iOS client ID', () {
     expect(SupabaseConstants.googleIosClientId, isNot(SupabaseConstants.googleAndroidClientId));
   });

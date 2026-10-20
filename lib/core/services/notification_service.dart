@@ -1,15 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
 
 import '../../commons/models/localized_text.dart';
 import '../../commons/models/notification_model.dart';
 import '../routing/app_routes.dart';
+import 'app_ready_gate.dart';
 import 'carzone_db_service.dart';
 import 'session_service.dart';
+import 'supabase_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -40,25 +45,78 @@ class NotificationService extends GetxService {
   );
 
   Future<NotificationService> init() async {
+    // Local notifications do not depend on Firebase, so a Firebase failure
+    // must not take them down with it.
+    try {
+      await _initLocalNotifications();
+      await _handleLaunchFromLocalNotification();
+    } catch (e) {
+      dev.log('[NotificationService] local notifications init error: $e');
+    }
+    // init() runs before runApp: awaiting the permission dialog here leaves a
+    // blank screen until the user answers, so ask once the first frame is up.
+    WidgetsBinding.instance.addPostFrameCallback((_) => requestPermissions());
     try {
       await Firebase.initializeApp();
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-      await _initLocalNotifications();
-      await requestPermissions();
       await _setupFcmListeners();
-      await syncToken();
+      _syncTokenOnSignIn();
     } catch (e) {
       dev.log('[NotificationService] init error: $e');
     }
     return this;
   }
 
+  /// The FCM token is stored per signed-in user (push_devices), so it is sent
+  /// whenever a session exists: on start-up with a saved session and after login.
+  /// Not awaited: on iOS the token waits for APNs and must not delay app start.
+  void _syncTokenOnSignIn() {
+    // New listeners only get the latest auth event (often tokenRefreshed at
+    // start-up, not initialSession), so react to "a user without a synced token".
+    void syncIfNeeded(String? uid) {
+      if (uid != null && uid != _tokenSyncedFor) unawaited(syncToken());
+    }
+
+    // The token is saved through CarzoneDbService, which AppBinding registers
+    // with the first frame; init() runs before that.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => syncIfNeeded(SupabaseService.client.auth.currentUser?.id),
+    );
+    SupabaseService.client.auth.onAuthStateChange.listen((state) {
+      if (state.event == AuthChangeEvent.signedOut) {
+        _tokenSyncedFor = null;
+      } else {
+        syncIfNeeded(state.session?.user.id);
+      }
+    });
+  }
+
+  void _onLocalNotificationPayload(String? payload) {
+    if (payload == null || payload.isEmpty) return;
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      _handleNotificationClick(data);
+    } catch (_) {
+      _handleSimplePayloadClick(payload);
+    }
+  }
+
+  /// A local notification tapped while the app was closed launches it without
+  /// calling onDidReceiveNotificationResponse.
+  Future<void> _handleLaunchFromLocalNotification() async {
+    final launch = await _localNotifs.getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp ?? false) {
+      _onLocalNotificationPayload(launch!.notificationResponse?.payload);
+    }
+  }
+
   Future<void> _initLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Permission is requested later by requestPermissions(), not on initialize.
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const initSettings = InitializationSettings(
@@ -67,18 +125,8 @@ class NotificationService extends GetxService {
     );
 
     await _localNotifs.initialize(
-      settings: initSettings,
-      onDidReceiveNotificationResponse: (response) {
-        final payload = response.payload;
-        if (payload != null && payload.isNotEmpty) {
-          try {
-            final data = jsonDecode(payload) as Map<String, dynamic>;
-            _handleNotificationClick(data);
-          } catch (_) {
-            _handleSimplePayloadClick(payload);
-          }
-        }
-      },
+      initSettings,
+      onDidReceiveNotificationResponse: (response) => _onLocalNotificationPayload(response.payload),
     );
 
     final androidImplementation = _localNotifs
@@ -88,15 +136,13 @@ class NotificationService extends GetxService {
     }
   }
 
+  /// One system permission covers local and push notifications. Asked through
+  /// the local notifications plugin so it works even if Firebase is unavailable.
   Future<void> requestPermissions() async {
     try {
-      final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
+      await _localNotifs
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
 
       final androidPlugin = _localNotifs
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -138,27 +184,51 @@ class NotificationService extends GetxService {
     });
   }
 
+  bool _syncingToken = false;
+  String? _tokenSyncedFor;
+
   Future<void> syncToken() async {
+    if (_syncingToken || SupabaseService.client.auth.currentUser == null) return;
+    _syncingToken = true;
     try {
+      // iOS: getToken() throws until APNs has handed the app its device token.
+      if (GetPlatform.isIOS && !await _waitForApnsToken()) {
+        dev.log('[NotificationService] No APNs token; push is unavailable on this device/build.');
+        return;
+      }
       // ignore: deprecated_member_use
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         dev.log('[NotificationService] FCM Token: $token');
-        await _saveTokenToDb(token);
+        if (await _saveTokenToDb(token)) {
+          _tokenSyncedFor = SupabaseService.client.auth.currentUser?.id;
+        }
       }
     } catch (e) {
       dev.log('[NotificationService] syncToken error: $e');
+    } finally {
+      _syncingToken = false;
     }
   }
 
-  Future<void> _saveTokenToDb(String token) async {
-    if (!Get.isRegistered<CarzoneDbService>()) return;
+  Future<bool> _waitForApnsToken() async {
+    for (var i = 0; i < 10; i++) {
+      if (await FirebaseMessaging.instance.getAPNSToken() != null) return true;
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    return false;
+  }
+
+  /// False when nothing could be saved yet (services not ready / signed out).
+  Future<bool> _saveTokenToDb(String token) async {
+    if (!Get.isRegistered<CarzoneDbService>()) return false;
     final db = Get.find<CarzoneDbService>();
     final session = Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
-    final userId = session?.userId;
-    if (userId != null && userId.isNotEmpty) {
-      await db.updateCustomerToken(userId, token);
-    }
+    // push_devices is keyed by the auth user; the customer id only updates the local cache.
+    final userId = session?.userId ?? SupabaseService.client.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) return false;
+    await db.updateCustomerToken(userId, token);
+    return true;
   }
 
   void _showRemoteNotification(RemoteMessage message) {
@@ -240,15 +310,21 @@ class NotificationService extends GetxService {
     );
 
     await _localNotifs.show(
-      id: notifId,
-      title: title,
-      body: body,
-      notificationDetails: details,
+      notifId,
+      title,
+      body,
+      details,
       payload: payload,
     );
   }
 
+  /// Taps can arrive while the splash is still up (the tap launched the app),
+  /// so navigation waits for the main screen.
   void _handleNotificationClick(Map<String, dynamic> data) {
+    AppReadyGate.run(() => _openForNotification(data));
+  }
+
+  void _openForNotification(Map<String, dynamic> data) {
     final orderId = data['order_id']?.toString() ?? data['orderId']?.toString();
     final type = data['type']?.toString();
 
@@ -266,6 +342,10 @@ class NotificationService extends GetxService {
   }
 
   void _handleSimplePayloadClick(String payload) {
+    AppReadyGate.run(() => _openForSimplePayload(payload));
+  }
+
+  void _openForSimplePayload(String payload) {
     if (payload.startsWith('order:')) {
       final orderId = payload.replaceFirst('order:', '');
       Get.toNamed(Routes.bookingDetailsRoute, arguments: orderId);

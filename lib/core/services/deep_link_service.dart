@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../routing/app_routes.dart';
+import 'app_ready_gate.dart';
 import 'carzone_db_service.dart';
 
 class DeepLinkService extends GetxService {
@@ -127,6 +128,8 @@ class DeepLinkService extends GetxService {
   void markAppReady() {
     if (_appReady) return;
     _appReady = true;
+    // Notification taps that launched the app wait on the same moment.
+    AppReadyGate.markReady();
     final pending = _pendingBranchId;
     if (pending == null) return;
     _pendingBranchId = null;
