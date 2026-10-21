@@ -51,6 +51,7 @@ flutter:
   assets:
     - assets/logo/
     - assets/map/
+    - shorebird.yaml
 
   fonts:
     - family: IPM
