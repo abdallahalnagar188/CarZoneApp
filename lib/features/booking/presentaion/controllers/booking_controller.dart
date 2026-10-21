@@ -188,14 +188,7 @@ class BookingController extends GetxController {
     final b = branch;
     if (b == null) return;
     loadingSlots.value = true;
-    // Immediate fallback slots so UI is never blank
-    slots.assignAll(_availability.slotsFor(
-      b,
-      day.value,
-      durationMin: durationMin,
-      excludeOrderId: rescheduleOrder.value?.id,
-      includeFull: true,
-    ));
+    slots.clear();
 
     try {
       final remote = await _availability.fetchRemoteSlots(
@@ -203,12 +196,24 @@ class BookingController extends GetxController {
         day.value,
         durationMin: durationMin,
         excludeOrderId: rescheduleOrder.value?.id,
-        includeFull: true,
+        includeFull: false,
       );
-      if (remote.isNotEmpty || slots.isEmpty) {
-        slots.assignAll(remote);
-      }
+      final available = remote
+          .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.leadTimeMin))
+          .toList();
+      slots.assignAll(available);
     } catch (_) {
+      final local = _availability.slotsFor(
+        b,
+        day.value,
+        durationMin: durationMin,
+        excludeOrderId: rescheduleOrder.value?.id,
+        includeFull: false,
+      );
+      final available = local
+          .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.leadTimeMin))
+          .toList();
+      slots.assignAll(available);
     } finally {
       loadingSlots.value = false;
       if (slot.value != null &&
@@ -227,14 +232,36 @@ class BookingController extends GetxController {
   }
 
   void seeTomorrow() {
-    final next = days.skip(1).where((d) => !isClosedDay(d)).firstOrNull;
-    if (next != null) selectDay(next);
+    final currentIndex = days.indexWhere((d) => FormatHelper.sameDay(d, day.value));
+    final searchFrom = currentIndex >= 0 ? currentIndex + 1 : 1;
+    final next = days.skip(searchFrom).where((d) => !isClosedDay(d)).firstOrNull;
+    if (next != null) {
+      selectDay(next);
+    } else {
+      final firstOpen = days.where((d) => !isClosedDay(d) && !FormatHelper.sameDay(d, day.value)).firstOrNull;
+      if (firstOpen != null) {
+        selectDay(firstOpen);
+      }
+    }
   }
 
   void selectSlot(DateTime s) => slot.value = s;
 
   Future<void> continueFromSlot() async {
-    if (slot.value == null) return;
+    final s = slot.value;
+    if (s == null) return;
+    final b = branch;
+    if (b != null && BranchTimeHelper.isSlotTooSoon(s, b.settings.leadTimeMin)) {
+      slot.value = null;
+      await loadSlots();
+      Utils.getSnakBar(
+        message: FormatHelper.isAr
+            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
+            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
+        type: TosterTypes.warning,
+      );
+      return;
+    }
     if (isReschedule) {
       await _confirmReschedule();
       return;
@@ -253,17 +280,17 @@ class BookingController extends GetxController {
     } on SlotTooSoonException {
       confirming.value = false;
       slot.value = null;
-      loadSlots();
+      await loadSlots();
       Utils.getSnakBar(
         message: FormatHelper.isAr
-            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد قادم أو حجز ليوم غد.'
-            : 'The selected slot has passed or is too soon. Please select an upcoming slot or choose tomorrow.',
+            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
+            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
         type: TosterTypes.warning,
       );
     } on SlotOutsideHoursException {
       confirming.value = false;
       slot.value = null;
-      loadSlots();
+      await loadSlots();
       Utils.getSnakBar(
         message: FormatHelper.isAr
             ? 'الموعد المحدد خارج ساعات العمل للمغسلة. يرجى اختيار موعد متاح.'
@@ -272,7 +299,8 @@ class BookingController extends GetxController {
       );
     } on SlotTakenException {
       confirming.value = false;
-      loadSlots();
+      slot.value = null;
+      await loadSlots();
       Utils.getSnakBar(message: 'book.slotTaken'.tr, type: TosterTypes.warning);
     } catch (e) {
       confirming.value = false;
@@ -285,6 +313,19 @@ class BookingController extends GetxController {
   Future<void> confirm() async {
     final uid = _session.userId;
     if (uid == null || primaryId.value == null || vehicleId.value == null || slot.value == null) return;
+    final b = branch;
+    if (b != null && BranchTimeHelper.isSlotTooSoon(slot.value!, b.settings.leadTimeMin)) {
+      slot.value = null;
+      await loadSlots();
+      Utils.getSnakBar(
+        message: FormatHelper.isAr
+            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
+            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
+        type: TosterTypes.warning,
+      );
+      Get.until((r) => r.settings.name == Routes.bookSlotRoute);
+      return;
+    }
     confirming.value = true;
     try {
       final order = await _orders.create(
@@ -304,18 +345,18 @@ class BookingController extends GetxController {
     } on SlotTooSoonException {
       confirming.value = false;
       slot.value = null;
-      loadSlots();
+      await loadSlots();
       Utils.getSnakBar(
         message: FormatHelper.isAr
-            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد قادم أو حجز ليوم غد.'
-            : 'The selected slot has passed or is too soon. Please select an upcoming slot or choose tomorrow.',
+            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
+            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
         type: TosterTypes.warning,
       );
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
     } on SlotOutsideHoursException {
       confirming.value = false;
       slot.value = null;
-      loadSlots();
+      await loadSlots();
       Utils.getSnakBar(
         message: FormatHelper.isAr
             ? 'الموعد المحدد خارج ساعات العمل للمغسلة. يرجى اختيار موعد متاح.'
@@ -326,7 +367,7 @@ class BookingController extends GetxController {
     } on SlotTakenException {
       confirming.value = false;
       slot.value = null;
-      loadSlots();
+      await loadSlots();
       Utils.getSnakBar(message: '${'book.slotTaken'.tr}\n${'book.slotTakenBody'.tr}', type: TosterTypes.warning);
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
     } catch (e) {

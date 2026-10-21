@@ -42,12 +42,24 @@ class BranchTimeHelper {
     return utc.add(cairoOffset(utc));
   }
 
+  /// Converts a branch local wall-clock [DateTime] or [slot] to UTC [DateTime]
+  static DateTime toUtcDateTime(DateTime slot) {
+    if (slot.isUtc) return slot;
+    final offset = cairoOffset(slot);
+    return DateTime.utc(slot.year, slot.month, slot.day, slot.hour, slot.minute).subtract(offset);
+  }
+
+  /// Checks whether [slot] is in the past or within [leadTimeMin] from current instant
+  static bool isSlotTooSoon(DateTime slot, int leadTimeMin) {
+    final nowUtc = DateTime.now().toUtc();
+    final earliestUtc = nowUtc.add(Duration(minutes: leadTimeMin));
+    final slotUtc = toUtcDateTime(slot);
+    return slotUtc.isBefore(earliestUtc);
+  }
+
   /// Converts a branch local wall-clock [DateTime] or [slot] to exact ISO-8601 UTC string for Supabase RPC
   static String toUtcIsoString(DateTime slot) {
-    if (slot.isUtc) return slot.toIso8601String();
-    final offset = cairoOffset(slot);
-    final utc = DateTime.utc(slot.year, slot.month, slot.day, slot.hour, slot.minute).subtract(offset);
-    return utc.toIso8601String();
+    return toUtcDateTime(slot).toIso8601String();
   }
 }
 
@@ -117,22 +129,21 @@ class AvailabilityService {
     if (!branch.bookable) return const [];
     final hours = branch.hoursFor(day);
     if (hours.closed) return const [];
-    final now = DateTime.now();
-    final earliest = now.add(Duration(minutes: branch.settings.leadTimeMin));
     final open = FormatHelper.clockToMinutes(hours.open);
     final close = FormatHelper.clockToMinutes(hours.close);
-    final base = DateTime(day.year, day.month, day.day);
     final result = <SlotModel>[];
     for (var m = open; m + durationMin <= close; m += branch.settings.slotIntervalMin) {
-      final start = base.add(Duration(minutes: m));
-      if (start.isBefore(earliest)) continue;
-      final end = start.add(Duration(minutes: durationMin));
-      final used = _overlapping(branch.id, start, end, excludeOrderId);
+      final slotLocal = DateTime(day.year, day.month, day.day, m ~/ 60, m % 60);
+      final slotUtc = BranchTimeHelper.toUtcDateTime(slotLocal);
+      if (BranchTimeHelper.isSlotTooSoon(slotUtc, branch.settings.leadTimeMin)) continue;
+
+      final endUtc = slotUtc.add(Duration(minutes: durationMin));
+      final used = _overlapping(branch.id, slotUtc, endUtc, excludeOrderId);
       final free = branch.capacity - used;
       if (free > 0 || includeFull) {
         final hh = (m ~/ 60).toString().padLeft(2, '0');
         final mm = (m % 60).toString().padLeft(2, '0');
-        result.add(SlotModel(start, free > 0 ? free : 0, localTime: '$hh:$mm'));
+        result.add(SlotModel(slotUtc, free > 0 ? free : 0, localTime: '$hh:$mm'));
       }
     }
     return result;
