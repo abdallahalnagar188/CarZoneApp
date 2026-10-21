@@ -13,6 +13,32 @@ class MapMarkerHelper {
 
   static const double _ratio = 3;
   static final Map<String, BitmapDescriptor> _cache = {};
+  static bool? _flipsY;
+
+  /// Impeller's OpenGLES backend (Android emulators, phones without Vulkan)
+  /// returns Picture.toImage upside down. Checked once with a 1x2 image whose
+  /// top pixel is painted: when it reads back empty, markers are drawn pre-flipped.
+  static Future<bool> _toImageFlipsY() async {
+    if (_flipsY != null) return _flipsY!;
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder).drawRect(const Rect.fromLTWH(0, 0, 1, 1), Paint()..color = const Color(0xFFFF0000));
+    final image = await recorder.endRecording().toImage(1, 2);
+    final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    image.dispose();
+    return _flipsY = data == null ? false : data.getUint8(0) == 0;
+  }
+
+  /// A canvas in logical units ([_ratio] applied) for an image [height] tall,
+  /// pre-flipped when this device's toImage comes back upside down.
+  static Future<Canvas> _canvas(ui.PictureRecorder recorder, double height) async {
+    final canvas = Canvas(recorder);
+    if (await _toImageFlipsY()) {
+      canvas
+        ..translate(0, (height * _ratio).ceilToDouble())
+        ..scale(1, -1);
+    }
+    return canvas..scale(_ratio);
+  }
 
   static Future<BitmapDescriptor> pricePin(String label, PinState state) async {
     final key = 'price|$label|${state.name}';
@@ -47,7 +73,7 @@ class MapMarkerHelper {
     final canvasH = height + tail + shadow * 2;
 
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder)..scale(_ratio);
+    final canvas = await _canvas(recorder, canvasH);
     final body = RRect.fromRectAndRadius(
       Rect.fromLTWH(shadow, shadow, width, height),
       Radius.circular(height / 2),
@@ -108,7 +134,7 @@ class MapMarkerHelper {
     if (cached != null) return cached;
     const size = 44.0;
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder)..scale(_ratio);
+    final canvas = await _canvas(recorder, size);
     const center = Offset(size / 2, size / 2);
     canvas.drawCircle(center, size / 2, Paint()..color = AppColors.accent.withValues(alpha: 0.22));
     canvas.drawCircle(center, 11, Paint()..color = Colors.white);

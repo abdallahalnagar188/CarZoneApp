@@ -29,9 +29,9 @@ class AppBottomNav extends StatelessWidget {
     final height = 64.h.clamp(58.0, 76.0).toDouble();
 
     // Floats over the content; Scaffold.extendBody lets pages scroll beneath it.
-    // Sits a little into the home-indicator area instead of fully above it.
+    // Sits just slightly into the home-indicator area instead of fully above it.
     final safeBottom = MediaQuery.paddingOf(context).bottom;
-    final bottom = math.max(safeBottom - 14.h, 8.h);
+    final bottom = math.max(safeBottom - 4.h, 18.h);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),

@@ -47,7 +47,9 @@ class Utils {
     _snackTimer = null;
     final entry = _snackEntry;
     _snackEntry = null;
-    if (entry != null && entry.mounted) entry.remove();
+    // Not `entry.mounted`: an entry inserted in this same frame is not mounted
+    // yet, and skipping it would leave it on screen with nothing to remove it.
+    entry?.remove();
   }
 
   static Future<bool> confirm({
