@@ -379,6 +379,8 @@ class BookingController extends GetxController {
   String _bookingError(Object e, String fallbackKey) => switch (e) {
         BookingException(code: 'branch_unavailable') => 'book.unavailable'.tr,
         BookingException(code: 'account_suspended') => 'book.suspended'.tr,
+        BookingException(code: 'vehicle_busy') => 'book.vehicleBusy'.tr,
+        BookingException(code: 'too_many_bookings') => 'book.tooMany'.tr,
         _ => fallbackKey.tr,
       };
 
