@@ -33,6 +33,10 @@ concurrency:
   group: shorebird-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   detect-changes:
     name: Detect Change Type
@@ -93,6 +97,8 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.build_android == 'true'
     runs-on: ubuntu-latest
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -112,7 +118,7 @@ jobs:
       - name: Set up Shorebird
         uses: shorebirdtech/setup-shorebird@v1
         with:
-          shorebird-token: ${{ secrets.SHOREBIRD_TOKEN }}
+          cache: true
 
       - name: Install Dependencies
         run: flutter pub get
@@ -142,6 +148,8 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.build_ios == 'true'
     runs-on: macos-latest
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -155,7 +163,7 @@ jobs:
       - name: Set up Shorebird
         uses: shorebirdtech/setup-shorebird@v1
         with:
-          shorebird-token: ${{ secrets.SHOREBIRD_TOKEN }}
+          cache: true
 
       - name: Install Dependencies
         run: flutter pub get
