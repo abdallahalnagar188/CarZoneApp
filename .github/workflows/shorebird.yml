@@ -133,15 +133,26 @@ jobs:
             echo "has_config=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Shorebird Release (Android)
-        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'release'
+      - name: Build Android with Shorebird
+        if: steps.check-shorebird-config.outputs.has_config == 'true'
         run: |
-          shorebird release android --no-confirm
+          RELEASES=$(shorebird releases list 2>&1 || true)
+          echo "Existing releases on Shorebird:"
+          echo "$RELEASES"
 
-      - name: Shorebird Patch (Android)
-        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'patch'
-        run: |
-          shorebird patch android --no-confirm
+          ACTION="${{ needs.detect-changes.outputs.action_type }}"
+          if echo "$RELEASES" | grep -iq "No releases found"; then
+            echo "No existing releases found on Shorebird. Creating initial RELEASE."
+            ACTION="release"
+          fi
+
+          if [ "$ACTION" = "release" ]; then
+            echo "Executing: shorebird release android --no-confirm"
+            shorebird release android --no-confirm
+          else
+            echo "Executing: shorebird patch android --no-confirm --release-version=latest"
+            shorebird patch android --no-confirm --release-version=latest
+          fi
 
   shorebird-ios:
     name: Shorebird iOS (${{ needs.detect-changes.outputs.action_type }})
@@ -178,13 +189,23 @@ jobs:
             echo "has_config=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Shorebird Release (iOS)
-        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'release'
+      - name: Build iOS with Shorebird
+        if: steps.check-shorebird-config.outputs.has_config == 'true'
         run: |
-          # Releases iOS framework without requiring codesign in CI if certificates not present
-          shorebird release ios --no-confirm --no-codesign
+          RELEASES=$(shorebird releases list 2>&1 || true)
+          echo "Existing releases on Shorebird:"
+          echo "$RELEASES"
 
-      - name: Shorebird Patch (iOS)
-        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'patch'
-        run: |
-          shorebird patch ios --no-confirm
+          ACTION="${{ needs.detect-changes.outputs.action_type }}"
+          if echo "$RELEASES" | grep -iq "No releases found"; then
+            echo "No existing releases found on Shorebird. Creating initial RELEASE."
+            ACTION="release"
+          fi
+
+          if [ "$ACTION" = "release" ]; then
+            echo "Executing: shorebird release ios --no-confirm --no-codesign"
+            shorebird release ios --no-confirm --no-codesign
+          else
+            echo "Executing: shorebird patch ios --no-confirm --release-version=latest"
+            shorebird patch ios --no-confirm --release-version=latest
+          fi
