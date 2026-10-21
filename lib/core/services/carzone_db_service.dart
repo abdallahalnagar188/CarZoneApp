@@ -19,6 +19,8 @@ import 'supabase_service.dart';
 
 class CarzoneDbService extends GetxService {
   RealtimeChannel? _notificationsChannel;
+  RealtimeChannel? _ordersChannel;
+  String? _ordersChannelFor;
 
   // Remote reactive collections
   final areas = <AreaModel>[].obs;
@@ -210,6 +212,7 @@ class CarzoneDbService extends GetxService {
 
           await fetchNotifications(lookupId);
           subscribeToCustomerNotifications(lookupId);
+          subscribeToCustomerOrders(lookupId);
         } catch (_) {}
       }
 
@@ -588,6 +591,57 @@ class CarzoneDbService extends GetxService {
     }
   }
 
+  /// Order changes made by the wash (vendor dashboard) arrive live, so the
+  /// bookings screens and the live booking widget follow without a refresh.
+  void subscribeToCustomerOrders(String customerId) {
+    if (_ordersChannelFor == customerId) return;
+    _ordersChannel?.unsubscribe();
+    _ordersChannelFor = customerId;
+    try {
+      _ordersChannel = SupabaseService.client
+          .channel('public:orders:$customerId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'orders',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'customer_id',
+              value: customerId,
+            ),
+            callback: (payload) {
+              final id = (payload.newRecord['id'] ?? payload.oldRecord['id'])?.toString();
+              if (id == null) return;
+              if (payload.eventType == PostgresChangeEvent.delete) {
+                orders.removeWhere((o) => o.id == id);
+              } else {
+                refreshOrder(id);
+              }
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      dev.log('[CarzoneDbService] subscribeToCustomerOrders error: $e');
+    }
+  }
+
+  /// Reloads one order with its items and status history.
+  Future<void> refreshOrder(String orderId) async {
+    try {
+      final res = await SupabaseService.client
+          .from('orders')
+          .select('*, order_items(*), order_events(*)')
+          .eq('id', orderId)
+          .order('at', referencedTable: 'order_events')
+          .maybeSingle();
+      if (res == null) return;
+      upsertOrders([OrderModel.fromJson(Map<String, dynamic>.from(res))]);
+      orders.refresh();
+    } catch (e) {
+      dev.log('[CarzoneDbService] refreshOrder error: $e');
+    }
+  }
+
   void subscribeToCustomerNotifications(String customerId) {
     if (_notificationsChannel != null) return;
     try {
@@ -665,6 +719,7 @@ class CarzoneDbService extends GetxService {
   @override
   void onClose() {
     _notificationsChannel?.unsubscribe();
+    _ordersChannel?.unsubscribe();
     super.onClose();
   }
 }

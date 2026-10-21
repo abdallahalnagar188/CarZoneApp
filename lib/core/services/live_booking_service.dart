@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../commons/models/order_model.dart';
@@ -14,7 +15,7 @@ import 'session_service.dart';
 /// apps do: an iOS Live Activity (lock screen + Dynamic Island) and an Android
 /// ongoing "live update" notification. Native code only renders what it is
 /// given here, so all wording and localisation stays in Dart.
-class LiveBookingService extends GetxService {
+class LiveBookingService extends GetxService with WidgetsBindingObserver {
   static const _channel = MethodChannel('carzone/live_booking');
 
   /// Stages shown as the progress track: booked → confirmed → arrived → washing → ready.
@@ -53,7 +54,26 @@ class LiveBookingService extends GetxService {
     ever(_db.notifications, (_) => _applyStatusNotifications());
     ever(_session.user, (_) => _reconcile());
     _reconcile();
+    WidgetsBinding.instance.addObserver(this);
     return this;
+  }
+
+  /// Live order updates do not replay what happened while the app was
+  /// suspended, so coming back to the foreground reloads the active bookings.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final uid = _session.userId;
+    if (uid == null) return;
+    for (final o in _db.orders.where((o) => o.customerId == uid && o.status.isUpcoming).toList()) {
+      _db.refreshOrder(o.id);
+    }
+  }
+
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
   }
 
   /// A new status notification means the wash changed the order on the server:
