@@ -528,18 +528,6 @@ class CarzoneDbService extends GetxService {
     }
   }
 
-  Future<void> saveNotification(NotificationModel notif) async {
-    try {
-      await SupabaseService.client.from('customer_notifications').upsert(
-        notif.toJson(),
-        onConflict: 'id',
-        ignoreDuplicates: true,
-      );
-    } catch (e) {
-      dev.log('[CarzoneDbService] Error saving notification to Supabase: $e');
-    }
-  }
-
   Future<void> markNotificationRead(String notifId) async {
     try {
       await SupabaseService.client
@@ -640,6 +628,8 @@ class CarzoneDbService extends GetxService {
     }
   }
 
+  /// Local-only notification (list + banner). Real notifications are created
+  /// on the server (customer_notifications) and arrive through realtime / push.
   void notify({
     required String userId,
     required String type,
@@ -657,7 +647,6 @@ class CarzoneDbService extends GetxService {
       createdAt: DateTime.now(),
     );
     notifications.insert(0, notif);
-    saveNotification(notif);
 
     try {
       if (Get.isRegistered<NotificationService>()) {

@@ -159,6 +159,8 @@ class NotificationService extends GetxService {
     // 1. Foreground FCM message listener
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       dev.log('[NotificationService] Foreground message received: ${message.data}');
+      // The realtime subscription may already have shown this notification.
+      if (_alreadyReceived(message)) return;
       _showRemoteNotification(message);
       _persistRemoteNotification(message);
     });
@@ -230,6 +232,12 @@ class NotificationService extends GetxService {
     if (userId == null || userId.isEmpty) return false;
     await db.updateCustomerToken(userId, token);
     return true;
+  }
+
+  bool _alreadyReceived(RemoteMessage message) {
+    final id = message.data['id']?.toString();
+    if (id == null || !Get.isRegistered<CarzoneDbService>()) return false;
+    return Get.find<CarzoneDbService>().notifications.any((n) => n.id == id);
   }
 
   void _showRemoteNotification(RemoteMessage message) {

@@ -83,17 +83,7 @@ class OrderService {
     });
     final order = OrderModel.fromJson(json);
     _db.upsertOrders([order]);
-    final branch = _db.branch(order.branchId);
-    _db.notify(
-      userId: order.customerId,
-      type: 'created',
-      title: const LocalizedText('تم إنشاء الحجز', 'Booking created'),
-      body: LocalizedText(
-        branch == null ? order.number : '${order.number} · ${branch.name.ar}',
-        branch == null ? order.number : '${order.number} · ${branch.name.en}',
-      ),
-      orderId: order.id,
-    );
+    // The "created" notification comes from the orders trigger on the server.
     return order;
   }
 
@@ -107,13 +97,7 @@ class OrderService {
     final json = await _rpc('cancel_order', {'p_order_id': order.id, 'p_reason': reason});
     _applyServerState(order, json);
     order.lateCancel = json['late_cancel'] == true;
-    _db.notify(
-      userId: order.customerId,
-      type: 'cancelled',
-      title: _toasts[OrderStatus.cancelled]!,
-      body: LocalizedText(order.number, order.number),
-      orderId: order.id,
-    );
+    // The "cancelled" notification comes from the orders trigger on the server.
   }
 
   Future<void> reschedule(OrderModel order, DateTime slot) async {

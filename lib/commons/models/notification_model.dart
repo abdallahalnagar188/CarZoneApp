@@ -43,6 +43,6 @@ class NotificationModel {
     'order_id': orderId,
     'href': orderId != null ? '/booking_details?id=$orderId' : '/notifications',
     'read': read,
-    'created_at': createdAt.toIso8601String(),
+    'created_at': createdAt.toUtc().toIso8601String(),
   };
 }
