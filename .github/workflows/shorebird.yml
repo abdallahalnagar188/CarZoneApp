@@ -1,0 +1,182 @@
+name: Shorebird CI/CD
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Build Mode (auto: detect from diff, release: full release, patch: hot update)'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - patch
+          - release
+      platform:
+        description: 'Target Platform'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - android
+          - ios
+
+concurrency:
+  group: shorebird-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  detect-changes:
+    name: Detect Change Type
+    runs-on: ubuntu-latest
+    outputs:
+      action_type: ${{ steps.decide.outputs.action_type }}
+      build_android: ${{ steps.decide.outputs.build_android }}
+      build_ios: ${{ steps.decide.outputs.build_ios }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Inspect Git Changes
+        id: decide
+        run: |
+          MODE="${{ github.event.inputs.mode || 'auto' }}"
+          PLATFORM="${{ github.event.inputs.platform || 'both' }}"
+
+          BUILD_ANDROID="true"
+          BUILD_IOS="true"
+          if [ "$PLATFORM" = "android" ]; then
+            BUILD_IOS="false"
+          elif [ "$PLATFORM" = "ios" ]; then
+            BUILD_ANDROID="false"
+          fi
+
+          if [ "$MODE" != "auto" ]; then
+            echo "action_type=$MODE" >> $GITHUB_OUTPUT
+            echo "build_android=$BUILD_ANDROID" >> $GITHUB_OUTPUT
+            echo "build_ios=$BUILD_IOS" >> $GITHUB_OUTPUT
+            echo "Manual override selected: mode=$MODE, platform=$PLATFORM"
+            exit 0
+          fi
+
+          # Check git diff between current commit and previous commit
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-files)
+          echo "Changed files in this commit/merge:"
+          echo "$CHANGED_FILES"
+
+          # Native changes or version bump require a new full release
+          NATIVE_CHANGES=$(echo "$CHANGED_FILES" | grep -E '^(android/|ios/|pubspec\.yaml|pubspec\.lock)' || true)
+
+          if [ -n "$NATIVE_CHANGES" ]; then
+            echo "Native or dependency changes detected: Creating full RELEASE"
+            echo "action_type=release" >> $GITHUB_OUTPUT
+          else
+            echo "Dart/asset changes only: Creating hot PATCH"
+            echo "action_type=patch" >> $GITHUB_OUTPUT
+          fi
+
+          echo "build_android=$BUILD_ANDROID" >> $GITHUB_OUTPUT
+          echo "build_ios=$BUILD_IOS" >> $GITHUB_OUTPUT
+
+  shorebird-android:
+    name: Shorebird Android (${{ needs.detect-changes.outputs.action_type }})
+    needs: detect-changes
+    if: needs.detect-changes.outputs.build_android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Set up Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          shorebird-token: ${{ secrets.SHOREBIRD_TOKEN }}
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Check Shorebird Configuration
+        id: check-shorebird-config
+        run: |
+          if [ ! -f "shorebird.yaml" ]; then
+            echo "has_config=false" >> $GITHUB_OUTPUT
+            echo "::warning title=Shorebird Not Configured::shorebird.yaml not found. Please run 'shorebird init' and commit shorebird.yaml to enable Shorebird builds."
+          else
+            echo "has_config=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Shorebird Release (Android)
+        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'release'
+        run: |
+          shorebird release android --no-confirm
+
+      - name: Shorebird Patch (Android)
+        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'patch'
+        run: |
+          shorebird patch android --no-confirm
+
+  shorebird-ios:
+    name: Shorebird iOS (${{ needs.detect-changes.outputs.action_type }})
+    needs: detect-changes
+    if: needs.detect-changes.outputs.build_ios == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Set up Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          shorebird-token: ${{ secrets.SHOREBIRD_TOKEN }}
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Check Shorebird Configuration
+        id: check-shorebird-config
+        run: |
+          if [ ! -f "shorebird.yaml" ]; then
+            echo "has_config=false" >> $GITHUB_OUTPUT
+            echo "::warning title=Shorebird Not Configured::shorebird.yaml not found. Please run 'shorebird init' and commit shorebird.yaml to enable Shorebird builds."
+          else
+            echo "has_config=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Shorebird Release (iOS)
+        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'release'
+        run: |
+          # Releases iOS framework without requiring codesign in CI if certificates not present
+          shorebird release ios --no-confirm --no-codesign
+
+      - name: Shorebird Patch (iOS)
+        if: steps.check-shorebird-config.outputs.has_config == 'true' && needs.detect-changes.outputs.action_type == 'patch'
+        run: |
+          shorebird patch ios --no-confirm

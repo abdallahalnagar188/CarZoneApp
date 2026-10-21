@@ -46,14 +46,22 @@ class AuthController extends GetxController {
     if (googleSigningIn.value || sending.value) return;
     googleSigningIn.value = true;
     try {
+      bool nativeSucceeded = false;
       if (_repo.canUseNativeGoogle) {
-        final res = await _repo.signInWithGoogleNative();
-        if (res == null) {
-          // User dismissed or canceled the popup dialog
-          return;
+        try {
+          final res = await _repo.signInWithGoogleNative();
+          if (res == null) {
+            // User intentionally dismissed or canceled the popup dialog
+            return;
+          }
+          await _handleSuccessfulAuth(res);
+          nativeSucceeded = true;
+        } catch (nativeError) {
+          debugPrint('[AuthController] Native Google sign-in failed, trying browser fallback: $nativeError');
         }
-        await _handleSuccessfulAuth(res);
-      } else {
+      }
+
+      if (!nativeSucceeded) {
         // Fallback: in-app browser view
         final started = await _repo.signInWithGoogleInAppBrowser();
         if (!started) {
