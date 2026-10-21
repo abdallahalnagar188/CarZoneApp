@@ -70,6 +70,17 @@ class DeepLinkService extends GetxService {
       return false;
     }
 
+    // carzone://booking?id=<order id>: tapping the live booking widget.
+    if (uri.scheme == 'carzone' && uri.host == 'booking') {
+      final orderId = uri.queryParameters['id'];
+      if (orderId == null || orderId.isEmpty) return false;
+      AppReadyGate.run(() {
+        if (Get.currentRoute == Routes.bookingDetailsRoute && Get.arguments == orderId) return;
+        Get.toNamed(Routes.bookingDetailsRoute, arguments: orderId);
+      });
+      return true;
+    }
+
     final branchId = extractBranchId(uri);
     if (branchId != null && branchId.isNotEmpty) {
       // Prevent duplicate double-firings within 1.5 seconds

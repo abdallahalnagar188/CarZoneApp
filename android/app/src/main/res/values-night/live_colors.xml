@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="live_brand">#3DB4F2</color>
+    <color name="live_brand_sky">#7FE3FF</color>
+    <color name="live_success">#34D399</color>
+    <color name="live_danger">#F87171</color>
+    <color name="live_title">#F1F6FA</color>
+    <color name="live_body">#A9BCC9</color>
+    <color name="live_track">#2B3E4D</color>
+    <color name="live_chip_bg">#173246</color>
+</resources>

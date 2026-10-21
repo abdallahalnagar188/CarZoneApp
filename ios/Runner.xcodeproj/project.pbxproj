@@ -7,16 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		042747930E3ACEE609DC95B0 /* BookingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A93D6C6C57A5E41B33209F /* BookingActivityAttributes.swift */; };
+		10D03534C7DA7A04DC498E48 /* BookingLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 09CE530A3E88277328C52334 /* BookingLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		385EC59E936A89C414F00BCE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0E7346D698A983EFE6ED7DDD /* GoogleService-Info.plist */; };
+		39DA53D4030558D8950180EB /* BookingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A93D6C6C57A5E41B33209F /* BookingActivityAttributes.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		8829D6157FAEFB302A97BF9D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACAE2AA17AC46FD2B1175DB7 /* Foundation.framework */; };
 		8DCE97F4D6ABF097261AC616 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEBFA2E9B1240331CED01F73 /* Pods_Runner.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		B83C4C4F8E5A9BD2EAC1AE1B /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F114E74C14B97BE67063335C /* Pods_RunnerTests.framework */; };
+		DBB033909C535134805963F7 /* LiveBookingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0C22A2238CCA46D7FC2DABE /* LiveBookingController.swift */; };
+		F878FB93FC1C3CB91832C31D /* BookingLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EACA48A24CFFB0D3F0EDA50 /* BookingLiveActivity.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +32,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		E1C7E98A8C97200523B23C24 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1E858537EE6230CC37ADB011;
+			remoteInfo = BookingLiveActivity;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -40,9 +53,21 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DC11A00077EA042EFCBEB638 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				10D03534C7DA7A04DC498E48 /* BookingLiveActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		09CE530A3E88277328C52334 /* BookingLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BookingLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E7346D698A983EFE6ED7DDD /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
@@ -51,6 +76,8 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		3EACA48A24CFFB0D3F0EDA50 /* BookingLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookingLiveActivity.swift; sourceTree = "<group>"; };
+		605122897EC47F28EFE7202D /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7350573ED0A73F84339AE78E /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -64,13 +91,24 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AAF402368E879D2A1F87972B /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		ACAE2AA17AC46FD2B1175DB7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		B0C22A2238CCA46D7FC2DABE /* LiveBookingController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveBookingController.swift; sourceTree = "<group>"; };
 		B920E3905D523130B51261DE /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		C8A93D6C6C57A5E41B33209F /* BookingActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookingActivityAttributes.swift; sourceTree = "<group>"; };
 		E8F13D473CD7D49EF2B6F3DA /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		EEBFA2E9B1240331CED01F73 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F114E74C14B97BE67063335C /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4C801DB8B10ABA2C20A38433 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8829D6157FAEFB302A97BF9D /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5A15F987C217F16CEC8131F3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -98,6 +136,16 @@
 			path = RunnerTests;
 			sourceTree = "<group>";
 		};
+		3AA22C8A122306958B6639A2 /* BookingLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				3EACA48A24CFFB0D3F0EDA50 /* BookingLiveActivity.swift */,
+				605122897EC47F28EFE7202D /* Info.plist */,
+			);
+			name = BookingLiveActivity;
+			path = BookingLiveActivity;
+			sourceTree = "<group>";
+		};
 		4E56FB7F3B7C39EF98672DA4 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -110,6 +158,16 @@
 			);
 			name = Pods;
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		767F2B5406C3D312FCAC1771 /* LiveBooking */ = {
+			isa = PBXGroup;
+			children = (
+				C8A93D6C6C57A5E41B33209F /* BookingActivityAttributes.swift */,
+				B0C22A2238CCA46D7FC2DABE /* LiveBookingController.swift */,
+			);
+			name = LiveBooking;
+			path = LiveBooking;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -132,6 +190,7 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				4E56FB7F3B7C39EF98672DA4 /* Pods */,
 				B0081769AD4C9D44106596F0 /* Frameworks */,
+				3AA22C8A122306958B6639A2 /* BookingLiveActivity */,
 			);
 			sourceTree = "<group>";
 		};
@@ -140,6 +199,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				09CE530A3E88277328C52334 /* BookingLiveActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -157,6 +217,7 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				0E7346D698A983EFE6ED7DDD /* GoogleService-Info.plist */,
 				223C52C97A5432D3431CB870 /* Runner.entitlements */,
+				767F2B5406C3D312FCAC1771 /* LiveBooking */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -166,13 +227,39 @@
 			children = (
 				EEBFA2E9B1240331CED01F73 /* Pods_Runner.framework */,
 				F114E74C14B97BE67063335C /* Pods_RunnerTests.framework */,
+				C8DE1281A328525E29F4648D /* iOS */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C8DE1281A328525E29F4648D /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				ACAE2AA17AC46FD2B1175DB7 /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1E858537EE6230CC37ADB011 /* BookingLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E13911DEBB5470631549D2E6 /* Build configuration list for PBXNativeTarget "BookingLiveActivity" */;
+			buildPhases = (
+				B757D7B78140BA6FEE17A093 /* Sources */,
+				4C801DB8B10ABA2C20A38433 /* Frameworks */,
+				01F480938A105BDE39F9C89A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BookingLiveActivity;
+			productName = BookingLiveActivity;
+			productReference = 09CE530A3E88277328C52334 /* BookingLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -202,6 +289,7 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				DC11A00077EA042EFCBEB638 /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				FB705E7AF01283DD36DB2054 /* [CP] Embed Pods Frameworks */,
 				164B53B47D6ADED9663706B6 /* [CP] Copy Pods Resources */,
@@ -209,6 +297,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				1A4CEA1A9E73499ACFDD76A3 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -250,11 +339,19 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				1E858537EE6230CC37ADB011 /* BookingLiveActivity */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		01F480938A105BDE39F9C89A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807F294A63A400263BE5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -403,12 +500,29 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				39DA53D4030558D8950180EB /* BookingActivityAttributes.swift in Sources */,
+				DBB033909C535134805963F7 /* LiveBookingController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B757D7B78140BA6FEE17A093 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F878FB93FC1C3CB91832C31D /* BookingLiveActivity.swift in Sources */,
+				042747930E3ACEE609DC95B0 /* BookingActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1A4CEA1A9E73499ACFDD76A3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = BookingLiveActivity;
+			target = 1E858537EE6230CC37ADB011 /* BookingLiveActivity */;
+			targetProxy = E1C7E98A8C97200523B23C24 /* PBXContainerItemProxy */;
+		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
@@ -560,6 +674,60 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
 			name = Profile;
+		};
+		7743C7302CBDCE9212A4011A /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7B755LHC84;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BookingLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.carzone.BookingLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
+		86FA98AF7BA79E3A9653738A /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7B755LHC84;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BookingLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.carzone.BookingLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
 		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -719,6 +887,32 @@
 			};
 			name = Release;
 		};
+		DE39F52D73B90B61F26BCC01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7B755LHC84;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BookingLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.carzone.BookingLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -748,6 +942,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E13911DEBB5470631549D2E6 /* Build configuration list for PBXNativeTarget "BookingLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				86FA98AF7BA79E3A9653738A /* Release */,
+				DE39F52D73B90B61F26BCC01 /* Debug */,
+				7743C7302CBDCE9212A4011A /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

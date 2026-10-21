@@ -14,6 +14,9 @@ import UIKit
     // never shows a notification while the app is in the foreground.
     UNUserNotificationCenter.current().delegate = self
     GeneratedPluginRegistrant.register(with: self)
+    if let registrar = registrar(forPlugin: "LiveBookingController") {
+      LiveBookingController.register(with: registrar.messenger())
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

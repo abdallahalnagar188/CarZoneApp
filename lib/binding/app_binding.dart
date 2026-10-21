@@ -4,6 +4,7 @@ import '../core/local/lang_controller.dart';
 import '../core/local/theme_controller.dart';
 import '../core/services/carzone_db_service.dart';
 import '../core/services/deep_link_service.dart';
+import '../core/services/live_booking_service.dart';
 import '../core/services/session_service.dart';
 import '../features/auth/presentaion/controllers/auth_controller.dart';
 import '../features/booking/presentaion/controllers/booking_controller.dart';
@@ -42,6 +43,9 @@ class AppBinding extends Bindings {
     if (!Get.isRegistered<DeepLinkService>()) {
       Get.put(DeepLinkService(), permanent: true);
       Get.find<DeepLinkService>().init();
+    }
+    if (!Get.isRegistered<LiveBookingService>()) {
+      Get.put(LiveBookingService().init(), permanent: true);
     }
     if (!Get.isRegistered<BookingController>()) {
       Get.put(BookingController(), permanent: true);
