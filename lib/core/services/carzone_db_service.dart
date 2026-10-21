@@ -531,6 +531,45 @@ class CarzoneDbService extends GetxService {
     }
   }
 
+  /// Tells the server this device shows [orderId] in its live booking widget,
+  /// so status changes are pushed to the widget while the app is closed.
+  Future<bool> followLiveBooking({
+    required String orderId,
+    required String fcmToken,
+    String? activityToken,
+    required String locale,
+  }) async {
+    try {
+      await SupabaseService.client.from('live_booking_devices').upsert(
+        {
+          'order_id': orderId,
+          'platform': GetPlatform.isIOS ? 'ios' : 'android',
+          'fcm_token': fcmToken,
+          'activity_token': activityToken,
+          'locale': locale,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        onConflict: 'order_id,fcm_token',
+      );
+      return true;
+    } catch (e) {
+      dev.log('[CarzoneDbService] followLiveBooking error: $e');
+      return false;
+    }
+  }
+
+  Future<void> unfollowLiveBooking(String orderId, String fcmToken) async {
+    try {
+      await SupabaseService.client
+          .from('live_booking_devices')
+          .delete()
+          .eq('order_id', orderId)
+          .eq('fcm_token', fcmToken);
+    } catch (e) {
+      dev.log('[CarzoneDbService] unfollowLiveBooking error: $e');
+    }
+  }
+
   Future<void> markNotificationRead(String notifId) async {
     try {
       await SupabaseService.client

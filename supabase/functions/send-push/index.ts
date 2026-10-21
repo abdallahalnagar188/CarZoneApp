@@ -54,5 +54,48 @@ Deno.serve(async (req: Request) =>
       const { error } = await db.from("push_devices").delete().in("token", tokens);
       if (error) throw error;
     },
+    live: {
+      getOrder: async (orderId) => {
+        const { data, error } = await db
+          .from("orders")
+          .select(
+            "id, number, code, status, scheduled_at, duration_min, branches(name), order_items(name, type, position), order_events(status, at)",
+          )
+          .eq("id", orderId)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return null;
+        const items = [...(data.order_items ?? [])].sort((a, b) => a.position - b.position);
+        const primary = items.find((i) => i.type === "primary") ?? items[0];
+        const started = (data.order_events ?? [])
+          .filter((e) => e.status === "in_service")
+          .map((e) => e.at)
+          .sort()
+          .pop();
+        return {
+          id: data.id,
+          number: data.number,
+          code: data.code,
+          status: data.status,
+          scheduledAt: data.scheduled_at,
+          durationMin: data.duration_min,
+          branchName: (data.branches as { name?: unknown } | null)?.name ?? null,
+          serviceName: primary?.name ?? null,
+          serviceStartedAt: started ?? null,
+        };
+      },
+      getDevices: async (orderId) => {
+        const { data, error } = await db
+          .from("live_booking_devices")
+          .select("id, platform, fcm_token, activity_token, locale")
+          .eq("order_id", orderId);
+        if (error) throw error;
+        return data ?? [];
+      },
+      deleteDevices: async (ids) => {
+        const { error } = await db.from("live_booking_devices").delete().in("id", ids);
+        if (error) throw error;
+      },
+    },
   })
 );

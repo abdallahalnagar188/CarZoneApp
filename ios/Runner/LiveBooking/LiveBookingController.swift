@@ -3,9 +3,21 @@ import Flutter
 import Foundation
 
 /// Bridges `carzone/live_booking` (Flutter's LiveBookingService) to ActivityKit.
+/// Activities are started with a push token so the server (send-push) can update
+/// them while the app is closed; tokens go back to Flutter, which stores them.
 final class LiveBookingController {
+  private static var channel: FlutterMethodChannel?
+  /// Latest ActivityKit push token per order id, for Flutter to read at start-up.
+  private static var pushTokens: [String: String] = [:]
+  private static var observed = Set<String>()
+
   static func register(with messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(name: "carzone/live_booking", binaryMessenger: messenger)
+    self.channel = channel
+    if #available(iOS 16.2, *) {
+      // Activities left from an earlier launch keep receiving pushes; refresh their tokens.
+      Activity<BookingActivityAttributes>.activities.forEach(observeToken)
+    }
     channel.setMethodCallHandler { call, result in
       guard #available(iOS 16.2, *) else { return result(nil) }
       let args = call.arguments as? [String: Any] ?? [:]
@@ -17,6 +29,8 @@ final class LiveBookingController {
         let orderId = args["orderId"] as? String ?? ""
         Task { await end(orderId: orderId) }
         result(nil)
+      case "pushTokens":
+        result(pushTokens)
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -57,9 +71,32 @@ final class LiveBookingController {
       isArabic: args["isArabic"] as? Bool ?? true
     )
     do {
-      _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
+      observeToken(try Activity.request(attributes: attributes, content: content, pushType: .token))
     } catch {
       NSLog("[LiveBooking] could not start the Live Activity: \(error)")
+    }
+  }
+
+  /// Forwards the activity's push token (and any later rotation) to Flutter.
+  @available(iOS 16.2, *)
+  private static func observeToken(_ activity: Activity<BookingActivityAttributes>) {
+    // The bookkeeping and the channel live on the main thread.
+    DispatchQueue.main.async {
+      guard observed.insert(activity.id).inserted else { return }
+      let orderId = activity.attributes.orderId
+      Task {
+        for await data in activity.pushTokenUpdates {
+          let token = data.map { String(format: "%02x", $0) }.joined()
+          await MainActor.run {
+            pushTokens[orderId] = token
+            channel?.invokeMethod("pushToken", arguments: ["orderId": orderId, "token": token])
+          }
+        }
+        await MainActor.run {
+          observed.remove(activity.id)
+          pushTokens.removeValue(forKey: orderId)
+        }
+      }
     }
   }
 

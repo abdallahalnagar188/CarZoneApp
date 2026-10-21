@@ -9,12 +9,18 @@ import '../../commons/models/order_model.dart';
 import '../enums/enums.dart';
 import '../helpers/format_helper.dart';
 import 'carzone_db_service.dart';
+import 'notification_service.dart';
 import 'session_service.dart';
 
 /// Mirrors the customer's current booking outside the app, like ride-hailing
 /// apps do: an iOS Live Activity (lock screen + Dynamic Island) and an Android
 /// ongoing "live update" notification. Native code only renders what it is
 /// given here, so all wording and localisation stays in Dart.
+///
+/// While the app is closed the server keeps the widget moving: each device
+/// showing a booking is registered in live_booking_devices, and send-push
+/// sends it every status change (see supabase/functions/send-push/live.ts,
+/// which repeats this payload and its wording).
 class LiveBookingService extends GetxService with WidgetsBindingObserver {
   static const _channel = MethodChannel('carzone/live_booking');
 
@@ -48,7 +54,15 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
   String? _lastSent;
   final _seenNotifications = <String>{};
 
+  /// iOS: ActivityKit push token per order id, from the native side.
+  final _activityTokens = <String, String>{};
+
+  /// Order id → the device registration last sent to the server for it.
+  final _followed = <String, ({String fcmToken, String? activityToken, String locale})>{};
+
   LiveBookingService init() {
+    _channel.setMethodCallHandler(_onNativeCall);
+    _loadActivityTokens();
     _seenNotifications.addAll(_db.notifications.map((n) => n.id));
     ever(_db.orders, (_) => _reconcile());
     ever(_db.notifications, (_) => _applyStatusNotifications());
@@ -100,6 +114,8 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
     // The tracked booking just finished: show its final state, then let it go.
     if (tracked != null && !tracked.status.isUpcoming) {
       _send('show', _payload(tracked, isFinal: true));
+      // The server stops following a finished order by itself.
+      _followed.remove(tracked.id);
       _trackedId = null;
       return;
     }
@@ -112,6 +128,7 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
     if (_trackedId != null && _trackedId != next.id) _end(_trackedId!);
     _trackedId = next.id;
     _send('show', _payload(next));
+    _follow(next.id);
   }
 
   /// The booking a customer is waiting on: one in progress first, then the
@@ -176,6 +193,54 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
   void _end(String orderId) {
     _lastSent = null;
     _invoke('end', {'orderId': orderId});
+    _unfollow(orderId);
+  }
+
+  /// iOS hands over each Live Activity's push token as soon as ActivityKit has it.
+  Future<void> _onNativeCall(MethodCall call) async {
+    if (call.method != 'pushToken') return;
+    final args = Map<String, dynamic>.from(call.arguments as Map);
+    final orderId = args['orderId'] as String?;
+    final token = args['token'] as String?;
+    if (orderId == null || token == null) return;
+    _activityTokens[orderId] = token;
+    if (orderId == _trackedId) _follow(orderId);
+  }
+
+  /// Tokens of activities started before this launch, which keep receiving pushes.
+  Future<void> _loadActivityTokens() async {
+    if (!GetPlatform.isIOS) return;
+    try {
+      _activityTokens.addAll(await _channel.invokeMapMethod<String, String>('pushTokens') ?? {});
+      if (_trackedId != null) _follow(_trackedId!);
+    } catch (e) {
+      dev.log('[LiveBookingService] pushTokens failed: $e');
+    }
+  }
+
+  /// Registers this device for server pushes of [orderId]'s status.
+  Future<void> _follow(String orderId) async {
+    if (!(GetPlatform.isIOS || GetPlatform.isAndroid) || !Get.isRegistered<NotificationService>()) return;
+    final activityToken = _activityTokens[orderId];
+    // iOS needs the activity's own token; _onNativeCall comes back with it.
+    if (GetPlatform.isIOS && activityToken == null) return;
+    final fcmToken = await NotificationService.to.deviceToken();
+    if (fcmToken == null || orderId != _trackedId) return;
+    final device = (fcmToken: fcmToken, activityToken: activityToken, locale: FormatHelper.isAr ? 'ar' : 'en');
+    if (_followed[orderId] == device) return;
+    _followed[orderId] = device;
+    final saved = await _db.followLiveBooking(
+      orderId: orderId,
+      fcmToken: device.fcmToken,
+      activityToken: device.activityToken,
+      locale: device.locale,
+    );
+    if (!saved) _followed.remove(orderId);
+  }
+
+  void _unfollow(String orderId) {
+    final device = _followed.remove(orderId);
+    if (device != null) _db.unfollowLiveBooking(orderId, device.fcmToken);
   }
 
   void _send(String method, Map<String, dynamic> payload) {

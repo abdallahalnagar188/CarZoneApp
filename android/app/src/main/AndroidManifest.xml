@@ -80,6 +80,15 @@
                       android:pathPrefix="/wash" />
             </intent-filter>
         </activity>
+        <!-- Live booking updates pushed by the server while the app is closed (send-push, kind=live_booking). -->
+        <receiver
+            android:name=".LiveBookingPushReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </receiver>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAnsK0I2lw7YP3qhUthMBtlsiJ31WVkPrY" />

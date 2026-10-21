@@ -1,7 +1,9 @@
 // Push delivery for customer notifications.
 //
 // Called by the trg_customer_notifications_send_push trigger (pg_net) with a
-// Database Webhook payload for every INSERT on public.customer_notifications.
+// Database Webhook payload for every INSERT on public.customer_notifications,
+// and by trg_orders_live_push for status changes of orders shown in a live
+// booking widget (handled in live.ts).
 // Looks up the customer's auth user and their customer-app tokens in
 // push_devices, and sends each one an FCM message the app understands
 // (lib/core/services/notification_service.dart):
@@ -16,6 +18,7 @@
 // also sends; see index.ts). The function is deployed with --no-verify-jwt, so
 // this header is the only gate.
 import type { FcmSend, SendResult } from "./fcm.ts";
+import { type LiveDeps, sendLiveUpdate } from "./live.ts";
 
 export interface NotificationRow {
   id: string;
@@ -38,6 +41,8 @@ export interface Deps {
   deleteTokens: (tokens: string[]) => Promise<void>;
   /** Null when the Firebase service account is missing or invalid. */
   send: FcmSend | null;
+  /** Live booking widget lookups; orders webhooks are skipped without them. */
+  live?: LiveDeps;
 }
 
 const ANDROID_CHANNEL = "carzone_orders";
@@ -108,11 +113,20 @@ export async function handleSendPush(req: Request, deps: Deps): Promise<Response
     return json(401, { error: "Unauthorized" });
   }
 
-  let payload: { type?: string; table?: string; schema?: string; record?: NotificationRow };
+  let payload: { type?: string; table?: string; schema?: string; record?: NotificationRow & { status?: string } };
   try {
     payload = await req.json();
   } catch (_) {
     return json(400, { error: "Invalid JSON" });
+  }
+
+  if (payload?.type === "UPDATE" && payload?.table === "orders" && payload?.record?.id) {
+    if (!deps.send) {
+      console.error("[send-push] Firebase service account is missing or invalid; cannot send live", payload.record.id);
+      return json(500, { error: "FCM is not configured" });
+    }
+    if (!deps.live) return json(200, { skipped: "live booking is not configured" });
+    return json(200, await sendLiveUpdate(payload.record.id, deps.live, deps.send));
   }
 
   const row = payload?.record;

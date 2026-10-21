@@ -159,6 +159,8 @@ class NotificationService extends GetxService {
     // 1. Foreground FCM message listener
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       dev.log('[NotificationService] Foreground message received: ${message.data}');
+      // Silent live booking updates are drawn natively (LiveBookingPushReceiver).
+      if (message.data['kind'] == 'live_booking') return;
       // The realtime subscription may already have shown this notification.
       if (_alreadyReceived(message)) return;
       _showRemoteNotification(message);
@@ -194,13 +196,7 @@ class NotificationService extends GetxService {
     if (_syncingToken || SupabaseService.client.auth.currentUser == null) return;
     _syncingToken = true;
     try {
-      // iOS: getToken() throws until APNs has handed the app its device token.
-      if (GetPlatform.isIOS && !await _waitForApnsToken()) {
-        dev.log('[NotificationService] No APNs token; push is unavailable on this device/build.');
-        return;
-      }
-      // ignore: deprecated_member_use
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await deviceToken();
       if (token != null) {
         dev.log('[NotificationService] FCM Token: $token');
         if (await _saveTokenToDb(token)) {
@@ -211,6 +207,22 @@ class NotificationService extends GetxService {
       dev.log('[NotificationService] syncToken error: $e');
     } finally {
       _syncingToken = false;
+    }
+  }
+
+  /// This device's FCM token, or null where push is unavailable.
+  Future<String?> deviceToken() async {
+    try {
+      // iOS: getToken() throws until APNs has handed the app its device token.
+      if (GetPlatform.isIOS && !await _waitForApnsToken()) {
+        dev.log('[NotificationService] No APNs token; push is unavailable on this device/build.');
+        return null;
+      }
+      // ignore: deprecated_member_use
+      return await FirebaseMessaging.instance.getToken();
+    } catch (e) {
+      dev.log('[NotificationService] deviceToken error: $e');
+      return null;
     }
   }
 
