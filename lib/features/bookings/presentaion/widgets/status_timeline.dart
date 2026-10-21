@@ -23,20 +23,42 @@ class StatusTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
     final done = {for (final t in order.timeline) t.key: t.at};
+    done.putIfAbsent('pending', () => order.createdAt);
+
     final terminal = order.status == OrderStatus.cancelled || order.status == OrderStatus.noShow;
-    final rows = terminal
-        ? order.timeline.map((t) => t.key).where((k) => k != 'rescheduled').toList()
-        : _flow;
+    final currentKey = order.status.key;
+    final currentIdx = _flow.indexOf(currentKey);
+
+    final List<String> rows;
+    if (terminal) {
+      final timelineKeys = order.timeline.map((t) => t.key).where((k) => k != 'rescheduled').toList();
+      if (!timelineKeys.contains(currentKey)) {
+        timelineKeys.add(currentKey);
+      }
+      rows = timelineKeys.isEmpty ? ['pending', currentKey] : timelineKeys;
+    } else {
+      rows = _flow;
+    }
+
     return RoundedContainer(
       child: Column(
         children: List.generate(rows.length, (i) {
           final key = rows[i];
           final at = done[key];
-          final reached = at != null;
-          final current = key == order.status.key;
-          final color = reached
-              ? (terminal && i == rows.length - 1 ? StatusBadge.colorFor(order.status) : AppColors.primary)
-              : AppColors.ink300;
+          final isCurrent = key == currentKey;
+          final isReached = terminal
+              ? (at != null || isCurrent)
+              : (currentIdx >= 0 ? i <= currentIdx : at != null);
+          final isCompleted = terminal
+              ? (at != null && !isCurrent)
+              : (currentIdx >= 0 ? i < currentIdx : (at != null && !isCurrent));
+
+          final stepStatus = OrderStatus.values.firstWhereOrNull((s) => s.key == key);
+          final statusColor = (stepStatus != null) ? StatusBadge.colorFor(stepStatus) : AppColors.primary;
+          final color = isCurrent
+              ? statusColor
+              : (isCompleted ? AppColors.primary : AppColors.ink300);
+
           return IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,23 +67,48 @@ class StatusTimeline extends StatelessWidget {
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      width: current ? 18.r : 14.r,
-                      height: current ? 18.r : 14.r,
+                      width: isCurrent ? 20.r : 16.r,
+                      height: isCurrent ? 20.r : 16.r,
                       decoration: BoxDecoration(
-                        color: reached ? color : AppColors.surface,
+                        color: isCompleted
+                            ? AppColors.primary
+                            : (isCurrent ? AppColors.tint(statusColor) : AppColors.surface),
                         shape: BoxShape.circle,
-                        border: Border.all(color: color, width: 2.5),
-                        boxShadow: current
-                            ? [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 10, spreadRadius: 2)]
+                        border: Border.all(
+                          color: isReached ? color : AppColors.line,
+                          width: isCurrent ? 3 : 2,
+                        ),
+                        boxShadow: isCurrent
+                            ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.35),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                )
+                              ]
                             : null,
                       ),
+                      child: isCompleted
+                          ? Icon(Icons.check, size: 10.sp, color: Colors.white)
+                          : (isCurrent
+                              ? Center(
+                                  child: Container(
+                                    width: 7.r,
+                                    height: 7.r,
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                )
+                              : null),
                     ),
                     if (i < rows.length - 1)
                       Expanded(
                         child: Container(
                           width: 2.5,
                           margin: EdgeInsets.symmetric(vertical: 2.h),
-                          color: reached && done[rows[i + 1]] != null ? AppColors.primary : AppColors.line,
+                          color: isCompleted ? AppColors.primary : AppColors.line,
                         ),
                       ),
                   ],
@@ -76,12 +123,19 @@ class StatusTimeline extends StatelessWidget {
                           child: Text(
                             _label(key),
                             style: theme.titleSmall?.copyWith(
-                              color: reached ? AppColors.ink900 : AppColors.ink500,
-                              fontWeight: current ? FontWeight.w700 : FontWeight.w500,
+                              color: isReached ? AppColors.ink900 : AppColors.ink500,
+                              fontWeight: isCurrent ? FontWeight.w800 : (isCompleted ? FontWeight.w600 : FontWeight.w500),
                             ),
                           ),
                         ),
-                        if (at != null) Text(FormatHelper.time(at), style: theme.labelSmall),
+                        if (at != null)
+                          Text(
+                            FormatHelper.time(at),
+                            style: theme.labelSmall?.copyWith(
+                              color: isCurrent ? color : AppColors.ink500,
+                              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
                       ],
                     ),
                   ),

@@ -201,7 +201,7 @@ class CarzoneDbService extends GetxService {
           final lookupId = customerId ?? currentUser.id;
           final orderRes = await client
               .from('orders')
-              .select('*, order_items(*)')
+              .select('*, order_items(*), order_events(*)')
               .eq('customer_id', lookupId)
               .order('scheduled_at', ascending: false)
               .limit(5);
@@ -337,7 +337,7 @@ class CarzoneDbService extends GetxService {
 
       final res = await client
           .from('orders')
-          .select('*, order_items(*)')
+          .select('*, order_items(*), order_events(*)')
           .eq('customer_id', effectiveCustId)
           .order('scheduled_at', ascending: false)
           .range(from, to);

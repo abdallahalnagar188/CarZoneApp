@@ -43,6 +43,9 @@ class BookingDetailsController extends GetxController {
     super.onInit();
     orderId = Get.arguments?.toString() ?? '';
     _sync();
+    if (orderId.isNotEmpty) {
+      _db.refreshOrder(orderId);
+    }
     ever(_db.orders, (_) => _sync());
     ever(_db.reviews, (_) => order.refresh());
   }

@@ -53,7 +53,7 @@ class BookingController extends GetxController {
   PriceQuote get quote => _pricing.quote(
         branchId: branchId.value,
         primaryId: primaryId.value,
-        addonIds: addonIds,
+        addonIds: addonIds.toList(),
       );
 
   int get durationMin => rescheduleOrder.value?.durationMin ?? quote.durationMin;
