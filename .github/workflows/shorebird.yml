@@ -37,6 +37,12 @@ permissions:
   contents: read
   id-token: write
 
+env:
+  # Pin Flutter so a new stable release can't change the build. Releases are
+  # built with this version and patches reuse their release's version; bump it
+  # only together with a new release (and the Android Gradle Plugin it needs).
+  FLUTTER_VERSION: '3.47.7'
+
 jobs:
   detect-changes:
     name: Detect Change Type
@@ -113,6 +119,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Set up Shorebird
@@ -147,8 +154,8 @@ jobs:
           fi
 
           if [ "$ACTION" = "release" ]; then
-            echo "Executing: shorebird release android --no-confirm"
-            shorebird release android --no-confirm
+            echo "Executing: shorebird release android --no-confirm --flutter-version=$FLUTTER_VERSION"
+            shorebird release android --no-confirm --flutter-version="$FLUTTER_VERSION"
           else
             echo "Executing: shorebird patch android --no-confirm --release-version=latest"
             shorebird patch android --no-confirm --release-version=latest
@@ -169,6 +176,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Set up Shorebird
@@ -203,8 +211,8 @@ jobs:
           fi
 
           if [ "$ACTION" = "release" ]; then
-            echo "Executing: shorebird release ios --no-confirm --no-codesign"
-            shorebird release ios --no-confirm --no-codesign
+            echo "Executing: shorebird release ios --no-confirm --no-codesign --flutter-version=$FLUTTER_VERSION"
+            shorebird release ios --no-confirm --no-codesign --flutter-version="$FLUTTER_VERSION"
           else
             echo "Executing: shorebird patch ios --no-confirm --release-version=latest"
             shorebird patch ios --no-confirm --release-version=latest
