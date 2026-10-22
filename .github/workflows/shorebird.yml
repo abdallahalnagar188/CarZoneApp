@@ -184,8 +184,22 @@ jobs:
         with:
           cache: true
 
+      # Keep iOS on CocoaPods. Under Swift Package Manager (on by default in the
+      # pinned Flutter) firebase-ios-sdk 13 needs app-check 12 while
+      # google_sign_in_ios (GoogleSignIn 8) needs app-check 11, so Xcode can't
+      # resolve packages. Done here rather than in pubspec.yaml because older
+      # local Flutter versions reject the pubspec `config` key.
+      - name: Disable Swift Package Manager
+        run: flutter config --no-enable-swift-package-manager
+
       - name: Install Dependencies
         run: flutter pub get
+
+      # The committed Podfile.lock comes from local builds on an older Flutter
+      # that resolves older plugins (e.g. Firebase 12 pods); CI's plugins need
+      # Firebase 13, which a stale lock would refuse. Resolve pods fresh here.
+      - name: Reset iOS pod lock
+        run: rm -f ios/Podfile.lock
 
       - name: Check Shorebird Configuration
         id: check-shorebird-config
