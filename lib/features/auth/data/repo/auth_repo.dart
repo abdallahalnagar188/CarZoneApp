@@ -279,16 +279,17 @@ class AuthRepo {
 
     // Sign out first so the native account picker dialog appears every time
     try {
-      await googleSignIn.signOut();
+      await googleSignIn.signOut().timeout(const Duration(seconds: 5));
     } catch (_) {}
 
+    // No timeout on signIn: the account picker waits for the user.
     final googleUser = await googleSignIn.signIn();
     if (googleUser == null) {
       // User canceled or dismissed the popup dialog
       return null;
     }
 
-    final googleAuth = await googleUser.authentication;
+    final googleAuth = await googleUser.authentication.timeout(_googleStepTimeout);
     final idToken = googleAuth.idToken;
     final accessToken = googleAuth.accessToken;
 
@@ -297,13 +298,23 @@ class AuthRepo {
       throw const AuthException('تعذر الحصول على رمز التحقق من Google. يرجى التأكد من إضافة Web Client ID.');
     }
 
-    final res = await _client.auth.signInWithIdToken(
-      provider: OAuthProvider.google,
-      idToken: idToken,
-      accessToken: accessToken,
-    );
+    // Supabase rejects the token unless the Google provider lists this
+    // platform's client ID and, on iOS, skips the nonce check (the Google iOS
+    // SDK embeds a nonce it never exposes).
+    final res = await _client.auth
+        .signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: idToken,
+          accessToken: accessToken,
+        )
+        .timeout(_googleStepTimeout);
     return res;
   }
+
+  static const _googleStepTimeout = Duration(seconds: 20);
+
+  /// One listener for the browser flow, however many times the user retries.
+  static StreamSubscription<AuthState>? _oauthSub;
 
   /// In-app browser view OAuth fallback (opens in-app modal instead of separate Chrome app).
   /// Requires carzone://login-callback in Supabase Auth -> URL Configuration -> Redirect URLs.
@@ -311,21 +322,32 @@ class AuthRepo {
     // supabase_flutter signs in from the carzone://login-callback link but leaves
     // the in-app Safari sheet open on iOS, so close it once the session arrives.
     if (GetPlatform.isIOS) {
-      StreamSubscription<AuthState>? sub;
-      sub = _client.auth.onAuthStateChange.listen((state) {
+      // A sheet left open by an earlier attempt blocks the new one from showing.
+      try {
+        await closeInAppWebView();
+      } catch (_) {}
+      await _oauthSub?.cancel();
+      final sub = _client.auth.onAuthStateChange.listen((state) {
         if (state.event == AuthChangeEvent.signedIn) {
           closeInAppWebView();
-          sub?.cancel();
+          _oauthSub?.cancel();
+          _oauthSub = null;
         }
       });
-      Future.delayed(const Duration(minutes: 10), () => sub?.cancel());
+      _oauthSub = sub;
+      Future.delayed(const Duration(minutes: 10), () {
+        sub.cancel();
+        if (identical(_oauthSub, sub)) _oauthSub = null;
+      });
     }
     try {
-      final res = await _client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'carzone://login-callback',
-        authScreenLaunchMode: LaunchMode.inAppBrowserView,
-      );
+      final res = await _client.auth
+          .signInWithOAuth(
+            OAuthProvider.google,
+            redirectTo: 'carzone://login-callback',
+            authScreenLaunchMode: LaunchMode.inAppBrowserView,
+          )
+          .timeout(_googleStepTimeout);
       return res;
     } on AuthException catch (e) {
       dev.log('[AuthRepo] signInWithGoogleInAppBrowser AuthException: ${e.message}');

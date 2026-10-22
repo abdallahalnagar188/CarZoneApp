@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -51,28 +52,38 @@ class AuthController extends GetxController {
     if (googleSigningIn.value || sending.value) return;
     googleSigningIn.value = true;
     try {
-      bool nativeSucceeded = false;
+      AuthResponse? res;
       if (_repo.canUseNativeGoogle) {
         try {
-          final res = await _repo.signInWithGoogleNative();
+          res = await _repo.signInWithGoogleNative();
           if (res == null) {
             // User intentionally dismissed or canceled the popup dialog
             return;
           }
-          await _handleSuccessfulAuth(res);
-          nativeSucceeded = true;
+        } on PlatformException catch (e) {
+          // iOS reports a dismissed picker as an error, not as a null account.
+          if (e.code == 'sign_in_canceled') return;
+          debugPrint('[AuthController] Native Google sign-in failed, trying browser fallback: $e');
         } catch (nativeError) {
           debugPrint('[AuthController] Native Google sign-in failed, trying browser fallback: $nativeError');
         }
       }
 
-      if (!nativeSucceeded) {
-        // Fallback: in-app browser view
-        final started = await _repo.signInWithGoogleInAppBrowser();
-        if (!started) {
-          Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
-        }
+      // Only a failed Google/Supabase handshake falls back to the browser: once
+      // the session exists, a later failure must not start a second sign-in.
+      if (res != null) {
+        await _handleSuccessfulAuth(res);
+        return;
       }
+
+      // Fallback: in-app browser view
+      final started = await _repo.signInWithGoogleInAppBrowser();
+      if (!started) {
+        Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
+      }
+    } on ApiException catch (e) {
+      // Signed in, but the profile lookup lost the connection: say so, not "Google failed".
+      Utils.getSnakBar(message: e.message, type: TosterTypes.failed);
     } on AuthException catch (e) {
       // Not an OTP failure: show the Google message, keep the raw cause in the log.
       debugPrint('[AuthController] signInWithGoogle AuthException: ${e.message} (status: ${e.statusCode}, code: ${e.code})');
@@ -101,6 +112,10 @@ class AuthController extends GetxController {
     if (existing == null && authUser.phone != null && authUser.phone!.isNotEmpty) {
       existing = await _repo.findCustomerByPhone(authUser.phone!);
     }
+
+    // SessionService also reacts to the sign-in and may have moved on already;
+    // navigating again would push a second profile setup page.
+    if (Get.currentRoute != Routes.loginRoute && Get.currentRoute != Routes.otpRoute) return;
 
     if (existing != null) {
       await _session.signIn(existing, token: token);
