@@ -341,14 +341,20 @@ class AuthRepo {
       });
     }
     try {
-      final res = await _client.auth
-          .signInWithOAuth(
-            OAuthProvider.google,
-            redirectTo: 'carzone://login-callback',
-            authScreenLaunchMode: LaunchMode.inAppBrowserView,
-          )
-          .timeout(_googleStepTimeout);
-      return res;
+      // No timeout: on iOS the call only returns once the sheet's first page
+      // loads or the user closes it.
+      final res = await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'carzone://login-callback',
+        authScreenLaunchMode: LaunchMode.inAppBrowserView,
+        // Without this Google silently reuses the account signed in to Safari,
+        // which may not be the one the user just picked.
+        queryParams: const {'prompt': 'select_account'},
+      );
+      // When Google redirects straight back to carzone:// the in-app sheet
+      // reports "failed to load" although sign-in goes on through the link,
+      // so on iOS only an exception means the browser could not start.
+      return GetPlatform.isIOS || res;
     } on AuthException catch (e) {
       dev.log('[AuthRepo] signInWithGoogleInAppBrowser AuthException: ${e.message}');
       return false;
