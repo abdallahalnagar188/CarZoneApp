@@ -72,17 +72,25 @@ class HomePage extends StatelessWidget {
                 return _enter(0, const NearbyWashesList());
               }),
             ),
+            // No live offers: drop the whole section instead of an empty strip.
             SliverToBoxAdapter(
-              child: _enter(
-                5,
-                SectionHeader(
-                  title: 'home.offers'.tr,
-                  actionText: 'home.seeAll'.tr,
-                  onAction: controller.openOffers,
-                ),
-              ),
+              child: Obx(() {
+                if (controller.offers.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  children: [
+                    _enter(
+                      5,
+                      SectionHeader(
+                        title: 'home.offers'.tr,
+                        actionText: 'home.seeAll'.tr,
+                        onAction: controller.openOffers,
+                      ),
+                    ),
+                    _enter(6, const OffersCarousel()),
+                  ],
+                );
+              }),
             ),
-            SliverToBoxAdapter(child: _enter(6, const OffersCarousel())),
             SliverToBoxAdapter(child: 24.height),
             SliverToBoxAdapter(child: _enter(7, const MapPreviewCard())),
             SliverToBoxAdapter(child: 130.height),
