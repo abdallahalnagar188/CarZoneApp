@@ -25,6 +25,9 @@ class NotificationsPage extends StatelessWidget {
         }
 
         final groups = controller.grouped;
+        if (groups.isEmpty && controller.error.value != null) {
+          return AppErrorState(message: controller.error.value, onRetry: controller.refreshNotifications);
+        }
         if (groups.isEmpty) {
           return RefreshIndicator(
             onRefresh: controller.refreshNotifications,

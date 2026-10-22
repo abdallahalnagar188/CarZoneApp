@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 
 import '../../../../commons/models/customer_model.dart';
 import '../../../../core/constance/supabase_constants.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/services/carzone_db_service.dart';
 import '../../../../core/services/supabase_service.dart';
 
@@ -19,11 +20,16 @@ class AuthRepo {
 
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
 
+  /// The last [sendOtp] / [verifyOtp] failed on the connection, not on the
+  /// code, so it should not count as a wrong attempt.
+  bool lastFailureWasNetwork = false;
+
   /// Send a phone OTP via Supabase Auth.
   /// Phone must be in E.164 format, e.g. +201001234567
   Future<String?> sendOtp(String e164Phone) async {
+    lastFailureWasNetwork = false;
     try {
-      await _client.auth.signInWithOtp(phone: e164Phone);
+      await ApiCall.write(() => _client.auth.signInWithOtp(phone: e164Phone), tag: 'sendOtp');
       return null; // success
     } on AuthException catch (e) {
       dev.log('[AuthRepo] sendOtp error: ${e.message} (status: ${e.statusCode})');
@@ -37,11 +43,15 @@ class AuthRepo {
   /// Verify the OTP code the user entered.
   /// Returns null on success, or an error key on failure.
   Future<String?> verifyOtp(String e164Phone, String code) async {
+    lastFailureWasNetwork = false;
     try {
-      final response = await _client.auth.verifyOTP(
-        phone: e164Phone,
-        token: code,
-        type: OtpType.sms,
+      final response = await ApiCall.write(
+        () => _client.auth.verifyOTP(
+          phone: e164Phone,
+          token: code,
+          type: OtpType.sms,
+        ),
+        tag: 'verifyOtp',
       );
       if (response.session == null) {
         return 'otp.invalid'.tr;
@@ -59,6 +69,12 @@ class AuthRepo {
   /// Map raw backend exceptions (Twilio 20003, sms_send_failed, network errors)
   /// to clean, user-friendly localized messages without exposing internal URLs or technical errors.
   String mapAuthError(dynamic error, {bool isVerify = false}) {
+    final failure = error is Object ? ApiException.from(error) : null;
+    if (failure != null) {
+      lastFailureWasNetwork = true;
+      return failure.message;
+    }
+
     if (error is AuthException) {
       final msg = error.message.toLowerCase();
       final code = (error.statusCode ?? '').toLowerCase();
@@ -113,6 +129,8 @@ class AuthRepo {
   }
 
   /// Find an existing customer in the local DB or Supabase by phone number.
+  /// Throws [ApiException] when the lookup could not reach the server, so a
+  /// lost connection is not mistaken for "no such customer".
   Future<CustomerModel?> findCustomerByPhone(String phone) async {
     final cleanPhone = phone.replaceAll(' ', '');
     final local = _db.customers.firstWhereOrNull(
@@ -120,16 +138,17 @@ class AuthRepo {
     );
     if (local != null) return local;
     try {
-      final res = await _client
-          .from('customers')
-          .select()
-          .eq('phone', cleanPhone)
-          .maybeSingle();
+      final res = await ApiCall.read(
+        () => _client.from('customers').select().eq('phone', cleanPhone).maybeSingle(),
+        tag: 'customer by phone',
+      );
       if (res != null) {
         final cust = CustomerModel.fromJson(Map<String, dynamic>.from(res));
         _db.customers.add(cust);
         return cust;
       }
+    } on ApiException {
+      rethrow;
     } catch (e) {
       dev.log('[AuthRepo] findCustomerByPhone error: $e');
     }
@@ -137,22 +156,24 @@ class AuthRepo {
   }
 
   /// Find an existing customer by their Supabase auth UID.
+  /// Throws [ApiException] when the lookup could not reach the server.
   Future<CustomerModel?> findCustomerByAuthId(String authId) async {
     final local = _db.customers.firstWhereOrNull(
       (c) => c.userId == authId || c.id == authId,
     );
     if (local != null) return local;
     try {
-      final res = await _client
-          .from('customers')
-          .select()
-          .eq('user_id', authId)
-          .maybeSingle();
+      final res = await ApiCall.read(
+        () => _client.from('customers').select().eq('user_id', authId).maybeSingle(),
+        tag: 'customer by auth id',
+      );
       if (res != null) {
         final cust = CustomerModel.fromJson(Map<String, dynamic>.from(res));
         _db.customers.add(cust);
         return cust;
       }
+    } on ApiException {
+      rethrow;
     } catch (e) {
       dev.log('[AuthRepo] findCustomerByAuthId error: $e');
     }
@@ -161,7 +182,8 @@ class AuthRepo {
 
   /// Atomically sync/find/create customer profile using Postgres RPC.
   /// The server links an existing customer only through the OTP-verified phone.
-  /// Throws [PhoneInUseException] when the number belongs to another account.
+  /// Throws [PhoneInUseException] when the number belongs to another account,
+  /// [ApiException] when the server could not be reached.
   Future<CustomerModel?> syncProfile({
     required String phone,
     String? name,
@@ -171,11 +193,14 @@ class AuthRepo {
     try {
       final cleanPhone = phone.replaceAll(' ', '');
       final effectiveToken = token ?? _client.auth.currentSession?.accessToken;
-      final res = await _client.rpc('sync_customer_profile', params: {
-        'p_phone': cleanPhone,
-        if (name != null) 'p_name': name.trim(),
-        'p_locale': locale ?? (Get.locale?.languageCode ?? 'ar'),
-      });
+      final res = await ApiCall.write(
+        () => _client.rpc('sync_customer_profile', params: {
+          'p_phone': cleanPhone,
+          if (name != null) 'p_name': name.trim(),
+          'p_locale': locale ?? (Get.locale?.languageCode ?? 'ar'),
+        }),
+        tag: 'sync_customer_profile',
+      );
       if (res != null) {
         final map = Map<String, dynamic>.from(res as Map);
         final cust = CustomerModel.fromJson(map);
@@ -193,6 +218,8 @@ class AuthRepo {
     } on PostgrestException catch (e) {
       dev.log('[AuthRepo] syncProfile refused: ${e.message}');
       if (e.message == 'phone_in_use') throw PhoneInUseException();
+    } on ApiException {
+      rethrow;
     } catch (e) {
       dev.log('[AuthRepo] syncProfile error: $e');
     }

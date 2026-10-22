@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'binding/app_binding.dart';
+import 'commons/widgets/connectivity/offline_banner.dart';
 import 'commons/styles/themes/app_theme.dart';
 import 'core/local/app_translation.dart';
 import 'core/local/lang_controller.dart';
@@ -41,7 +42,7 @@ class MyApp extends StatelessWidget {
               ResponsiveHelper.configureClampedScreenUtil(context);
               return AnnotatedRegion<SystemUiOverlayStyle>(
                 value: SystemUi.adaptive,
-                child: child ?? const SizedBox.shrink(),
+                child: OfflineBanner(child: child ?? const SizedBox.shrink()),
               );
             },
           ),

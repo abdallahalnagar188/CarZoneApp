@@ -7,6 +7,7 @@ import '../../commons/models/localized_text.dart';
 import '../../commons/models/order_model.dart';
 import '../../commons/models/review_model.dart';
 import '../enums/enums.dart';
+import '../network/api_call.dart';
 import 'availability_service.dart';
 import 'carzone_db_service.dart';
 import 'supabase_service.dart';
@@ -38,10 +39,12 @@ class OrderService {
   };
 
   /// Orders are written only by server RPCs, which price, number and validate
-  /// the booking. Slot errors become [SlotTakenException], the rest [BookingException].
+  /// the booking. Slot errors become [SlotTakenException], the rest [BookingException];
+  /// a lost connection or timeout is an [ApiException] (never retried: the
+  /// booking may already exist).
   Future<Map<String, dynamic>> _rpc(String fn, Map<String, dynamic> params) async {
     try {
-      final res = await SupabaseService.client.rpc(fn, params: params);
+      final res = await ApiCall.write(() => SupabaseService.client.rpc(fn, params: params), tag: fn);
       return Map<String, dynamic>.from(res as Map);
     } on PostgrestException catch (e) {
       dev.log('[OrderService] $fn refused: ${e.code} ${e.message}');

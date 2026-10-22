@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constance/api_paths.dart';
 import '../constance/supabase_constants.dart';
+import '../network/api_call.dart';
 import '../network/pretty_http_logger.dart';
 
 class SupabaseService {
@@ -26,7 +27,7 @@ class SupabaseService {
 
   static Future<bool> healthCheck() async {
     try {
-      final rows = await client.from(ApiEndPoints.appHealth).select().limit(1);
+      final rows = await ApiCall.read(() => client.from(ApiEndPoints.appHealth).select().limit(1), retries: 0);
       return rows.isNotEmpty;
     } catch (e) {
       log('Supabase health error: $e');

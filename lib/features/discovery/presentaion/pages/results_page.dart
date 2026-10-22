@@ -24,6 +24,9 @@ class ResultsPage extends StatelessWidget {
           Expanded(
             child: Obx(() {
               if (controller.loading.value) return const AppShimmerList(itemHeight: 220);
+              if (controller.rows.isEmpty && controller.error.value != null) {
+                return AppErrorState(message: controller.error.value, onRetry: controller.load);
+              }
               if (controller.rows.isEmpty) {
                 return CustomEmptyState(
                   icon: Iconsax.search_status,

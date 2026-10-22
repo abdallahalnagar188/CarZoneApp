@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../commons/models/order_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/utils/utils.dart';
 
@@ -35,6 +36,11 @@ class ReportController extends GetxController {
       return;
     }
     error.value = null;
+    // Saved in the background after the screen closes, so it must not start offline.
+    if (!ConnectivityService.online) {
+      Utils.getSnakBar(message: 'offline.action'.tr, type: TosterTypes.warning);
+      return;
+    }
     sending.value = true;
     final ticket = await _orders.report(o, category.value, descriptionController.text.trim());
     sending.value = false;

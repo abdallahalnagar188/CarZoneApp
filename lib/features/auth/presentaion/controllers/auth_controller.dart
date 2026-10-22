@@ -8,6 +8,7 @@ import '../../../../commons/models/customer_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/utils.dart';
@@ -38,6 +39,10 @@ class AuthController extends GetxController {
 
   int _attempts = 0;
   Timer? _timer;
+
+  /// The code was accepted but the profile lookup after it failed on the
+  /// connection; verifying again only redoes the lookup (the code is used up).
+  bool _otpVerified = false;
 
   SessionService get _session => Get.find<SessionService>();
 
@@ -150,6 +155,7 @@ class AuthController extends GetxController {
 
     otpError.value = null;
     otpController.clear();
+    _otpVerified = false;
     _startTimer(resend: 30);
     Get.toNamed(Routes.otpRoute);
     Utils.getSnakBar(
@@ -179,6 +185,7 @@ class AuthController extends GetxController {
       Utils.getSnakBar(message: error, type: TosterTypes.failed);
       return;
     }
+    _otpVerified = false;
     _startTimer(resend: 30);
     Utils.getSnakBar(
       message: 'otp.sent'.trParams({'phone': phone}),
@@ -203,11 +210,12 @@ class AuthController extends GetxController {
 
     verifying.value = true;
     otpError.value = null;
-    final error = await _repo.verifyOtp(_e164Phone, code);
+    final error = _otpVerified ? null : await _repo.verifyOtp(_e164Phone, code);
     verifying.value = false;
 
     if (error != null) {
-      _attempts++;
+      // A lost connection is not a wrong code.
+      if (!_repo.lastFailureWasNetwork) _attempts++;
       if (_attempts >= 5) {
         _attempts = 0;
         _startTimer(lock: 60);
@@ -231,15 +239,20 @@ class AuthController extends GetxController {
 
     final token = _repo.currentSessionToken;
     // Try atomic profile sync first (links an unlinked customer with the verified phone)
+    _otpVerified = true;
     CustomerModel? existing;
     try {
       existing = await _repo.syncProfile(phone: _e164Phone, token: token);
+      existing ??= await _repo.findCustomerByAuthId(authUser.id);
+      existing ??= await _repo.findCustomerByPhone(_e164Phone);
     } on PhoneInUseException {
       Utils.getSnakBar(message: 'auth.phoneInUse'.tr, type: TosterTypes.failed);
       return;
+    } on ApiException catch (e) {
+      // Not "no profile": without this the user would be sent to profile setup.
+      Utils.getSnakBar(message: e.message, type: TosterTypes.failed);
+      return;
     }
-    existing ??= await _repo.findCustomerByAuthId(authUser.id);
-    existing ??= await _repo.findCustomerByPhone(_e164Phone);
 
     if (existing == null) {
       // New user — go to profile setup to collect their name
@@ -296,6 +309,9 @@ class AuthController extends GetxController {
       row = await _repo.register(authUser.id, effectivePhone, name, token: token);
     } on PhoneInUseException {
       Utils.getSnakBar(message: 'auth.phoneInUse'.tr, type: TosterTypes.failed);
+      return;
+    } on ApiException catch (e) {
+      Utils.getSnakBar(message: e.message, type: TosterTypes.failed);
       return;
     } catch (_) {
       Utils.getSnakBar(message: 'profile.saveFailed'.tr, type: TosterTypes.failed);

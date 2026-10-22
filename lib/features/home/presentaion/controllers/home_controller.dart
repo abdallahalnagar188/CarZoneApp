@@ -38,6 +38,12 @@ class HomeController extends GetxController {
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
   SessionService get session => Get.find<SessionService>();
 
+  /// The catalog is still on its way (first launch, nothing cached yet).
+  bool get syncing => _db.isSyncing.value;
+
+  /// Why the last catalog fetch failed; null after a successful one.
+  String? get syncError => _db.hasError.value ? _db.errorMessage.value : null;
+
   static const categoryIds = ['exterior', 'interior', 'full', 'deep'];
 
   @override
@@ -65,10 +71,16 @@ class HomeController extends GetxController {
   }
 
   Future<void> refreshHome() async {
-    loading.value = true;
-    await _db.fetchFromSupabase();
+    final hadData = nearby.isNotEmpty;
+    loading.value = !hadData;
+    final ok = await _db.fetchFromSupabase();
     _compute();
     loading.value = false;
+    // With nothing to show the page has its own error state; otherwise keep
+    // the cached data and say why it did not refresh.
+    if (!ok && hadData) {
+      Utils.getSnakBar(message: _db.errorMessage.value, type: TosterTypes.failed);
+    }
   }
 
   void _compute() {

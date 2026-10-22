@@ -7,8 +7,10 @@ import '../../../../commons/models/vehicle_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/utils.dart';
 
@@ -88,11 +90,17 @@ class CarsController extends GetxController {
     }
     errors.assignAll(e);
     if (e.isNotEmpty) return;
+    if (!ConnectivityService.online) {
+      Utils.getSnakBar(message: 'offline.action'.tr, type: TosterTypes.warning);
+      return;
+    }
     saving.value = true;
+    // The list shows the change at once; it is undone if the server refuses it.
+    final existing = editingId.value == null ? null : _db.vehicle(editingId.value!);
+    final before = existing == null ? null : VehicleModel.fromJson(existing.toJson());
+    VehicleModel? added;
     try {
-      await Future.delayed(const Duration(milliseconds: 350));
       final year = int.tryParse(yearController.text.trim());
-      final existing = editingId.value == null ? null : _db.vehicle(editingId.value!);
       if (existing != null) {
         existing
           ..make = make.value!
@@ -103,7 +111,7 @@ class CarsController extends GetxController {
         _db.vehicles.refresh();
         await _db.saveVehicle(existing);
       } else {
-        final newV = VehicleModel(
+        added = VehicleModel(
           id: 've_${DateTime.now().microsecondsSinceEpoch}',
           customerId: uid,
           make: make.value!,
@@ -113,8 +121,8 @@ class CarsController extends GetxController {
           year: year,
           isDefault: vehicles.isEmpty,
         );
-        _db.vehicles.add(newV);
-        await _db.saveVehicle(newV);
+        _db.vehicles.add(added);
+        await _db.saveVehicle(added);
       }
       saving.value = false;
       Get.back();
@@ -122,11 +130,26 @@ class CarsController extends GetxController {
     } catch (e) {
       saving.value = false;
       dev.log('[CarsController] Error saving vehicle: $e');
-      Utils.getSnakBar(message: 'Error saving car: $e', type: TosterTypes.failed);
+      if (added != null) _db.vehicles.remove(added);
+      if (existing != null && before != null) {
+        existing
+          ..make = before.make
+          ..model = before.model
+          ..color = before.color
+          ..plate = before.plate
+          ..year = before.year;
+        _db.vehicles.refresh();
+      }
+      Utils.getSnakBar(message: ApiException.messageFor(e, fallback: 'cars.saveFailed'.tr), type: TosterTypes.failed);
     }
   }
 
   Future<void> setDefault(VehicleModel v) async {
+    if (!ConnectivityService.online) {
+      Utils.getSnakBar(message: 'offline.action'.tr, type: TosterTypes.warning);
+      return;
+    }
+    final previous = vehicles.firstWhereOrNull((x) => x.isDefault);
     for (final x in vehicles) {
       x.isDefault = x.id == v.id;
     }
@@ -135,6 +158,11 @@ class CarsController extends GetxController {
       await _db.saveVehicle(v);
     } catch (e) {
       dev.log('[CarsController] Error setting default car: $e');
+      for (final x in vehicles) {
+        x.isDefault = x.id == previous?.id;
+      }
+      _db.vehicles.refresh();
+      Utils.getSnakBar(message: ApiException.messageFor(e, fallback: 'cars.saveFailed'.tr), type: TosterTypes.failed);
     }
   }
 
@@ -150,12 +178,25 @@ class CarsController extends GetxController {
       danger: true,
     );
     if (!ok) return;
+    if (!ConnectivityService.online) {
+      Utils.getSnakBar(message: 'offline.action'.tr, type: TosterTypes.warning);
+      return;
+    }
     final wasDefault = v.isDefault;
+    final index = _db.vehicles.indexOf(v);
     _db.vehicles.remove(v);
-    await _db.deleteVehicle(v.id);
+    if (!await _db.deleteVehicle(v.id)) {
+      _db.vehicles.insert(index.clamp(0, _db.vehicles.length), v);
+      Utils.getSnakBar(message: 'cars.deleteFailed'.tr, type: TosterTypes.failed);
+      return;
+    }
     if (wasDefault && vehicles.isNotEmpty) {
       vehicles.first.isDefault = true;
-      await _db.saveVehicle(vehicles.first);
+      try {
+        await _db.saveVehicle(vehicles.first);
+      } catch (e) {
+        dev.log('[CarsController] Error moving default car: $e');
+      }
     }
     _db.vehicles.refresh();
     if (Get.currentRoute == Routes.carFormRoute) Get.back();

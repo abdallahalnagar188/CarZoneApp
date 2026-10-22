@@ -6,9 +6,11 @@ import '../../../../core/enums/enums.dart';
 import '../../../../core/local/cache_controller.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/services/supabase_service.dart';
+import '../../../../core/utils/utils.dart';
 
 class FavoritesController extends GetxController {
   final _discovery = DiscoveryService();
@@ -36,9 +38,16 @@ class FavoritesController extends GetxController {
     return guestId;
   }
 
-  void toggle(String branchId) {
+  /// The heart flips at once; it flips back with a toast when the server
+  /// call fails, and is not touched at all while offline.
+  Future<void> toggle(String branchId) async {
+    if (!ConnectivityService.online) {
+      Utils.getSnakBar(message: 'offline.action'.tr, type: TosterTypes.warning);
+      return;
+    }
     final uid = resolveEffectiveUserId();
-    _db.toggleFavorite(branchId, uid);
+    final saved = await _db.toggleFavorite(branchId, uid);
+    if (!saved) Utils.getSnakBar(message: 'fav.failed'.tr, type: TosterTypes.failed);
   }
 
   List<BranchListingModel> get rows => _db.favorites

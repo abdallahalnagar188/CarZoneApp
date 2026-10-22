@@ -2,8 +2,10 @@ import 'package:get/get.dart';
 
 import '../../../../commons/models/notification_model.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/session_service.dart';
 
 class NotificationsController extends GetxController {
@@ -12,10 +14,22 @@ class NotificationsController extends GetxController {
 
   final isLoading = false.obs;
 
+  /// Why the last refresh failed; null after a successful one.
+  final error = RxnString();
+
+  Worker? _reconnect;
+
   @override
   void onInit() {
     super.onInit();
     refreshNotifications();
+    _reconnect = ConnectivityService.maybe?.onReconnect(refreshNotifications);
+  }
+
+  @override
+  void onClose() {
+    _reconnect?.dispose();
+    super.onClose();
   }
 
   Future<void> refreshNotifications() async {
@@ -23,7 +37,10 @@ class NotificationsController extends GetxController {
     if (custId != null && custId.isNotEmpty) {
       isLoading.value = true;
       try {
-        await _db.fetchNotifications(custId);
+        await _db.fetchNotifications(custId, throwOnError: true);
+        error.value = null;
+      } catch (e) {
+        error.value = ApiException.messageFor(e);
       } finally {
         isLoading.value = false;
       }

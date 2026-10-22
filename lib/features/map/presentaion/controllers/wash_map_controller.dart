@@ -8,6 +8,7 @@ import '../../../../core/helpers/map_marker_helper.dart';
 import '../../../../core/local/theme_controller.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/maps_service.dart';
 import '../../../../core/services/session_service.dart';
@@ -27,6 +28,7 @@ class WashMapController extends GetxController {
 
   GoogleMapController? _map;
   bool _fromMarker = false;
+  Worker? _reconnect;
 
   SessionService get session => Get.find<SessionService>();
 
@@ -51,6 +53,7 @@ class WashMapController extends GetxController {
     ever(Get.find<CarzoneDbService>().orders, (_) => _compute());
     ever(Get.find<CarzoneDbService>().branches, (_) => _compute());
     ever(Get.find<ThemeController>().isDarkMode, (_) => _loadStyle());
+    _reconnect = ConnectivityService.maybe?.onReconnect(_loadMapData);
   }
 
   Future<void> _loadMapData() async {
@@ -165,6 +168,7 @@ class WashMapController extends GetxController {
 
   @override
   void onClose() {
+    _reconnect?.dispose();
     pageController.dispose();
     _map?.dispose();
     super.onClose();

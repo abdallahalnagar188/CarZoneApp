@@ -5,11 +5,14 @@ import '../../../../commons/models/branch_listing_model.dart';
 import '../../../../commons/models/branch_model.dart';
 import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
 import '../../../../core/enums/enums.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/pricing_service.dart';
 import '../../../../core/services/session_service.dart';
+import '../../../../core/utils/utils.dart';
 import '../widgets/filter_sheet.dart';
 
 class ResultsController extends GetxController {
@@ -44,6 +47,11 @@ class ResultsController extends GetxController {
 
   final isClosedHours = false.obs;
 
+  /// Why the first page failed; null after a successful load.
+  final error = RxnString();
+
+  Worker? _reconnect;
+
   @override
   void onInit() {
     super.onInit();
@@ -67,6 +75,9 @@ class ResultsController extends GetxController {
     ever(_db.services, (_) {
       if (!loading.value) _compute();
     });
+    _reconnect = ConnectivityService.maybe?.onReconnect(() {
+      if (error.value != null) load();
+    });
     load();
   }
 
@@ -79,6 +90,7 @@ class ResultsController extends GetxController {
 
   @override
   void onClose() {
+    _reconnect?.dispose();
     scrollController.removeListener(_onScroll);
     scrollController.dispose();
     super.onClose();
@@ -95,13 +107,17 @@ class ResultsController extends GetxController {
         pageSize: pageSize,
         areaId: areaId.isNotEmpty ? areaId : null,
         category: category,
+        throwOnError: true,
       );
       if (fetched.length < pageSize) {
         hasMore.value = false;
       }
+      error.value = null;
       _loadedBranches.assignAll(fetched);
       _compute();
-    } catch (_) {
+    } catch (e) {
+      // Cached branches (if any) are still listed; the error shows when there are none.
+      error.value = ApiException.messageFor(e);
       _compute();
     } finally {
       loading.value = false;
@@ -119,6 +135,7 @@ class ResultsController extends GetxController {
         pageSize: pageSize,
         areaId: areaId.isNotEmpty ? areaId : null,
         category: category,
+        throwOnError: true,
       );
       if (fetched.isEmpty) {
         hasMore.value = false;
@@ -135,8 +152,9 @@ class ResultsController extends GetxController {
         }
         _compute();
       }
-    } catch (_) {
-      // Keep existing state
+    } catch (e) {
+      // Keep existing state; scrolling to the end again retries.
+      Utils.getSnakBar(message: ApiException.messageFor(e), type: TosterTypes.failed);
     } finally {
       loadingMore.value = false;
     }

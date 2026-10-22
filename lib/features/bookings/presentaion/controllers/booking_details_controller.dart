@@ -5,8 +5,10 @@ import '../../../../commons/models/order_model.dart';
 import '../../../../commons/models/vehicle_model.dart';
 import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
 import '../../../../core/enums/enums.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/maps_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/utils/utils.dart';
@@ -20,8 +22,13 @@ class BookingDetailsController extends GetxController {
   final order = Rxn<OrderModel>();
   final cancelReason = 'cancel.r1'.obs;
   final cancelling = false.obs;
+  final loading = false.obs;
+
+  /// Why the order could not be loaded; shown only when nothing is cached.
+  final error = RxnString();
 
   late final String orderId;
+  Worker? _reconnect;
 
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
 
@@ -43,11 +50,35 @@ class BookingDetailsController extends GetxController {
     super.onInit();
     orderId = Get.arguments?.toString() ?? '';
     _sync();
-    if (orderId.isNotEmpty) {
-      _db.refreshOrder(orderId);
-    }
+    load();
     ever(_db.orders, (_) => _sync());
     ever(_db.reviews, (_) => order.refresh());
+    // Status changes made while offline did not arrive over realtime.
+    _reconnect = ConnectivityService.maybe?.onReconnect(load);
+  }
+
+  Future<void> load() async {
+    if (orderId.isEmpty) return;
+    loading.value = true;
+    try {
+      await _db.refreshOrder(orderId, throwOnError: true);
+      // Opened from a notification: the branch may not be cached yet.
+      final branchId = _db.order(orderId)?.branchId;
+      if (branchId != null && _db.branch(branchId) == null) {
+        await _db.fetchBranchDetails(branchId, throwOnError: true);
+      }
+      error.value = null;
+    } catch (e) {
+      error.value = ApiException.messageFor(e);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  @override
+  void onClose() {
+    _reconnect?.dispose();
+    super.onClose();
   }
 
   void _sync() {
@@ -87,8 +118,8 @@ class BookingDetailsController extends GetxController {
         message: (e.code == 'order_not_cancellable' ? 'cancel.notAllowed' : 'cancel.failed').tr,
         type: TosterTypes.failed,
       );
-    } catch (_) {
-      Utils.getSnakBar(message: 'cancel.failed'.tr, type: TosterTypes.failed);
+    } catch (e) {
+      Utils.getSnakBar(message: ApiException.messageFor(e, fallback: 'cancel.failed'.tr), type: TosterTypes.failed);
     } finally {
       cancelling.value = false;
     }

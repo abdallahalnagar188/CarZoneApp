@@ -35,6 +35,10 @@ class BookingDetailsPage extends StatelessWidget {
         final order = controller.order.value;
         final branch = controller.branch;
         if (order == null || branch == null) {
+          if (controller.loading.value) return const AppShimmerList(count: 5);
+          if (controller.error.value != null) {
+            return AppErrorState(message: controller.error.value, onRetry: controller.load);
+          }
           return CustomEmptyState(icon: Iconsax.receipt_search, title: 'notfound'.tr);
         }
         final vehicle = controller.vehicle;

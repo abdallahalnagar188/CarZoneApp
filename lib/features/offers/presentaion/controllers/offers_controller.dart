@@ -13,15 +13,20 @@ class OffersController extends GetxController {
 
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
 
+  /// Why the offers could not be loaded; null after a successful load.
+  String? get error => _db.hasError.value ? _db.errorMessage.value : null;
+
   @override
   void onInit() {
     super.onInit();
     load();
   }
 
+  /// Offers arrive with the home catalog; fetch it again when it failed or
+  /// on pull to refresh.
   Future<void> load() async {
-    loading.value = true;
-    await Future.delayed(const Duration(milliseconds: 350));
+    loading.value = offers.isEmpty;
+    if (_db.offers.isEmpty || offers.isNotEmpty) await _db.fetchFromSupabase();
     offers.assignAll(_pricing.liveOffers());
     loading.value = false;
   }

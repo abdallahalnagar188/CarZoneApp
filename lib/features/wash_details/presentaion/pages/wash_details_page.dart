@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../../core/utils/system_ui.dart';
 import '../../../../commons/widgets/common_widgets.dart';
@@ -29,8 +30,18 @@ class WashDetailsPage extends StatelessWidget {
       child: Scaffold(
         bottomNavigationBar: const BookNowBar(),
         body: Obx(() {
-          if (controller.loading.value || controller.listing.value == null) {
-            return const SafeArea(child: AppShimmerList(count: 5));
+          if (controller.listing.value == null) {
+            if (controller.loading.value) return const SafeArea(child: AppShimmerList(count: 5));
+            return Column(
+              children: [
+                const AppTopBar(title: ''),
+                Expanded(
+                  child: controller.error.value != null
+                      ? AppErrorState(message: controller.error.value, onRetry: controller.load)
+                      : CustomEmptyState(icon: Iconsax.shop_remove, title: 'notfound'.tr),
+                ),
+              ],
+            );
           }
           return CustomScrollView(
             slivers: [

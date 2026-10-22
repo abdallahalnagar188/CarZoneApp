@@ -28,7 +28,11 @@ class BookingsPage extends StatelessWidget {
           );
         }
         final list = controller.tab.value == 0 ? controller.upcoming : controller.history;
-        if (controller.loading.value) return const AppShimmerList();
+        // Cached bookings stay on screen while refreshing or offline.
+        if (list.isEmpty && controller.loading.value) return const AppShimmerList();
+        if (list.isEmpty && controller.error.value != null) {
+          return AppErrorState(message: controller.error.value, onRetry: controller.loadBookings);
+        }
         if (list.isEmpty) {
           return CustomEmptyState(
             icon: Iconsax.calendar_remove,

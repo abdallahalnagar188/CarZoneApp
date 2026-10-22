@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../commons/models/branch_model.dart';
 import '../enums/enums.dart';
 import '../helpers/format_helper.dart';
+import '../network/api_call.dart';
 import 'carzone_db_service.dart';
 import 'supabase_service.dart';
 
@@ -167,18 +168,19 @@ class AvailabilityService {
         'p_duration': durationMin,
         'p_exclude_order': excludeOrderId,
       };
+      Future<dynamic> slotsRpc(Map<String, dynamic> p) =>
+          ApiCall.read(() => SupabaseService.client.rpc('get_branch_slots', params: p), tag: 'get_branch_slots');
       dynamic res;
       if (includeFull) {
         try {
-          res = await SupabaseService.client
-              .rpc('get_branch_slots', params: {...params, 'p_include_full': true});
+          res = await slotsRpc({...params, 'p_include_full': true});
         } on PostgrestException catch (e) {
           // Older database without p_include_full: full slots stay hidden.
           if (e.code != 'PGRST202') rethrow;
-          res = await SupabaseService.client.rpc('get_branch_slots', params: params);
+          res = await slotsRpc(params);
         }
       } else {
-        res = await SupabaseService.client.rpc('get_branch_slots', params: params);
+        res = await slotsRpc(params);
       }
       if (res is List) {
         final list = res.map((row) {

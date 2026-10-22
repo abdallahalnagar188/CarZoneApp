@@ -9,6 +9,7 @@ import '../../commons/models/customer_model.dart';
 import '../enums/enums.dart';
 import '../local/cache_controller.dart';
 import '../local/cache_helper.dart';
+import '../network/api_call.dart';
 import '../network/dio_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,6 +19,7 @@ import '../routing/app_routes.dart';
 import '../../features/auth/presentaion/controllers/auth_controller.dart';
 
 import 'carzone_db_service.dart';
+import 'connectivity_service.dart';
 import 'location_service.dart';
 import 'supabase_service.dart';
 
@@ -101,6 +103,11 @@ class SessionService extends GetxService {
         user.value = null;
         _db.favorites.clear();
       }
+    });
+
+    // Signed in while offline: the customer profile could not load yet.
+    ConnectivityService.maybe?.onReconnect(() {
+      if (user.value == null && SupabaseService.client.auth.currentUser != null) refreshProfile();
     });
 
     final cachedArea = CacheController().getter(key: CacheKeys.areaId);
@@ -198,6 +205,12 @@ class SessionService extends GetxService {
             await saveToken(res.session!.accessToken);
           }
         } catch (refreshErr) {
+          // Offline at launch is not a reason to drop the session: Supabase
+          // refreshes it again once the connection is back.
+          if (ApiException.from(refreshErr) case final failure? when failure.isTransient) {
+            dev.log('[SessionService] Token refresh postponed, no connection: $refreshErr');
+            return;
+          }
           dev.log('[SessionService] Token refresh failed ($refreshErr). Signing out expired session.');
           await signOut();
         }
@@ -211,11 +224,10 @@ class SessionService extends GetxService {
     final authUser = SupabaseService.client.auth.currentUser;
     if (authUser == null) return;
     try {
-      final res = await SupabaseService.client
-          .from('customers')
-          .select()
-          .eq('user_id', authUser.id)
-          .maybeSingle();
+      final res = await ApiCall.read(
+        () => SupabaseService.client.from('customers').select().eq('user_id', authUser.id).maybeSingle(),
+        tag: 'profile',
+      );
       if (res != null) {
         final cust = CustomerModel.fromJson(Map<String, dynamic>.from(res));
         final idx = _db.customers.indexWhere((c) => c.id == cust.id);
@@ -236,6 +248,7 @@ class SessionService extends GetxService {
       }
     } catch (e) {
       final errStr = e.toString();
+      // ApiException.toString() keeps the PostgrestException text.
       if (errStr.contains('JWT expired') || errStr.contains('PGRST303')) {
         dev.log('[SessionService] JWT expired during refreshProfile. Attempting recovery...');
         try {
@@ -244,7 +257,8 @@ class SessionService extends GetxService {
             await saveToken(res.session!.accessToken);
             return refreshProfile();
           }
-        } catch (_) {
+        } catch (refreshErr) {
+          if (ApiException.from(refreshErr)?.isTransient ?? false) return;
           await signOut();
           return;
         }

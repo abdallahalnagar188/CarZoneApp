@@ -16,6 +16,9 @@ class OffersPage extends StatelessWidget {
       appBar: AppTopBar(title: 'offers.title'.tr),
       body: Obx(() {
         if (controller.loading.value) return const AppShimmerList(itemHeight: 168);
+        if (controller.offers.isEmpty && controller.error != null) {
+          return AppErrorState(message: controller.error, onRetry: controller.load);
+        }
         if (controller.offers.isEmpty) {
           return CustomEmptyState(icon: Iconsax.ticket_discount, title: 'offers.title'.tr);
         }

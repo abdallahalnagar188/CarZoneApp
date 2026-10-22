@@ -8,9 +8,11 @@ import '../../../../commons/models/wash_service_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/availability_service.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/services/pricing_service.dart';
 import '../../../../core/services/session_service.dart';
@@ -70,6 +72,8 @@ class BookingController extends GetxController {
 
   bool isClosedDay(DateTime d) => branch == null || _availability.isClosedDay(branch!, d);
 
+  Worker? _reconnect;
+
   @override
   void onInit() {
     super.onInit();
@@ -78,6 +82,10 @@ class BookingController extends GetxController {
         vehicleId.value = vehicles.last.id;
         _selectNewCar = false;
       }
+    });
+    // Slots shown while offline come from the local estimate; get the real ones.
+    _reconnect = ConnectivityService.maybe?.onReconnect(() {
+      if (Get.currentRoute == Routes.bookSlotRoute && !loadingSlots.value) loadSlots();
     });
   }
 
@@ -372,6 +380,12 @@ class BookingController extends GetxController {
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
     } catch (e) {
       confirming.value = false;
+      if (e is ApiException && e.type == ApiErrorType.timeout) {
+        // The server may have created it anyway: show it if so, and say to check.
+        _db.fetchUserBookings(userId: uid);
+        Utils.getSnakBar(message: 'book.timeout'.tr, type: TosterTypes.warning);
+        return;
+      }
       Utils.getSnakBar(message: _bookingError(e, 'book.failed'), type: TosterTypes.failed);
     }
   }
@@ -381,6 +395,7 @@ class BookingController extends GetxController {
         BookingException(code: 'account_suspended') => 'book.suspended'.tr,
         BookingException(code: 'vehicle_busy') => 'book.vehicleBusy'.tr,
         BookingException(code: 'too_many_bookings') => 'book.tooMany'.tr,
+        ApiException() => e.message,
         _ => fallbackKey.tr,
       };
 
@@ -394,6 +409,7 @@ class BookingController extends GetxController {
 
   @override
   void onClose() {
+    _reconnect?.dispose();
     noteController.dispose();
     super.onClose();
   }

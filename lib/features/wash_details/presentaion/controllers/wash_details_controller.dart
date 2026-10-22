@@ -10,9 +10,11 @@ import '../../../../commons/models/offer_model.dart';
 import '../../../../commons/models/review_model.dart';
 import '../../../../commons/models/wash_service_model.dart';
 import '../../../../core/enums/enums.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/availability_service.dart';
 import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/maps_service.dart';
@@ -37,7 +39,11 @@ class WashDetailsController extends GetxController {
   final hoursExpanded = false.obs;
   final reviewStarFilter = 0.obs;
 
+  /// Why the branch could not be loaded; shown only when nothing is cached.
+  final error = RxnString();
+
   late final String branchId;
+  Worker? _reconnect;
 
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
 
@@ -52,13 +58,28 @@ class WashDetailsController extends GetxController {
     ever(_db.services, (_) => _compute());
     ever(_db.reviews, (_) => _compute());
     ever(_db.orders, (_) => _compute());
+    _reconnect = ConnectivityService.maybe?.onReconnect(() {
+      if (error.value != null) load();
+    });
   }
 
   Future<void> load() async {
     loading.value = true;
-    await _db.fetchBranchDetails(branchId);
-    _compute();
-    loading.value = false;
+    try {
+      await _db.fetchBranchDetails(branchId, throwOnError: true);
+      error.value = null;
+    } catch (e) {
+      error.value = ApiException.messageFor(e);
+    } finally {
+      _compute();
+      loading.value = false;
+    }
+  }
+
+  @override
+  void onClose() {
+    _reconnect?.dispose();
+    super.onClose();
   }
 
   void _compute() {
@@ -131,18 +152,19 @@ class WashDetailsController extends GetxController {
   }
 
   void _recordShareAnalytics() {
-    try {
-      final session = Get.find<SessionService>();
-      SupabaseService.client.from('branch_shares').insert({
+    final session = Get.find<SessionService>();
+    ApiCall.write(
+      () => SupabaseService.client.from('branch_shares').insert({
         'branch_id': branchId,
         'user_id': session.userId,
         'platform': 'native_share',
-      }).then((_) {
-        dev.log('[WashDetailsController] Share event recorded in Supabase.');
-      }).catchError((err) {
-        dev.log('[WashDetailsController] Error recording share event: $err');
-      });
-    } catch (_) {}
+      }),
+      tag: 'record share',
+    ).then((_) {
+      dev.log('[WashDetailsController] Share event recorded in Supabase.');
+    }).catchError((Object err) {
+      dev.log('[WashDetailsController] Error recording share event: $err');
+    });
   }
 
   void openGallery(int index) => Get.toNamed(Routes.galleryRoute, arguments: {'branchId': branchId, 'index': index});

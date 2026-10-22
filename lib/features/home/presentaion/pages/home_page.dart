@@ -61,11 +61,16 @@ class HomePage extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
-              child: Obx(
-                () => controller.loading.value
-                    ? SizedBox(height: 252.h, child: const AppShimmerList(count: 1, itemHeight: 230))
-                    : _enter(0, const NearbyWashesList()),
-              ),
+              child: Obx(() {
+                final empty = controller.nearby.isEmpty;
+                if (controller.loading.value || (empty && controller.syncing)) {
+                  return SizedBox(height: 252.h, child: const AppShimmerList(count: 1, itemHeight: 230));
+                }
+                if (empty && controller.syncError != null) {
+                  return AppErrorState(message: controller.syncError, onRetry: controller.refreshHome);
+                }
+                return _enter(0, const NearbyWashesList());
+              }),
             ),
             SliverToBoxAdapter(
               child: _enter(
