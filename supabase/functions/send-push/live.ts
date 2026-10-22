@@ -49,7 +49,7 @@ const APPLE_EPOCH_SEC = 978307200;
 
 const STRINGS: Record<Lang, Record<string, string>> = {
   ar: {
-    "app.name": "كار زون",
+    "app.name": "واش اب",
     "title.pending": "بانتظار تأكيد المغسلة",
     "title.confirmed": "تم تأكيد حجزك",
     "title.waiting": "سيارتك في المغسلة",
@@ -79,7 +79,7 @@ const STRINGS: Record<Lang, Record<string, string>> = {
     "stage.completed": "جاهزة",
   },
   en: {
-    "app.name": "CarZone",
+    "app.name": "Wash Up",
     "title.pending": "Waiting for the wash to confirm",
     "title.confirmed": "Your booking is confirmed",
     "title.waiting": "Your car is at the wash",

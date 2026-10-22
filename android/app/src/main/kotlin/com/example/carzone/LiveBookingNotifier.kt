@@ -117,32 +117,59 @@ class LiveBookingNotifier(private val context: Context) {
 
     private fun color(id: Int) = ContextCompat.getColor(context, id)
 
-    private fun accent(booking: Booking) = when {
-        booking.cancelled -> color(R.color.live_danger)
-        booking.status == "completed" -> color(R.color.live_success)
+    /** Custom status color for every status according to Wash Up brand guidelines. */
+    private fun accent(booking: Booking): Int = when (booking.status) {
+        "pending" -> color(R.color.live_status_pending)
+        "confirmed" -> color(R.color.live_status_confirmed)
+        "waiting" -> color(R.color.live_status_waiting)
+        "in_service" -> color(R.color.live_status_in_service)
+        "completed" -> color(R.color.live_status_completed)
+        "cancelled", "no_show" -> color(R.color.live_status_cancelled)
         else -> color(R.color.live_brand)
+    }
+
+    /** Glowing status chip background with soft tint and matching border. */
+    private fun chipBg(booking: Booking): Int = when (booking.status) {
+        "pending" -> R.drawable.live_chip_pending_bg
+        "confirmed" -> R.drawable.live_chip_confirmed_bg
+        "waiting" -> R.drawable.live_chip_waiting_bg
+        "in_service" -> R.drawable.live_chip_in_service_bg
+        "completed" -> R.drawable.live_chip_completed_bg
+        "cancelled", "no_show" -> R.drawable.live_chip_cancelled_bg
+        else -> R.drawable.live_chip_bg
+    }
+
+    /** Current stage glowing dot with status-specific aura. */
+    private fun currentDotDrawable(booking: Booking): Int = when (booking.status) {
+        "pending" -> R.drawable.live_dot_current_pending
+        "confirmed" -> R.drawable.live_dot_current_confirmed
+        "waiting" -> R.drawable.live_dot_current_waiting
+        "in_service" -> R.drawable.live_dot_current_in_service
+        "completed" -> R.drawable.live_dot_current_completed
+        "cancelled", "no_show" -> R.drawable.live_dot_current_cancelled
+        else -> R.drawable.live_dot_current
     }
 
     // ---- Android 16+: promoted Live Update with ProgressStyle ---------------
 
     private fun liveUpdate(booking: Booking): Notification {
-        val brand = color(R.color.live_brand)
+        val statusAccent = accent(booking)
         val track = color(R.color.live_track)
         val reached = booking.stage.coerceAtLeast(0)
         val style = Notification.ProgressStyle()
             .setStyledByProgress(false)
             .setProgressSegments(
                 (0 until STAGES - 1).map { i ->
-                    Notification.ProgressStyle.Segment(SEGMENT).setColor(if (i < reached) brand else track)
+                    Notification.ProgressStyle.Segment(SEGMENT).setColor(if (i < reached) statusAccent else track)
                 },
             )
             .setProgressPoints(
                 (1 until STAGES - 1).map { i ->
-                    Notification.ProgressStyle.Point(i * SEGMENT).setColor(if (i <= reached) brand else track)
+                    Notification.ProgressStyle.Point(i * SEGMENT).setColor(if (i <= reached) statusAccent else track)
                 },
             )
             .setProgress(if (booking.cancelled) 0 else reached * SEGMENT)
-            .setProgressTrackerIcon(Icon.createWithResource(context, R.drawable.ic_live_car).setTint(brand))
+            .setProgressTrackerIcon(Icon.createWithResource(context, R.drawable.ic_live_car).setTint(statusAccent))
 
         val builder = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -154,7 +181,7 @@ class LiveBookingNotifier(private val context: Context) {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setStyle(style)
-            .setColor(accent(booking))
+            .setColor(statusAccent)
 
         if (booking.isFinal) {
             builder.setOngoing(false).setAutoCancel(true)
@@ -228,6 +255,7 @@ class LiveBookingNotifier(private val context: Context) {
         views.setTextViewText(R.id.live_subtitle, booking.subtitle)
         views.setTextViewText(R.id.live_status_chip, booking.shortStatus)
         views.setTextColor(R.id.live_status_chip, accent(booking))
+        views.setInt(R.id.live_status_chip, "setBackgroundResource", chipBg(booking))
     }
 
     private fun bindStages(views: RemoteViews, booking: Booking) {
@@ -239,7 +267,7 @@ class LiveBookingNotifier(private val context: Context) {
                 DOTS[i],
                 when {
                     i < reached || (i == reached && i == STAGES - 1) -> R.drawable.live_dot_done
-                    i == reached -> R.drawable.live_dot_current
+                    i == reached -> currentDotDrawable(booking)
                     else -> R.drawable.live_dot_todo
                 },
             )

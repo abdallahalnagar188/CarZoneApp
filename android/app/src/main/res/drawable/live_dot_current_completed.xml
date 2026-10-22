@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer Emerald Glow Halo -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/live_chip_completed_bg" />
+            <size android:width="20dp" android:height="20dp" />
+            <stroke android:width="1.5dp" android:color="@color/live_status_completed" />
+        </shape>
+    </item>
+    <!-- Middle Ring -->
+    <item android:bottom="3dp" android:left="3dp" android:right="3dp" android:top="3dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/live_chip_completed_bg" />
+        </shape>
+    </item>
+    <!-- Solid Glowing Core -->
+    <item android:bottom="4dp" android:left="4dp" android:right="4dp" android:top="4dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/live_status_completed" />
+        </shape>
+    </item>
+</layer-list>

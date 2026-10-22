@@ -1,11 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Wash Up Brand Colors (Dark Theme) -->
     <color name="live_brand">#4DA3FF</color>
     <color name="live_brand_sky">#6FD3FF</color>
+    <color name="live_brand_deep">#01398C</color>
+    <color name="live_brand_night">#01193A</color>
+    <color name="live_glow">#6FD3FF</color>
+
+    <!-- Custom Status Colors (Dark Theme - vibrant & lifted) -->
+    <color name="live_status_pending">#FBBF24</color>
+    <color name="live_status_confirmed">#6FB4FF</color>
+    <color name="live_status_waiting">#A78BFA</color>
+    <color name="live_status_in_service">#22D3EE</color>
+    <color name="live_status_completed">#34D399</color>
+    <color name="live_status_cancelled">#F87171</color>
+
+    <!-- Status Glow / Chip Backgrounds (Dark Theme) -->
+    <color name="live_chip_pending_bg">#291E05</color>
+    <color name="live_chip_confirmed_bg">#0A2540</color>
+    <color name="live_chip_waiting_bg">#241042</color>
+    <color name="live_chip_in_service_bg">#082F38</color>
+    <color name="live_chip_completed_bg">#062E20</color>
+    <color name="live_chip_cancelled_bg">#360D0D</color>
+
     <color name="live_success">#34D399</color>
     <color name="live_danger">#F87171</color>
     <color name="live_title">#EEF4FF</color>
     <color name="live_body">#A9B6CC</color>
-    <color name="live_track">#25365A</color>
+    <color name="live_track">#1E2C47</color>
     <color name="live_chip_bg">#13274A</color>
 </resources>
