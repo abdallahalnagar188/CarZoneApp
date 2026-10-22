@@ -28,7 +28,7 @@ class SectionHeader extends StatelessWidget {
             width: 4.w,
             height: 18.h,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: AppColors.ribbonGradient,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -48,7 +48,7 @@ class SectionHeader extends StatelessWidget {
                 child: Text(
                   actionText!,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.sandInk,
+                        color: AppColors.secondaryInk,
                         fontWeight: FontWeight.w700,
                       ),
                 ),

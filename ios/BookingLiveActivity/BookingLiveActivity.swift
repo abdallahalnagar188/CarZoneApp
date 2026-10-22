@@ -9,15 +9,15 @@ struct BookingLiveActivityBundle: WidgetBundle {
   }
 }
 
-// MARK: - Palette (matches lib/core/constance/app_colors.dart)
+// MARK: - Palette (Wash Up, matches lib/core/constance/app_colors.dart)
 
 private enum Palette {
-  static let brand = Color(red: 0x00 / 255, green: 0x75 / 255, blue: 0xC4 / 255)
-  static let sky = Color(red: 0x0B / 255, green: 0xA9 / 255, blue: 0xE8 / 255)
-  static let glow = Color(red: 0x7F / 255, green: 0xE3 / 255, blue: 0xFF / 255)
-  static let deep = Color(red: 0x03 / 255, green: 0x47 / 255, blue: 0x7E / 255)
-  static let night = Color(red: 0x02 / 255, green: 0x32 / 255, blue: 0x5F / 255)
-  static let success = Color(red: 0x22 / 255, green: 0xC5 / 255, blue: 0x5E / 255)
+  static let brand = Color(red: 0x00 / 255, green: 0x70 / 255, blue: 0xE8 / 255)
+  static let sky = Color(red: 0x03 / 255, green: 0x96 / 255, blue: 0xFB / 255)
+  static let glow = Color(red: 0x6F / 255, green: 0xD3 / 255, blue: 0xFF / 255)
+  static let deep = Color(red: 0x01 / 255, green: 0x39 / 255, blue: 0x8C / 255)
+  static let night = Color(red: 0x01 / 255, green: 0x19 / 255, blue: 0x3A / 255)
+  static let success = Color(red: 0x34 / 255, green: 0xD3 / 255, blue: 0x99 / 255)
   static let danger = Color(red: 0xF8 / 255, green: 0x71 / 255, blue: 0x71 / 255)
 
   static func accent(_ state: BookingActivityAttributes.ContentState) -> Color {

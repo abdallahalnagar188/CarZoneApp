@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/constance/app_colors.dart';
 import 'text_theme.dart';
 
 class MyAppTheme {
@@ -15,11 +16,11 @@ class MyAppTheme {
 
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF03111C) : const Color(0xFFF5F8FB);
-    final surface = isDark ? const Color(0xFF0A1E2D) : const Color(0xFFFFFFFF);
-    final primary = isDark ? const Color(0xFF4CC3F5) : const Color(0xFF0075C4);
-    final onSurface = isDark ? const Color(0xFFEEF6FB) : const Color(0xFF0B1F2E);
-    final line = isDark ? const Color(0xFF17344A) : const Color(0xFFE1EBF2);
+    final bg = isDark ? const Color(0xFF020B1A) : const Color(0xFFF5F8FC);
+    final surface = isDark ? const Color(0xFF0A1830) : const Color(0xFFFFFFFF);
+    final primary = isDark ? const Color(0xFF2F8CFF) : AppColors.brand;
+    final onSurface = isDark ? const Color(0xFFEEF4FF) : AppColors.brandNight;
+    final line = isDark ? const Color(0xFF1A2A47) : const Color(0xFFE2E9F3);
 
     return ThemeData(
       useMaterial3: true,
@@ -27,7 +28,7 @@ class MyAppTheme {
       brightness: brightness,
       textTheme: MyAppTextTheme.textThemeFor(brightness).apply(fontFamily: fontFamily),
       primaryColor: primary,
-      hintColor: isDark ? const Color(0xFF8EA6B6) : const Color(0xFF5F7686),
+      hintColor: isDark ? const Color(0xFF8D9BB5) : const Color(0xFF5B6B85),
       highlightColor: Colors.transparent,
       splashColor: Colors.transparent,
       splashFactory: NoSplash.splashFactory,
@@ -51,9 +52,9 @@ class MyAppTheme {
         brightness: brightness,
         primary: primary,
         onPrimary: Colors.white,
-        secondary: const Color(0xFFDDF3FD),
-        onSecondary: const Color(0xFF03477E),
-        error: const Color(0xFFE5484D),
+        secondary: AppColors.sand,
+        onSecondary: AppColors.sandInk,
+        error: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
         onError: Colors.white,
         surface: surface,
         onSurface: onSurface,
@@ -67,7 +68,7 @@ class MyAppTheme {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
-        modalBarrierColor: const Color(0xFF041828).withValues(alpha: 0.5),
+        modalBarrierColor: AppColors.brandNight.withValues(alpha: 0.5),
       ),
       dialogTheme: DialogThemeData(backgroundColor: surface, surfaceTintColor: Colors.transparent),
       switchTheme: SwitchThemeData(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../core/constance/app_colors.dart';
 import '../../../core/services/connectivity_service.dart';
 import 'custom_empty_state.dart';
 
@@ -22,6 +23,7 @@ class AppErrorState extends StatelessWidget {
       body: message ?? 'error.body'.tr,
       actionText: 'error.retry'.tr,
       onAction: onRetry,
+      color: offline ? AppColors.warning : AppColors.danger,
     );
   }
 }

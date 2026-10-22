@@ -1,8 +1,15 @@
 class AppRes {
   AppRes._();
 
-  static const String logo = 'assets/logo/logo.png';
-  static const String logoWhite = 'assets/logo/logo_white.png';
+  /// Wash Up "W" ribbon mark (aspect [markAspect]) and its reversed version.
+  static const String logo = 'assets/logo/mark.png';
+  static const String logoWhite = 'assets/logo/mark_white.png';
+  static const double markAspect = 673 / 302;
+
+  /// "WASHUP" wordmark (aspect [wordmarkAspect]) and its reversed version.
+  static const String wordmark = 'assets/logo/wordmark.png';
+  static const String wordmarkWhite = 'assets/logo/wordmark_white.png';
+  static const double wordmarkAspect = 810 / 111;
 
   static String photo(String id, {int width = 800, int? height}) =>
       'https://images.unsplash.com/$id?auto=format&fit=crop&q=70&w=$width${height != null ? '&h=$height' : ''}';

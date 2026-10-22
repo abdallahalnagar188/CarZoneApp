@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
         return GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: GetMaterialApp(
-            title: 'CarZone',
+            title: 'Wash Up',
             debugShowCheckedModeBanner: false,
             theme: MyAppTheme.lightTheme,
             darkTheme: MyAppTheme.darkTheme,

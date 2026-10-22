@@ -127,7 +127,7 @@ class WashDetailsController extends GetxController {
   /// share sheet to it and refuse to open without one.
   Future<void> share([Rect? origin]) async {
     final b = branch;
-    final name = b?.name.value ?? 'CarZone Wash';
+    final name = b?.name.value ?? 'Wash Up';
     final address = b?.address.value ?? '';
     final rating = listing.value?.rating.toStringAsFixed(1) ?? '4.8';
     final shareUrl = DeepLinkService.buildShareUrl(branchId);
@@ -135,7 +135,7 @@ class WashDetailsController extends GetxController {
     final text = '🚗 $name\n'
         '⭐ $rating (${listing.value?.reviewCount ?? 0} تقييم)\n'
         '📍 $address\n\n'
-        'احجز موعد غسيل سيارتك الآن على CarZone:\n'
+        'احجز موعد غسيل سيارتك الآن على Wash Up:\n'
         '$shareUrl';
 
     try {

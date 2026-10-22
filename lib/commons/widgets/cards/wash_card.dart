@@ -120,7 +120,7 @@ class WashCard extends StatelessWidget {
                           4.width,
                           Text(
                             '(${row.reviewCount})',
-                            style: theme.labelSmall?.copyWith(color: const Color(0xFF5F7686)),
+                            style: theme.labelSmall?.copyWith(color: AppColors.ink500),
                           ),
                         ],
                       ),

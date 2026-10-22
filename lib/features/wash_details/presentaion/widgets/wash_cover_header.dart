@@ -69,12 +69,12 @@ class WashCoverHeader extends StatelessWidget {
                   Container(
                     width: 56.r,
                     height: 56.r,
-                    padding: EdgeInsets.all(3.r),
+                    padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(18.r),
                     ),
-                    child: const AppLogo(),
+                    child: AppLogo(size: 40.r),
                   ),
                   12.width,
                   Expanded(

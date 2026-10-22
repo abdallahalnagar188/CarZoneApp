@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constance/app_assets.dart';
 
+/// The Wash Up "W" ribbon mark.
 class AppLogo extends StatelessWidget {
+  /// Width of the mark; the height follows the logo's aspect ratio.
   final double size;
 
   /// White mark for blue / dark brand surfaces.
@@ -15,7 +17,7 @@ class AppLogo extends StatelessWidget {
     return Image.asset(
       onBrand ? AppRes.logoWhite : AppRes.logo,
       width: size,
-      height: size,
+      height: size / AppRes.markAspect,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.medium,
     );

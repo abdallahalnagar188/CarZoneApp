@@ -47,7 +47,7 @@ class QrFullscreen extends StatelessWidget {
                 style: theme.headlineLarge?.copyWith(fontSize: 40.sp, letterSpacing: 6, color: AppColors.brand),
               ),
               8.height,
-              Text('book.showQr'.tr, style: theme.bodyMedium?.copyWith(color: const Color(0xFF5F7686))),
+              Text('book.showQr'.tr, style: theme.bodyMedium?.copyWith(color: AppColors.ink500)),
               const Spacer(),
             ],
           ),

@@ -13,16 +13,15 @@ class SplashPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<SplashController>();
+    // Matches the native launch screen (white, navy in dark mode) so the
+    // mark carries straight over from it.
+    final dark = AppColors.isDark;
+    final background = dark ? AppColors.brandNight : Colors.white;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUi.onBrand.copyWith(
-        systemNavigationBarColor: AppColors.brandNight,
-        systemNavigationBarIconBrightness: Brightness.light,
-      ),
+      value: SystemUi.adaptive.copyWith(systemNavigationBarColor: background),
       child: Scaffold(
-        body: DecoratedBox(
-          decoration: BoxDecoration(gradient: AppColors.heroGradient),
-          child: Center(child: SplashBrand(controller: controller)),
-        ),
+        backgroundColor: background,
+        body: Center(child: SplashBrand(controller: controller)),
       ),
     );
   }

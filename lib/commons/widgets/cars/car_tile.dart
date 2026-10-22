@@ -122,7 +122,7 @@ class CarTile extends StatelessWidget {
                           ),
                           child: Text(
                             'book.default'.tr,
-                            style: theme.labelSmall?.copyWith(color: AppColors.sandInk),
+                            style: theme.labelSmall?.copyWith(color: AppColors.secondaryInk),
                           ),
                         ),
                       ],

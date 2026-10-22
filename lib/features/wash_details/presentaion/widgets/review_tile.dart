@@ -63,7 +63,7 @@ class ReviewTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('wash.reply'.tr, style: theme.labelMedium?.copyWith(color: AppColors.sandInk)),
+                  Text('wash.reply'.tr, style: theme.labelMedium?.copyWith(color: AppColors.secondaryInk)),
                   4.height,
                   Text(review.reply!, style: theme.bodySmall?.copyWith(color: AppColors.ink700)),
                 ],

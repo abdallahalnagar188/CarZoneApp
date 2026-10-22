@@ -20,11 +20,11 @@ class AppSnackBarContent extends StatelessWidget {
   Color get _baseColor {
     switch (type) {
       case TosterTypes.sucsses:
-        return const Color(0xFF10B981);
+        return const Color(0xFF15803D);
       case TosterTypes.warning:
-        return const Color(0xFFF59E0B);
+        return const Color(0xFFB45309);
       case TosterTypes.failed:
-        return const Color(0xFFEF4444);
+        return const Color(0xFFDC2626);
     }
   }
 

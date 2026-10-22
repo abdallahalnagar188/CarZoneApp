@@ -1,34 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constance/app_colors.dart';
+import '../../../core/constance/app_assets.dart';
 
-/// Two-tone "Car" + "Zone" brand name, matching the logo lockup.
+/// The "WASHUP" wordmark from the logo lockup. It is a logotype, so it stays
+/// in Latin letters in both languages; screen readers get the localized name.
 class AppWordmark extends StatelessWidget {
-  final TextStyle? style;
+  final double height;
 
   /// Light lockup for blue / dark brand surfaces.
   final bool onBrand;
 
-  const AppWordmark({super.key, this.style, this.onBrand = false});
+  const AppWordmark({super.key, this.height = 20, this.onBrand = false});
 
   @override
   Widget build(BuildContext context) {
-    final base = (style ?? Theme.of(context).textTheme.titleLarge)?.copyWith(fontWeight: FontWeight.w800);
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: 'app.name_lead'.tr,
-            style: base?.copyWith(color: onBrand ? Colors.white : AppColors.brandNight),
-          ),
-          TextSpan(
-            text: 'app.name_tail'.tr,
-            style: base?.copyWith(color: onBrand ? AppColors.glow : AppColors.brandSky),
-          ),
-        ],
+    return Semantics(
+      label: 'app.name'.tr,
+      image: true,
+      child: Image.asset(
+        onBrand ? AppRes.wordmarkWhite : AppRes.wordmark,
+        height: height,
+        width: height * AppRes.wordmarkAspect,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+        excludeFromSemantics: true,
       ),
-      semanticsLabel: 'app.name'.tr,
     );
   }
 }

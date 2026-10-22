@@ -15,6 +15,9 @@ class CustomEmptyState extends StatelessWidget {
   final String? secondaryText;
   final VoidCallback? onSecondary;
 
+  /// Icon tint; brand blue by default, a state color for errors.
+  final Color? color;
+
   const CustomEmptyState({
     super.key,
     required this.title,
@@ -24,6 +27,7 @@ class CustomEmptyState extends StatelessWidget {
     this.onAction,
     this.secondaryText,
     this.onSecondary,
+    this.color,
   });
 
   @override
@@ -39,10 +43,10 @@ class CustomEmptyState extends StatelessWidget {
               width: 88.r,
               height: 88.r,
               decoration: BoxDecoration(
-                color: AppColors.primarySoft,
+                color: color == null ? AppColors.primarySoft : AppColors.tint(color!),
                 borderRadius: BorderRadius.circular(28.r),
               ),
-              child: Icon(icon, size: 38.sp, color: AppColors.primary),
+              child: Icon(icon, size: 38.sp, color: color ?? AppColors.primary),
             ),
             20.height,
             Text(

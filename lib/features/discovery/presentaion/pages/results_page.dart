@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../commons/widgets/common_widgets.dart';
+import '../../../../core/constance/app_colors.dart';
 import '../../../favorites/presentaion/controllers/favorites_controller.dart';
 import '../controllers/results_controller.dart';
 import '../widgets/results_toolbar.dart';
@@ -44,19 +45,19 @@ class ResultsPage extends StatelessWidget {
                       margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
                       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.12),
+                        color: AppColors.tint(AppColors.warning),
                         borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
-                          Icon(Iconsax.info_circle, color: Colors.amber[800], size: 18.sp),
+                          Icon(Iconsax.info_circle, color: AppColors.warning, size: 18.sp),
                           SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
                               'results.closedNotice'.tr,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.amber[900],
+                                    color: AppColors.warning,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),

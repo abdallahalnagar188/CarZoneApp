@@ -123,12 +123,12 @@ class BookingSummaryPage extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(Iconsax.info_circle, size: 18.sp, color: AppColors.sandInk),
+                        Icon(Iconsax.info_circle, size: 18.sp, color: AppColors.secondaryInk),
                         10.width,
                         Expanded(
                           child: Text(
                             'book.policy'.trParams({'min': '${branch.settings.freeCancelMin}'}),
-                            style: theme.bodySmall?.copyWith(color: AppColors.sandInk),
+                            style: theme.bodySmall?.copyWith(color: AppColors.secondaryInk),
                           ),
                         ),
                       ],

@@ -62,7 +62,7 @@ class MapMarkerHelper {
           fontFamily: 'IPM',
           fontSize: fontSize,
           fontWeight: FontWeight.w700,
-          color: selected ? Colors.white : (closed ? const Color(0xFF5F7686) : AppColors.brandDeep),
+          color: selected ? Colors.white : (closed ? const Color(0xFF5B6B85) : AppColors.brandDeep),
         ),
       ),
       textDirection: TextDirection.rtl,
@@ -106,7 +106,7 @@ class MapMarkerHelper {
     canvas.drawCircle(
       circleCenter,
       iconBox / 2,
-      Paint()..color = selected ? Colors.white : (closed ? const Color(0xFFC3D3DE) : AppColors.brand),
+      Paint()..color = selected ? Colors.white : (closed ? const Color(0xFFC5D0E0) : AppColors.brand),
     );
     _drawIcon(
       canvas,

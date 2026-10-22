@@ -32,7 +32,7 @@ class OnboardingFooter extends StatelessWidget {
                     width: on ? 26.w : 8.w,
                     height: 8.h,
                     decoration: BoxDecoration(
-                      gradient: on ? AppColors.primaryGradient : null,
+                      gradient: on ? AppColors.ribbonGradient : null,
                       color: on ? null : AppColors.primarySoft2,
                       borderRadius: BorderRadius.circular(99),
                     ),

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../core/constance/app_colors.dart';
+
 class MyAppTextTheme {
   MyAppTextTheme._();
 
   static TextTheme textThemeFor(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final primary = isDark ? const Color(0xFFEEF6FB) : const Color(0xFF0B1F2E);
-    final secondary = isDark ? const Color(0xFF8EA6B6) : const Color(0xFF5F7686);
+    final primary = isDark ? const Color(0xFFEEF4FF) : AppColors.brandNight;
+    final secondary = isDark ? const Color(0xFF8D9BB5) : const Color(0xFF5B6B85);
 
     return TextTheme(
       headlineLarge: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w700, color: primary, height: 1.25),

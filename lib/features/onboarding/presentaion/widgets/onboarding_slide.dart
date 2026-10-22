@@ -76,7 +76,7 @@ class OnboardingSlide extends StatelessWidget {
                 child: Text(
                   '0$n / 0${OnboardingController.count}',
                   textDirection: TextDirection.ltr,
-                  style: theme.labelMedium?.copyWith(color: AppColors.sandInk, fontWeight: FontWeight.w700),
+                  style: theme.labelMedium?.copyWith(color: AppColors.secondaryInk, fontWeight: FontWeight.w700),
                 ),
               ),
               14.height,
@@ -99,9 +99,18 @@ class _TopRow extends StatelessWidget {
     final controller = Get.find<OnboardingController>();
     return Row(
       children: [
-        AppLogo(size: 30.r, onBrand: true),
-        8.width,
-        AppWordmark(onBrand: true, style: Theme.of(context).textTheme.titleLarge),
+        // The lockup is artwork: mark then wordmark, never mirrored in RTL.
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppLogo(size: 40.r, onBrand: true),
+              8.width,
+              AppWordmark(height: 14.r, onBrand: true),
+            ],
+          ),
+        ),
         const Spacer(),
         Obx(
           () => AnimatedOpacity(

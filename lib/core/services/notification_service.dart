@@ -33,7 +33,7 @@ class NotificationService extends GetxService {
   final FlutterLocalNotificationsPlugin _localNotifs = FlutterLocalNotificationsPlugin();
 
   static const String channelId = 'carzone_orders';
-  static const String channelName = 'CarZone Notifications';
+  static const String channelName = 'Wash Up Notifications';
   static const String channelDesc = 'Order status updates, reminders and offers';
 
   final AndroidNotificationChannel _channel = const AndroidNotificationChannel(
@@ -256,7 +256,7 @@ class NotificationService extends GetxService {
     final notification = message.notification;
     final data = message.data;
 
-    final title = notification?.title ?? data['title_ar'] ?? data['title_en'] ?? data['title'] ?? 'CarZone';
+    final title = notification?.title ?? data['title_ar'] ?? data['title_en'] ?? data['title'] ?? 'Wash Up';
     final body = notification?.body ?? data['body_ar'] ?? data['body_en'] ?? data['body'] ?? '';
 
     showLocalNotification(
