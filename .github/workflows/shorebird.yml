@@ -55,7 +55,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Inspect Git Changes
         id: decide
@@ -79,8 +79,14 @@ jobs:
             exit 0
           fi
 
-          # Check git diff between current commit and previous commit
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-files)
+          # Diff the whole push, not just its last commit: a push can carry
+          # several commits and a native change in any of them needs a release.
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            BEFORE="HEAD~1"
+          fi
+          echo "Comparing $BEFORE..HEAD"
+          CHANGED_FILES=$(git diff --name-only "$BEFORE" HEAD 2>/dev/null || git ls-files)
           echo "Changed files in this commit/merge:"
           echo "$CHANGED_FILES"
 
