@@ -148,8 +148,10 @@ jobs:
           echo "$RELEASES"
 
           ACTION="${{ needs.detect-changes.outputs.action_type }}"
-          if echo "$RELEASES" | grep -iq "No releases found"; then
-            echo "No existing releases found on Shorebird. Creating initial RELEASE."
+          # Releases are per platform: an Android release can't take an iOS
+          # patch, so look for a release on this platform specifically.
+          if ! echo "$RELEASES" | grep -iq "android:"; then
+            echo "No existing android release on Shorebird. Creating initial RELEASE."
             ACTION="release"
           fi
 
@@ -219,8 +221,10 @@ jobs:
           echo "$RELEASES"
 
           ACTION="${{ needs.detect-changes.outputs.action_type }}"
-          if echo "$RELEASES" | grep -iq "No releases found"; then
-            echo "No existing releases found on Shorebird. Creating initial RELEASE."
+          # Releases are per platform: an Android release can't take an iOS
+          # patch, so look for a release on this platform specifically.
+          if ! echo "$RELEASES" | grep -iq "ios:"; then
+            echo "No existing ios release on Shorebird. Creating initial RELEASE."
             ACTION="release"
           fi
 
