@@ -1,4 +1,4 @@
-package com.washup.app
+package com.alnagar.washup
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

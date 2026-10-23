@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.washup.app"
+    namespace = "com.alnagar.washup"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
@@ -22,7 +22,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.washup.app"
+        applicationId = "com.alnagar.washup"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24

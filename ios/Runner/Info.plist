@@ -28,7 +28,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.washup.app</string>
+			<string>com.alnagar.washup</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>washup</string>

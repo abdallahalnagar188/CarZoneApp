@@ -1,4 +1,4 @@
-package com.washup.app
+package com.alnagar.washup
 
 import android.content.BroadcastReceiver
 import android.content.Context

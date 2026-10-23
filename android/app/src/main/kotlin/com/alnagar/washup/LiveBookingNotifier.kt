@@ -1,4 +1,4 @@
-package com.washup.app
+package com.alnagar.washup
 
 import android.app.Notification
 import android.app.NotificationChannel
