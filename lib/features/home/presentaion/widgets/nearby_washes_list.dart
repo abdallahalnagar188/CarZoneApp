@@ -13,10 +13,11 @@ class NearbyWashesList extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
     final favorites = Get.find<FavoritesController>();
-    return SizedBox(
-      height: 252.h,
-      child: Obx(
-        () => ListView.separated(
+    return Obx(() {
+      if (controller.nearby.isEmpty) return const SizedBox.shrink();
+      return SizedBox(
+        height: 252.h,
+        child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 4.h),
           itemCount: controller.nearby.length,
@@ -38,7 +39,7 @@ class NearbyWashesList extends StatelessWidget {
             );
           },
         ),
-      ),
-    );
+      );
+    });
   }
 }

@@ -50,26 +50,31 @@ class HomePage extends StatelessWidget {
             ),
             SliverToBoxAdapter(child: _enter(2, SectionHeader(title: 'home.services'.tr))),
             SliverToBoxAdapter(child: _enter(3, const ServiceCategoriesGrid())),
-            SliverToBoxAdapter(
-              child: _enter(
-                4,
-                SectionHeader(
-                  title: 'home.nearby'.tr,
-                  actionText: 'home.seeAll'.tr,
-                  onAction: controller.openNearby,
-                ),
-              ),
-            ),
+            // No nearby washes: drop the whole section instead of an empty strip.
             SliverToBoxAdapter(
               child: Obx(() {
                 final empty = controller.nearby.isEmpty;
-                if (controller.loading.value || (empty && controller.syncing)) {
-                  return SizedBox(height: 252.h, child: const AppShimmerList(count: 1, itemHeight: 230));
+                if (empty && !controller.loading.value && !controller.syncing && controller.syncError == null) {
+                  return const SizedBox.shrink();
                 }
-                if (empty && controller.syncError != null) {
-                  return AppErrorState(message: controller.syncError, onRetry: controller.refreshHome);
-                }
-                return _enter(0, const NearbyWashesList());
+                return Column(
+                  children: [
+                    _enter(
+                      4,
+                      SectionHeader(
+                        title: 'home.nearby'.tr,
+                        actionText: 'home.seeAll'.tr,
+                        onAction: controller.openNearby,
+                      ),
+                    ),
+                    if (controller.loading.value || (empty && controller.syncing))
+                      SizedBox(height: 252.h, child: const AppShimmerList(count: 1, itemHeight: 230))
+                    else if (empty && controller.syncError != null)
+                      AppErrorState(message: controller.syncError, onRetry: controller.refreshHome)
+                    else
+                      _enter(0, const NearbyWashesList()),
+                  ],
+                );
               }),
             ),
             // No live offers: drop the whole section instead of an empty strip.
