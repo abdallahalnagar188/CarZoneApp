@@ -1,0 +1,69 @@
+workflows:
+  ios-workflow:
+    name: iOS App Store & TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # Name of the App Store Connect API key configured in Codemagic:
+      # Team settings > Integrations > Apple Developer Portal
+      app_store_connect: codemagic_api_key
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.example.carzone
+    scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Get Flutter dependencies
+        script: |
+          flutter packages pub get
+      - name: Install CocoaPods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Flutter build ipa
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - bdallhmsd807@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  android-workflow:
+    name: Android Release (AAB)
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      flutter: stable
+      java: 17
+    scripts:
+      - name: Get Flutter dependencies
+        script: |
+          flutter packages pub get
+      - name: Build Android App Bundle
+        script: |
+          flutter build appbundle --release
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/flutter-apk/*.apk
+    publishing:
+      email:
+        recipients:
+          - bdallhmsd807@gmail.com
+        notify:
+          success: true
+          failure: true
