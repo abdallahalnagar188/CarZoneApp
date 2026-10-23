@@ -1,4 +1,4 @@
-package com.example.carzone
+package com.washup.app
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

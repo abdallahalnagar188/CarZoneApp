@@ -1,4 +1,4 @@
-package com.example.carzone
+package com.washup.app
 
 import android.app.Notification
 import android.app.NotificationChannel

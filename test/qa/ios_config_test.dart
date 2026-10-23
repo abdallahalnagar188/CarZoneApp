@@ -38,7 +38,7 @@ void main() {
   test('Firebase config is bundled and matches the app', () {
     final file = File('ios/Runner/GoogleService-Info.plist');
     expect(file.existsSync(), isTrue, reason: 'Firebase.initializeApp() fails on iOS without it');
-    expect(_valueAfterKey(file.readAsStringSync(), 'BUNDLE_ID'), '<string>com.example.carzone</string>');
+    expect(_valueAfterKey(file.readAsStringSync(), 'BUNDLE_ID'), '<string>com.washup.app</string>');
     // Only files in Copy Bundle Resources end up in the app.
     final pbx = File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync();
     expect(pbx, contains('GoogleService-Info.plist in Resources'));

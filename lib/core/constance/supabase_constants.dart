@@ -12,7 +12,7 @@ class SupabaseConstants {
   static const String googleWebClientId =
       '995916581459-633gqn8celnqlprln9ejt2oorblqiobl.apps.googleusercontent.com';
 
-  /// Google iOS Client ID (OAuth 2.0 Client ID of type iOS, bundle id com.example.carzone).
+  /// Google iOS Client ID (OAuth 2.0 Client ID of type iOS, bundle id com.washup.app).
   /// Leave empty until it exists: iOS then signs in through the browser instead.
   /// When set, ios/Runner/Info.plist must also list its reversed form
   /// (com.googleusercontent.apps.ID) under CFBundleURLSchemes, or Google
@@ -21,7 +21,7 @@ class SupabaseConstants {
       '995916581459-16prakedukbmm60b8alm79009fkksv0l.apps.googleusercontent.com';
 
   /// Google Android Client ID from Google Cloud Console (OAuth 2.0 Client ID for Android)
-  /// Linked to package name com.example.carzone and debug keystore SHA-1.
+  /// Linked to package name com.washup.app and debug keystore SHA-1.
   static const String googleAndroidClientId =
       '995916581459-1pgjogapou9cdnfhhjs3bdki4vinqkgk.apps.googleusercontent.com';
 }
