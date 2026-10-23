@@ -317,9 +317,9 @@ class AuthRepo {
   static StreamSubscription<AuthState>? _oauthSub;
 
   /// In-app browser view OAuth fallback (opens in-app modal instead of separate Chrome app).
-  /// Requires carzone://login-callback in Supabase Auth -> URL Configuration -> Redirect URLs.
+  /// Requires washup://login-callback (and carzone://login-callback) in Supabase Auth -> URL Configuration -> Redirect URLs.
   Future<bool> signInWithGoogleInAppBrowser() async {
-    // supabase_flutter signs in from the carzone://login-callback link but leaves
+    // supabase_flutter signs in from the washup://login-callback link but leaves
     // the in-app Safari sheet open on iOS, so close it once the session arrives.
     if (GetPlatform.isIOS) {
       // A sheet left open by an earlier attempt blocks the new one from showing.
@@ -345,13 +345,13 @@ class AuthRepo {
       // loads or the user closes it.
       final res = await _client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'carzone://login-callback',
+        redirectTo: 'washup://login-callback',
         authScreenLaunchMode: LaunchMode.inAppBrowserView,
         // Without this Google silently reuses the account signed in to Safari,
         // which may not be the one the user just picked.
         queryParams: const {'prompt': 'select_account'},
       );
-      // When Google redirects straight back to carzone:// the in-app sheet
+      // When Google redirects straight back to washup:// the in-app sheet
       // reports "failed to load" although sign-in goes on through the link,
       // so on iOS only an exception means the browser could not start.
       return GetPlatform.isIOS || res;

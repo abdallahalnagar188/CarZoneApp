@@ -20,8 +20,9 @@ void main() {
     expect(_valueAfterKey(_plist(), 'FlutterDeepLinkingEnabled'), '<false/>');
   });
 
-  test('carzone:// URL scheme is registered', () {
+  test('carzone:// and washup:// URL schemes are registered', () {
     expect(_plist(), contains('<string>carzone</string>'));
+    expect(_plist(), contains('<string>washup</string>'));
   });
 
   test('iOS Google client ID has its reversed URL scheme in Info.plist', () {

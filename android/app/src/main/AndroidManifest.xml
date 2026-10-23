@@ -43,31 +43,35 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep Link Custom Scheme: carzone://wash?id=... or carzone://wash/:id -->
+            <!-- Deep Link Custom Schemes: washup://wash and carzone://wash -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="washup" android:host="wash" />
                 <data android:scheme="carzone" android:host="wash" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="washup" android:host="branch" />
                 <data android:scheme="carzone" android:host="branch" />
             </intent-filter>
-            <!-- Live booking widget tap: carzone://booking?id=... -->
+            <!-- Live booking widget tap: washup://booking?id=... or carzone://booking?id=... -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="washup" android:host="booking" />
                 <data android:scheme="carzone" android:host="booking" />
             </intent-filter>
-            <!-- Supabase OAuth Callback: carzone://login-callback -->
+            <!-- Supabase OAuth Callback: washup://login-callback or carzone://login-callback -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="washup" android:host="login-callback" />
                 <data android:scheme="carzone" android:host="login-callback" />
             </intent-filter>
             <!-- App Links (HTTPS Universal Link via Supabase) -->

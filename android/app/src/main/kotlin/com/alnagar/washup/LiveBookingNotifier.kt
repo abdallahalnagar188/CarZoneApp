@@ -104,7 +104,7 @@ class LiveBookingNotifier(private val context: Context) {
     private fun isArabicLocale() = context.resources.configuration.locales[0].language == "ar"
 
     private fun openBooking(booking: Booking): PendingIntent {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("carzone://booking?id=${Uri.encode(booking.orderId)}"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("washup://booking?id=${Uri.encode(booking.orderId)}"))
             .setClass(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         return PendingIntent.getActivity(

@@ -90,7 +90,7 @@ private extension BookingActivityAttributes {
   /// Arabic UI with Latin digits, matching the app ("4:00 م").
   var locale: Locale { Locale(identifier: isArabic ? "ar_EG@numbers=latn" : "en_US") }
   var direction: LayoutDirection { isArabic ? .rightToLeft : .leftToRight }
-  var deepLink: URL? { URL(string: "carzone://booking?id=\(orderId)") }
+  var deepLink: URL? { URL(string: "washup://booking?id=\(orderId)") }
 }
 
 private extension BookingActivityAttributes.ContentState {

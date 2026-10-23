@@ -27,7 +27,7 @@ class DeepLinkService extends GetxService {
 
   static String buildShareUrl(String branchId) => '$supabaseShareBaseUrl?id=$branchId';
 
-  static String buildAppSchemeUrl(String branchId) => 'carzone://wash?id=$branchId';
+  static String buildAppSchemeUrl(String branchId) => 'washup://wash?id=$branchId';
 
   Future<DeepLinkService> init() async {
     _initColdStart();
@@ -59,7 +59,7 @@ class DeepLinkService extends GetxService {
     );
   }
 
-  /// Parses and navigates if the URI is a valid CarZone content deep link.
+  /// Parses and navigates if the URI is a valid Wash Up content deep link.
   bool handleUri(Uri uri) {
     // Ignore Supabase Auth links (login-callback, OAuth tokens, password reset)
     if (uri.host == 'login-callback' ||
@@ -70,8 +70,8 @@ class DeepLinkService extends GetxService {
       return false;
     }
 
-    // carzone://booking?id=<order id>: tapping the live booking widget.
-    if (uri.scheme == 'carzone' && uri.host == 'booking') {
+    // washup://booking?id=<order id> or carzone://booking?id=...
+    if ((uri.scheme == 'washup' || uri.scheme == 'carzone') && uri.host == 'booking') {
       final orderId = uri.queryParameters['id'];
       if (orderId == null || orderId.isEmpty) return false;
       AppReadyGate.run(() {

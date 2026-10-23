@@ -53,7 +53,7 @@ void main() {
 
     test('buildAppSchemeUrl builds correct custom scheme URL', () {
       final url = DeepLinkService.buildAppSchemeUrl('br_oasis_nasr');
-      expect(url, equals('carzone://wash?id=br_oasis_nasr'));
+      expect(url, equals('washup://wash?id=br_oasis_nasr'));
     });
   });
 }
