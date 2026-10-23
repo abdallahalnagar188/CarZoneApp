@@ -66,7 +66,7 @@ class ReviewModel {
     'customer_id': customerId ?? '',
     if (serviceId != null) 'service_id': serviceId,
     'stars': stars,
-    'comment': comment,
+    'comment': {'ar': comment, 'en': comment},
     'tags': tags,
     if (reply != null) 'reply': reply,
     'created_at': createdAt.toUtc().toIso8601String(),
