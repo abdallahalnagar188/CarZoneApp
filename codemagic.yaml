@@ -28,6 +28,7 @@ workflows:
 
       - name: Get dependencies
         script: |
+          flutter config --no-enable-swift-package-manager
           flutter packages pub get
 
       - name: Install Pods
@@ -36,7 +37,11 @@ workflows:
 
       - name: Build IPA Release
         script: |
-          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+          # Ensure SPM is completely disabled before building
+          flutter config --no-enable-swift-package-manager
+
+          # Pass flag to prevent SPM auto-migration if supported by the Flutter channel
+          flutter build ipa --release --no-pub --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
