@@ -4,8 +4,6 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
-      # Name of the App Store Connect API key configured in Codemagic:
-      # Team settings > Integrations > Apple Developer Portal
       app_store_connect: codemagic_api_key
     environment:
       flutter: stable
@@ -15,33 +13,33 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.alnagar.washup
     scripts:
-      - name: Disable Swift Package Manager (fix Firebase & GoogleSign-In conflict)
+      - name: Disable Swift Package Manager & Clean
         script: |
-          # Disable SPM for standard Flutter
+          # تعطيل SPM عالمياً ولـ Shorebird
           flutter config --no-enable-swift-package-manager
-
-          # CRITICAL: Disable SPM directly in the Shorebird vendored Flutter instance
-          if command -v shorebird &> /dev/null; then
-            shorebird flutter config --no-enable-swift-package-manager || true
-          fi
           if [ -d "$HOME/.shorebird/bin" ]; then
             $HOME/.shorebird/bin/shorebird flutter config --no-enable-swift-package-manager || true
           fi
 
-          # Clean ephemeral files before dependency resolution
+          # مسح الكاش لمنع استدعاء SPM أثناء التجميع
           rm -rf ios/Flutter/ephemeral
           rm -rf ios/Pods ios/Podfile.lock
+          rm -rf build
+
       - name: Set up code signing settings on Xcode project
         script: |
           app-store-connect fetch-signing-files "com.alnagar.washup" --type IOS_APP_STORE --create || true
           app-store-connect fetch-signing-files "com.alnagar.washup.BookingLiveActivity" --type IOS_APP_STORE --create || true
           xcode-project use-profiles
+
       - name: Get Flutter dependencies
         script: |
           flutter packages pub get
+
       - name: Install CocoaPods
         script: |
-          find . -name "Podfile" -execdir pod install \;
+          cd ios && pod install --repo-update && cd ..
+
       - name: Build iOS release
         script: |
           SHOREBIRD_BIN=""
@@ -51,8 +49,9 @@ workflows:
             SHOREBIRD_BIN="$HOME/.shorebird/bin/shorebird"
           fi
 
+          # إذا أردت بناء عبر Shorebird مع تمرير الـ export-options بشكل صحيح:
           if [ -n "$SHOREBIRD_BIN" ]; then
-            $SHOREBIRD_BIN release ios --flutter-version=3.29.0 --no-confirm --export-options-plist=/Users/builder/export_options.plist
+            $SHOREBIRD_BIN release ios --flutter-version=3.29.0 --no-confirm -- --export-options-plist=/Users/builder/export_options.plist
           else
             flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
           fi
