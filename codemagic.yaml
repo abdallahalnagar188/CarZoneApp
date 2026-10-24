@@ -17,11 +17,20 @@ workflows:
     scripts:
       - name: Disable Swift Package Manager (fix Firebase & GoogleSign-In conflict)
         script: |
+          # Disable SPM for standard Flutter
           flutter config --no-enable-swift-package-manager
-          if [ -d "$HOME/.shorebird" ]; then
+
+          # CRITICAL: Disable SPM directly in the Shorebird vendored Flutter instance
+          if command -v shorebird &> /dev/null; then
+            shorebird flutter config --no-enable-swift-package-manager || true
+          fi
+          if [ -d "$HOME/.shorebird/bin" ]; then
             $HOME/.shorebird/bin/shorebird flutter config --no-enable-swift-package-manager || true
           fi
-          rm -rf ios/Flutter/ephemeral/Packages
+
+          # Clean ephemeral files before dependency resolution
+          rm -rf ios/Flutter/ephemeral
+          rm -rf ios/Pods ios/Podfile.lock
       - name: Set up code signing settings on Xcode project
         script: |
           app-store-connect fetch-signing-files "com.alnagar.washup" --type IOS_APP_STORE --create || true
@@ -35,8 +44,15 @@ workflows:
           find . -name "Podfile" -execdir pod install \;
       - name: Build iOS release
         script: |
-          if [ -d "$HOME/.shorebird" ]; then
-            $HOME/.shorebird/bin/shorebird release ios --no-confirm --export-options-plist=/Users/builder/export_options.plist
+          SHOREBIRD_BIN=""
+          if command -v shorebird &> /dev/null; then
+            SHOREBIRD_BIN="shorebird"
+          elif [ -d "$HOME/.shorebird/bin" ]; then
+            SHOREBIRD_BIN="$HOME/.shorebird/bin/shorebird"
+          fi
+
+          if [ -n "$SHOREBIRD_BIN" ]; then
+            $SHOREBIRD_BIN release ios --flutter-version=3.29.0 --no-confirm --export-options-plist=/Users/builder/export_options.plist
           else
             flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
           fi
