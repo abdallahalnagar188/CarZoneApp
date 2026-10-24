@@ -489,13 +489,13 @@ packages:
     source: hosted
     version: "14.0.2"
   geolocator_android:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: geolocator_android
-      sha256: e67583809a1fab5f4a2255902978e2bc095ace9451fde0d9624e54facd0a5c22
+      sha256: fcb1760a50d7500deca37c9a666785c047139b5f9ee15aa5469fae7dbbe3170d
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "5.2.1"
+    version: "4.6.2"
   geolocator_apple:
     dependency: transitive
     description:
