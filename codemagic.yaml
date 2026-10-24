@@ -15,8 +15,17 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.alnagar.washup
     scripts:
+      - name: Disable Swift Package Manager (fix Firebase & GoogleSign-In conflict)
+        script: |
+          flutter config --no-enable-swift-package-manager
+          if [ -d "$HOME/.shorebird" ]; then
+            $HOME/.shorebird/bin/shorebird flutter config --no-enable-swift-package-manager || true
+          fi
+          rm -rf ios/Flutter/ephemeral/Packages
       - name: Set up code signing settings on Xcode project
         script: |
+          app-store-connect fetch-signing-files "com.alnagar.washup" --type IOS_APP_STORE --create || true
+          app-store-connect fetch-signing-files "com.alnagar.washup.BookingLiveActivity" --type IOS_APP_STORE --create || true
           xcode-project use-profiles
       - name: Get Flutter dependencies
         script: |
@@ -24,10 +33,13 @@ workflows:
       - name: Install CocoaPods
         script: |
           find . -name "Podfile" -execdir pod install \;
-      - name: Flutter build ipa
+      - name: Build iOS release
         script: |
-          flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+          if [ -d "$HOME/.shorebird" ]; then
+            $HOME/.shorebird/bin/shorebird release ios --no-confirm --export-options-plist=/Users/builder/export_options.plist
+          else
+            flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
