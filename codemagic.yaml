@@ -6,39 +6,48 @@ workflows:
     integrations:
       app_store_connect: codemagic_api_key
     environment:
-      flutter: stable
+      flutter: 3.27.4     # Pinned: last stable BEFORE SPM became default (3.44+)
       xcode: latest
       cocoapods: default
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.alnagar.washup
     scripts:
-      - name: Disable SPM & Clean Caches
+      - name: Disable SPM & clean all caches
         script: |
+          # Write the flutter config file directly (most reliable method)
+          mkdir -p "$HOME/.config/flutter"
+          echo '{"enable-swift-package-manager": false}' > "$HOME/.config/flutter/settings.json"
+
+          # Also apply via CLI (belt-and-suspenders)
           flutter config --no-enable-swift-package-manager
+
+          # Confirm it's disabled
+          flutter config | grep swift || true
+
+          # Clean everything
           rm -rf ios/Flutter/ephemeral
           rm -rf ios/Pods ios/Podfile.lock
           rm -rf build
 
-      - name: Set up code signing
+      - name: Fetch signing files (Runner + BookingLiveActivity)
         script: |
-          app-store-connect fetch-signing-files "com.alnagar.washup" --type IOS_APP_STORE --create || true
-          app-store-connect fetch-signing-files "com.alnagar.washup.BookingLiveActivity" --type IOS_APP_STORE --create || true
+          app-store-connect fetch-signing-files "com.alnagar.washup" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "com.alnagar.washup.BookingLiveActivity" --type IOS_APP_STORE --create
           xcode-project use-profiles
 
       - name: Get dependencies
         script: |
-          flutter config --no-enable-swift-package-manager
           flutter packages pub get
 
-      - name: Install Pods
+      - name: Install CocoaPods
         script: |
           cd ios && pod install --repo-update && cd ..
 
       - name: Build IPA Release
         script: |
-          flutter config --no-enable-swift-package-manager
-          flutter build ipa --release --no-pub --export-options-plist=/Users/builder/export_options.plist
+          flutter build ipa --release --no-pub \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
