@@ -13,38 +13,33 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.alnagar.washup
     scripts:
-      - name: Disable Swift Package Manager & Clean
+      - name: Disable SPM & Clean Caches
         script: |
-          # تعطيل SPM صراحةً في بيئة Flutter
           flutter config --no-enable-swift-package-manager
-
-          # حذف أي مسارات كاش مؤقتة لـ SPM و Pods
           rm -rf ios/Flutter/ephemeral
           rm -rf ios/Pods ios/Podfile.lock
           rm -rf build
 
-      - name: Set up code signing settings on Xcode project
+      - name: Set up code signing
         script: |
           app-store-connect fetch-signing-files "com.alnagar.washup" --type IOS_APP_STORE --create || true
           app-store-connect fetch-signing-files "com.alnagar.washup.BookingLiveActivity" --type IOS_APP_STORE --create || true
           xcode-project use-profiles
 
-      - name: Get Flutter dependencies
+      - name: Get dependencies
         script: |
           flutter packages pub get
 
-      - name: Install CocoaPods
+      - name: Install Pods
         script: |
           cd ios && pod install --repo-update && cd ..
 
-      - name: Build iOS release
+      - name: Build IPA Release
         script: |
-          # بناء الـ IPA مباشرة عبر Flutter وتجاوز فخ Shorebird
-          flutter build ipa --release --verbose --export-options-plist=/Users/builder/export_options.plist
+          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
     publishing:
       app_store_connect:
         auth: integration
@@ -64,7 +59,7 @@ workflows:
       flutter: stable
       java: 17
     scripts:
-      - name: Get Flutter dependencies
+      - name: Get dependencies
         script: |
           flutter packages pub get
       - name: Build Android App Bundle
