@@ -15,13 +15,10 @@ workflows:
     scripts:
       - name: Disable Swift Package Manager & Clean
         script: |
-          # تعطيل SPM عالمياً ولـ Shorebird
+          # تعطيل SPM صراحةً في بيئة Flutter
           flutter config --no-enable-swift-package-manager
-          if [ -d "$HOME/.shorebird/bin" ]; then
-            $HOME/.shorebird/bin/shorebird flutter config --no-enable-swift-package-manager || true
-          fi
 
-          # مسح الكاش لمنع استدعاء SPM أثناء التجميع
+          # حذف أي مسارات كاش مؤقتة لـ SPM و Pods
           rm -rf ios/Flutter/ephemeral
           rm -rf ios/Pods ios/Podfile.lock
           rm -rf build
@@ -42,19 +39,8 @@ workflows:
 
       - name: Build iOS release
         script: |
-          SHOREBIRD_BIN=""
-          if command -v shorebird &> /dev/null; then
-            SHOREBIRD_BIN="shorebird"
-          elif [ -d "$HOME/.shorebird/bin" ]; then
-            SHOREBIRD_BIN="$HOME/.shorebird/bin/shorebird"
-          fi
-
-          # إذا أردت بناء عبر Shorebird مع تمرير الـ export-options بشكل صحيح:
-          if [ -n "$SHOREBIRD_BIN" ]; then
-            $SHOREBIRD_BIN release ios --flutter-version=3.29.0 --no-confirm -- --export-options-plist=/Users/builder/export_options.plist
-          else
-            flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
-          fi
+          # بناء الـ IPA مباشرة عبر Flutter وتجاوز فخ Shorebird
+          flutter build ipa --release --verbose --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
