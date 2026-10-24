@@ -17,7 +17,8 @@ class SupabaseConstants {
   /// When set, ios/Runner/Info.plist must also list its reversed form
   /// (com.googleusercontent.apps.ID) under CFBundleURLSchemes, or Google
   /// Sign-In crashes the app. test/qa/ios_config_test.dart checks this.
-  static const String googleIosClientId = '';
+  static const String googleIosClientId =
+      '995916581459-16prakedukbmm60b8alm79009fkksv0l.apps.googleusercontent.com';
 
   /// Google Android Client ID from Google Cloud Console (OAuth 2.0 Client ID for Android)
   /// Linked to package name com.alnagar.washup and debug keystore SHA-1.
