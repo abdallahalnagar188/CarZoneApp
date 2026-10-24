@@ -61,28 +61,3 @@ workflows:
         notify:
           success: true
           failure: true
-
-  android-workflow:
-    name: Android Release (AAB)
-    instance_type: linux_x2
-    max_build_duration: 45
-    environment:
-      flutter: stable
-      java: 17
-    scripts:
-      - name: Get dependencies
-        script: |
-          flutter packages pub get
-      - name: Build Android App Bundle
-        script: |
-          flutter build appbundle --release
-    artifacts:
-      - build/app/outputs/bundle/release/*.aab
-      - build/app/outputs/flutter-apk/*.apk
-    publishing:
-      email:
-        recipients:
-          - bdallhmsd807@gmail.com
-        notify:
-          success: true
-          failure: true
