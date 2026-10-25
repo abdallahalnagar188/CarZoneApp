@@ -52,11 +52,21 @@ class ProfilePage extends StatelessWidget {
               14.height,
               RoundedContainer(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-                child: ProfileMenuTile(
-                  icon: Iconsax.logout,
-                  title: 'profile.logout'.tr,
-                  danger: true,
-                  onTap: controller.logout,
+                child: Column(
+                  children: [
+                    ProfileMenuTile(
+                      icon: Iconsax.logout,
+                      title: 'profile.logout'.tr,
+                      danger: true,
+                      onTap: controller.logout,
+                    ),
+                    ProfileMenuTile(
+                      icon: Iconsax.trash,
+                      title: 'profile.delete'.tr,
+                      danger: true,
+                      onTap: controller.deleteAccount,
+                    ),
+                  ],
                 ),
               ),
             ],

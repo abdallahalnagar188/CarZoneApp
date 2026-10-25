@@ -29,6 +29,7 @@ class AuthController extends GetxController {
   final verifying = false.obs;
   final saving = false.obs;
   final googleSigningIn = false.obs;
+  final appleSigningIn = false.obs;
   final resendIn = 0.obs;
   final lockedFor = 0.obs;
 
@@ -49,7 +50,7 @@ class AuthController extends GetxController {
 
   /// Initiate native in-app Google Sign-In popup without opening Chrome app
   Future<void> signInWithGoogle() async {
-    if (googleSigningIn.value || sending.value) return;
+    if (googleSigningIn.value || appleSigningIn.value || sending.value) return;
     googleSigningIn.value = true;
     try {
       AuthResponse? res;
@@ -93,6 +94,24 @@ class AuthController extends GetxController {
       Utils.getSnakBar(message: 'login.google_failed'.tr, type: TosterTypes.failed);
     } finally {
       googleSigningIn.value = false;
+    }
+  }
+
+  /// Native Sign in with Apple (shown on iOS only).
+  Future<void> signInWithApple() async {
+    if (appleSigningIn.value || googleSigningIn.value || sending.value) return;
+    appleSigningIn.value = true;
+    try {
+      final res = await _repo.signInWithApple();
+      if (res == null) return; // User canceled the Apple sheet
+      await _handleSuccessfulAuth(res);
+    } on ApiException catch (e) {
+      Utils.getSnakBar(message: e.message, type: TosterTypes.failed);
+    } catch (e) {
+      debugPrint('[AuthController] signInWithApple failed: $e');
+      Utils.getSnakBar(message: 'login.apple_failed'.tr, type: TosterTypes.failed);
+    } finally {
+      appleSigningIn.value = false;
     }
   }
 

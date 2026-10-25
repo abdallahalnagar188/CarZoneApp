@@ -8,6 +8,7 @@ import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../controllers/auth_controller.dart';
+import '../widgets/apple_sign_in_button.dart';
 import '../widgets/auth_brand_card.dart';
 import '../widgets/google_sign_in_button.dart';
 import '../widgets/phone_input.dart';
@@ -137,6 +138,15 @@ class LoginPage extends StatelessWidget {
               ],
             ),
             20.height,
+            if (GetPlatform.isIOS) ...[
+              Obx(
+                () => AppleSignInButton(
+                  loading: controller.appleSigningIn.value,
+                  onTap: controller.signInWithApple,
+                ),
+              ),
+              12.height,
+            ],
             Obx(
               () => GoogleSignInButton(
                 loading: controller.googleSigningIn.value,

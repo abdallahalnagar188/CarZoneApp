@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as dev;
 
+import 'package:crypto/crypto.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 
@@ -14,6 +17,9 @@ import '../../../../core/services/supabase_service.dart';
 
 /// The phone number is already linked to a different account (sync_customer_profile).
 class PhoneInUseException implements Exception {}
+
+/// The account still has an open booking (delete_my_account).
+class ActiveBookingException implements Exception {}
 
 class AuthRepo {
   SupabaseClient get _client => SupabaseService.client;
@@ -361,6 +367,64 @@ class AuthRepo {
     } catch (e) {
       dev.log('[AuthRepo] signInWithGoogleInAppBrowser unexpected error: $e');
       return false;
+    }
+  }
+
+  /// Native Sign in with Apple (iOS). Returns null when the user cancels.
+  /// Apple shares the name only on the first sign-in, so it is saved to the
+  /// user metadata for the profile setup page to pick up.
+  /// Requires the Apple provider in Supabase Auth with the app bundle ID as a client ID.
+  Future<AuthResponse?> signInWithApple() async {
+    final rawNonce = _client.auth.generateRawNonce();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    final AuthorizationCredentialAppleID credential;
+    try {
+      credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+        nonce: hashedNonce,
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) return null;
+      rethrow;
+    }
+
+    final idToken = credential.identityToken;
+    if (idToken == null) {
+      throw const AuthException('Apple returned no identity token');
+    }
+
+    final res = await _client.auth.signInWithIdToken(
+      provider: OAuthProvider.apple,
+      idToken: idToken,
+      nonce: rawNonce,
+    );
+
+    final fullName = [credential.givenName, credential.familyName]
+        .whereType<String>()
+        .where((p) => p.trim().isNotEmpty)
+        .join(' ');
+    if (fullName.isEmpty) return res;
+    try {
+      final updated = await _client.auth.updateUser(UserAttributes(data: {'full_name': fullName}));
+      return AuthResponse(session: _client.auth.currentSession ?? res.session, user: updated.user ?? res.user);
+    } catch (e) {
+      dev.log('[AuthRepo] saving Apple name failed: $e');
+      return res;
+    }
+  }
+
+  /// Permanently delete the signed-in account (customer profile, cars,
+  /// favorites, reviews and the auth user) through the delete_my_account RPC.
+  /// Throws [ActiveBookingException] while a booking is still open and
+  /// [ApiException] when the server could not be reached.
+  Future<void> deleteAccount() async {
+    try {
+      await ApiCall.write(() => _client.rpc('delete_my_account'), tag: 'delete_my_account');
+    } on PostgrestException catch (e) {
+      dev.log('[AuthRepo] deleteAccount refused: ${e.message}');
+      if (e.message == 'active_booking') throw ActiveBookingException();
+      rethrow;
     }
   }
 

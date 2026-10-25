@@ -22,9 +22,9 @@ class HelpPage extends StatelessWidget {
           RoundedContainer(
             child: Column(
               children: [
-                _Row(icon: Iconsax.call, text: '+20 2 555 0100'),
+                _Row(icon: Iconsax.call, text: '+20 102 243 7824'),
                 Divider(color: AppColors.line, height: 24.h),
-                _Row(icon: Iconsax.sms, text: 'support@carzone.app'),
+                _Row(icon: Iconsax.sms, text: 'bdallhmsd807@gmail.com'),
                 Divider(color: AppColors.line, height: 24.h),
                 _Row(icon: Iconsax.clock, text: 'help.hours'.tr),
               ],

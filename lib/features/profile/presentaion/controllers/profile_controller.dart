@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/carzone_db_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/utils.dart';
+import '../../../auth/data/repo/auth_repo.dart';
 import '../../../booking/presentaion/controllers/booking_controller.dart';
 import '../../../main/presentaion/controllers/main_controller.dart';
 
@@ -14,6 +16,7 @@ class ProfileController extends GetxController {
   final nameController = TextEditingController();
   final nameError = RxnString();
   final saving = false.obs;
+  final deleting = false.obs;
 
   SessionService get session => Get.find<SessionService>();
   CarzoneDbService get _db => Get.find<CarzoneDbService>();
@@ -63,6 +66,37 @@ class ProfileController extends GetxController {
     Get.find<BookingController>().clearDraft();
     Get.find<MainController>().changeTab(0);
     Utils.getSnakBar(message: 'profile.logout'.tr, type: TosterTypes.sucsses);
+  }
+
+  /// In-app account deletion (required by App Store Guideline 5.1.1(v)).
+  Future<void> deleteAccount() async {
+    if (deleting.value) return;
+    final ok = await Utils.confirm(
+      title: 'profile.deleteAsk'.tr,
+      body: 'profile.deleteBody'.tr,
+      okText: 'profile.delete'.tr,
+      danger: true,
+    );
+    if (!ok) return;
+    deleting.value = true;
+    try {
+      await AuthRepo().deleteAccount();
+    } on ActiveBookingException {
+      Utils.getSnakBar(message: 'profile.deleteActive'.tr, type: TosterTypes.warning);
+      return;
+    } on ApiException catch (e) {
+      Utils.getSnakBar(message: e.message, type: TosterTypes.failed);
+      return;
+    } catch (_) {
+      Utils.getSnakBar(message: 'profile.deleteFailed'.tr, type: TosterTypes.failed);
+      return;
+    } finally {
+      deleting.value = false;
+    }
+    await session.signOut();
+    Get.find<BookingController>().clearDraft();
+    Get.find<MainController>().changeTab(0);
+    Utils.getSnakBar(message: 'profile.deleted'.tr, type: TosterTypes.sucsses);
   }
 
   @override
