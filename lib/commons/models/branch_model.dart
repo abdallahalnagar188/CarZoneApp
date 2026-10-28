@@ -31,6 +31,10 @@ class BranchSettings {
   final int noShowGraceMin;
   final int reminderMin;
 
+  /// How far ahead a slot must start: a wash that confirms by hand gets at
+  /// least 30 minutes to do it (same rule as booking_lead_min() in the database).
+  int get bookingLeadMin => autoConfirm ? leadTimeMin : (leadTimeMin < 30 ? 30 : leadTimeMin);
+
   const BranchSettings({
     this.autoConfirm = false,
     this.slotIntervalMin = 30,

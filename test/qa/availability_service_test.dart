@@ -36,9 +36,10 @@ void main() {
   test('09:00-12:00 with 30 min interval gives 6 slots for a 30 min service', () {
     final slots = svc.slotsFor(branchFixture(), futureDay(), durationMin: 30);
     expect(slots.length, 6);
-    expect(slots.first.start.hour, 9);
-    expect(slots.last.start.hour, 11);
-    expect(slots.last.start.minute, 30);
+    // start is the instant in UTC; localTime is the Cairo wall clock the customer sees.
+    expect(slots.first.localTime, '09:00');
+    expect(slots.last.localTime, '11:30');
+    expect(slots.first.start, BranchTimeHelper.toUtcDateTime(futureDay().add(const Duration(hours: 9))));
   });
 
   test('a long service does not get a slot that runs past closing time', () {
@@ -62,7 +63,8 @@ void main() {
     final db = freshDb();
     final b = branchFixture(capacity: 2);
     db.branches.add(b);
-    final nine = futureDay().add(const Duration(hours: 9));
+    // 09:00 Cairo time, as the UTC instant slots and orders use.
+    final nine = BranchTimeHelper.toUtcDateTime(futureDay().add(const Duration(hours: 9)));
     db.orders.addAll([
       _order('1', b.id, nine),
       _order('2', b.id, nine, status: OrderStatus.cancelled), // ignored
@@ -86,6 +88,20 @@ void main() {
     final today = DateTime(now.year, now.month, now.day);
     final slots = svc.slotsFor(b, today);
     expect(slots.every((s) => !s.start.isBefore(now.add(const Duration(minutes: 120)))), isTrue);
+  });
+
+  test('a wash that confirms by hand gets at least 30 minutes before a slot', () {
+    expect(const BranchSettings(autoConfirm: false, leadTimeMin: 15).bookingLeadMin, 30);
+    expect(const BranchSettings(autoConfirm: false, leadTimeMin: 60).bookingLeadMin, 60);
+    expect(const BranchSettings(autoConfirm: true, leadTimeMin: 0).bookingLeadMin, 0);
+
+    final now = DateTime.now();
+    final b = branchFixture(
+      hours: List.generate(7, (_) => const WorkingDay('00:00', '23:59')),
+      settings: const BranchSettings(slotIntervalMin: 15, leadTimeMin: 0, maxAdvanceDays: 7),
+    );
+    final slots = svc.slotsFor(b, DateTime(now.year, now.month, now.day));
+    expect(slots.every((s) => !s.start.isBefore(now.toUtc().add(const Duration(minutes: 30)))), isTrue);
   });
 
   test('isOpenNow respects working hours', () {

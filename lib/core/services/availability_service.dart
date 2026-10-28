@@ -136,7 +136,7 @@ class AvailabilityService {
     for (var m = open; m + durationMin <= close; m += branch.settings.slotIntervalMin) {
       final slotLocal = DateTime(day.year, day.month, day.day, m ~/ 60, m % 60);
       final slotUtc = BranchTimeHelper.toUtcDateTime(slotLocal);
-      if (BranchTimeHelper.isSlotTooSoon(slotUtc, branch.settings.leadTimeMin)) continue;
+      if (BranchTimeHelper.isSlotTooSoon(slotUtc, branch.settings.bookingLeadMin)) continue;
 
       final endUtc = slotUtc.add(Duration(minutes: durationMin));
       final used = _overlapping(branch.id, slotUtc, endUtc, excludeOrderId);
