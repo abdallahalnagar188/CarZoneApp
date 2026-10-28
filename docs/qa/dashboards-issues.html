@@ -1,0 +1,168 @@
+<title>مشاكل لوحات Wash Up</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one readable column, issues grouped by priority, each issue a compact block with steps and expected result */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #17202b; --muted: #5b6676; --line: #dde2e9;
+  --accent: #0a63c9;
+  --high: #c62f2f; --high-bg: #fdecec; --mid: #b45d00; --mid-bg: #fff2e2; --low: #4b5b70; --low-bg: #eef1f5;
+  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141b; --surface: #161d27; --fg: #e7ecf2; --muted: #9aa6b6; --line: #273242; --accent: #5aa2f2;
+  --high: #ff7a7a; --high-bg: #3a1c1f; --mid: #ffb259; --mid-bg: #3a2a16; --low: #aab6c6; --low-bg: #1e2733; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f141b; --surface: #161d27; --fg: #e7ecf2; --muted: #9aa6b6; --line: #273242; --accent: #5aa2f2;
+  --high: #ff7a7a; --high-bg: #3a1c1f; --mid: #ffb259; --mid-bg: #3a2a16; --low: #aab6c6; --low-bg: #1e2733; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.75; direction: rtl; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+header { display: grid; gap: 8px; }
+h1 { font-size: 26px; line-height: 1.3; margin: 0; text-wrap: balance; }
+.meta { color: var(--muted); margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+.pill.high { color: var(--high); background: var(--high-bg); }
+.pill.mid { color: var(--mid); background: var(--mid-bg); }
+.pill.low { color: var(--low); background: var(--low-bg); }
+section { display: grid; gap: 12px; }
+h2 { font-size: 18px; margin: 0; display: flex; align-items: center; gap: 10px; }
+.issue { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+.issue h3 { font-size: 16px; margin: 0; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; text-wrap: balance; }
+.issue h3 .n { font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
+.where { font-size: 13px; color: var(--muted); }
+.issue p { margin: 0; }
+.issue dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; }
+.issue dt { color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.issue dd { margin: 0; min-width: 0; }
+code { font-family: var(--font-mono); font-size: 13px; background: var(--low-bg); padding: 1px 6px; border-radius: 4px; direction: ltr; unicode-bidi: isolate; }
+.note { border-inline-start: 3px solid var(--accent); padding: 4px 12px; color: var(--muted); font-size: 14px; }
+footer { color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 16px; }
+@media (max-width: 480px) { .issue dl { grid-template-columns: 1fr; } .issue dt { margin-top: 4px; } }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>مشاكل لوحات التحكم — نتيجة الاختبار</h1>
+  <p class="meta">لوحة المغسلة <code>washup-vendor.vercel.app</code> ولوحة الإدارة <code>washup-superadmin.vercel.app</code> · اختبار يوم 28 أكتوبر 2026 على مغسلة «النصر لخدمات السيارات» (حساب تجريبي).</p>
+  <div class="legend"><span class="pill high">عاجل</span><span class="pill mid">متوسط</span><span class="pill low">تحسين</span></div>
+</header>
+
+<section>
+  <h2><span class="pill high">عاجل</span> مشاكل تأثر على الفلوس أو التشغيل أو الأمان</h2>
+
+  <div class="issue">
+    <h3><span class="n">1</span>الخصم بيمسح العلامة العشرية — 29.5 ج.م بتتحول 295 ج.م</h3>
+    <div class="where">لوحة المغسلة · تفاصيل الطلب ← إجراءات أخرى ← خصم ← مبلغ ثابت</div>
+    <dl>
+      <dt>الخطوات</dt><dd>طلب إجماليه 300 ج.م ← اكتب <code>29.5</code> في المبلغ.</dd>
+      <dt>اللي بيحصل</dt><dd>الخانة بتبقى <code>295</code>، و«الإجمالي بعد الخصم» 5 ج.م، وزر «تطبيق الخصم» شغّال. نفس الكلام مع النسبة.</dd>
+      <dt>المتوقع</dt><dd>يقبل الكسور صح (29.5) أو يرفضها برسالة — مايشيلش العلامة. الخانة <code>inputmode="numeric"</code> والفلترة بتشيل النقطة.</dd>
+    </dl>
+    <p>ومعاها: كتابة <code>-20</code> في النسبة بتتقبل وبتتحسب خصم 20٪ من غير أي رسالة — المفروض ترفض السالب.</p>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">2</span>المالك مش قادر يبدأ الخدمة لو مفيش موظفين</h3>
+    <div class="where">لوحة المغسلة · تفاصيل الطلب ← بدء الخدمة</div>
+    <dl>
+      <dt>الخطوات</dt><dd>مغسلة فيها المالك بس ← تسجيل وصول لطلب ← بدء الخدمة.</dd>
+      <dt>اللي بيحصل</dt><dd>الحوار بيقول «لا يوجد موظفون نشطون في هذا الفرع» وزر البدء مقفول. الطلب يفضل «تم الوصول» للأبد: <code>CZ-50052</code> واقف من 23 أكتوبر (7222 دقيقة انتظار في التشغيل المباشر).</dd>
+      <dt>المتوقع</dt><dd>المالك ومدير الفرع يظهروا في قائمة المسؤول، أو يبدأ الطلب من غير موظف معيّن. ولو مفيش حد خالص، رسالة فيها رابط «إضافة موظف».</dd>
+    </dl>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">3</span>مواعيد الحجز في لوحة المغسلة بتعرض أوقات فاتت وأوقات بعد القفل</h3>
+    <div class="where">لوحة المغسلة · طلب جديد ← حجز هاتفي، وصفحة الجدول والسعة</div>
+    <dl>
+      <dt>الخطوات</dt><dd>الساعة 12:55 م، فرع ساعاته 9:00 ص – 11:00 م، وقاعدة «حجز قبل الموعد بساعة».</dd>
+      <dt>اللي بيحصل</dt><dd>المواعيد المعروضة من 12:00 م لحد 12:30 ص (بعد نص الليل). صفحة الجدول نفس الكلام: «28 فترة» وآخرها 1:30 ص.</dd>
+      <dt>المتوقع</dt><dd>من 2:30 م لحد 10:30 م. دالة الداتابيز <code>get_branch_slots</code> اللي التطبيق بيستخدمها بترجّع المواعيد الصح — استخدموها بدل الحساب في الويب.</dd>
+    </dl>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">4</span>حسابات أدمن تجريبية شغالة على production</h3>
+    <div class="where">لوحة الإدارة · المسؤولون</div>
+    <p>6 حسابات بإيميلات <code>@carzen.demo</code> نشطة، منهم <b>Sara Nabil بدور Super Admin</b>. لو جاية من بيانات الـ seed يبقى الباسورد معروف. لازم تتوقف أو تتمسح.</p>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">5</span>بيانات الدعم في إعدادات المنصة تجريبية</h3>
+    <div class="where">لوحة الإدارة · إعدادات المنصة ← عام</div>
+    <p>الاسم «Carzen»، الهاتف <code>+20 150 000 1111</code>، البريد <code>hello@carzen.demo</code>. الصفحة بتقول إن زر الاتصال في التطبيق بيستخدمها. هتتظبط مع تعديل في التطبيق عشان يقرأ منها (عندي).</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="pill mid">متوسط</span> بيانات غلط أو حالات مش متسقة</h2>
+
+  <div class="issue">
+    <h3><span class="n">6</span>الحجز الهاتفي بيربط عربية العميل القديمة بلوحة جديدة</h3>
+    <dl>
+      <dt>الخطوات</dt><dd>حجز هاتفي بلوحة <code>TEST999</code> لعميل عنده عربية واحدة (Elantra لوحتها <code>HHHH4444</code>).</dd>
+      <dt>اللي بيحصل</dt><dd>الطلب <code>CZ-70008</code> اتربط بالـ Elantra وبيعرض «Hyundai Elantra · TEST999». العربية نفسها ما اتعدلتش.</dd>
+      <dt>المتوقع</dt><dd>يربط بعربية لوحتها مطابقة، أو يعمل عربية جديدة باللوحة الجديدة.</dd>
+    </dl>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">7</span>معاملة مالية «معلقة» لطلب ما اتنفذش</h3>
+    <p><code>CZ-50052</code> (حالته «تم الوصول») ليه معاملة 400 ج.م معلقة في دفتر المعاملات، مع إن صفحة الطلب بتقول «تُنشأ عند اكتمال الخدمة». يا إما المعاملة تتعمل عند الاكتمال بس، يا إما النص يتعدل.</p>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">8</span>الطلب الملغي لسه مكتوب عليه «بانتظار الدفع»</h3>
+    <p>بعد إلغاء <code>CZ-70008</code> حالة الدفع فضلت «بانتظار الدفع» في اللوحتين. المفروض «لا يوجد» أو «ملغي».</p>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">9</span>سبب الإلغاء بيظهر كود خام</h3>
+    <p>صفحة الحجز <code>CZ-50097</code> في لوحة الإدارة بتعرض <code>expired_unconfirmed</code>. المفروض «اتلغى تلقائيًا لأن المغسلة ما أكدتش».</p>
+  </div>
+
+  <div class="issue">
+    <h3><span class="n">10</span>طلبات «تم الوصول» بتفضل مفتوحة للأبد</h3>
+    <p>محتاجين تنبيه في «يحتاج انتباهك» لأي سيارة واقفة أكتر من ساعتين مثلًا، وطريقة يقفلها بيها المالك (إلغاء أو لم يحضر).</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="pill low">تحسين</span> الشكل والكلام</h2>
+
+  <div class="issue">
+    <h3><span class="n">11</span>اسم البراند لسه Carzen / كارزن</h3>
+    <p>عناوين الصفحات «Carzen Partners» و«Carzen Super Admin»، ونصوص زي «عمولة كارزن» و«تطبيق كارزن» و«أبلغ كارزن». التطبيق اسمه Wash Up.</p>
+  </div>
+  <div class="issue">
+    <h3><span class="n">12</span>زر «حجز هاتفي» بيفتح الفورم على «حضور مباشر»</h3>
+    <p>المفروض يفتح على اختيار «حجز هاتفي» على طول.</p>
+  </div>
+  <div class="issue">
+    <h3><span class="n">13</span>رقم موبايل غلط بيقفل الزر من غير رسالة</h3>
+    <p>اكتب <code>0102</code>: زر «تأكيد الحجز» مقفول ومفيش أي رسالة. محتاجين «رقم الموبايل لازم 11 رقم يبدأ بـ 01».</p>
+  </div>
+  <div class="issue">
+    <h3><span class="n">14</span>حوار الإلغاء فيه «إلغاء» جنب «إلغاء الطلب»</h3>
+    <p>الزرين بيتلخبطوا. الأول يبقى «رجوع».</p>
+  </div>
+  <div class="issue">
+    <h3><span class="n">15</span>أرقام لوحة الإدارة</h3>
+    <p>«إجمالي القيمة المعروضة» في الحجوزات (3,092 ج.م) بيجمع الملغي ولم يحضر. وقمع الحجوزات بيعد الحالة الحالية بس: حجز اتأكد ووصل وبعدين اتلغى بيظهر «مؤكدة 0 · وصل 0». وتنبيه «تقييم منخفض» بيطلع من تقييم واحد — حطوا حد أدنى (مثلًا 5 تقييمات).</p>
+  </div>
+  <div class="issue">
+    <h3><span class="n">16</span>نافذة «إكمال الإعداد» بتغطي الصفحة</h3>
+    <p>بتظهر فوق صفحة الحجوزات وبتمنع الضغط لحد «تخطي». خليها شريط صغير أو تظهر مرة واحدة.</p>
+  </div>
+  <div class="issue">
+    <h3><span class="n">17</span>بيانات تجربة محتاجة تتنضف</h3>
+    <p>طلب انضمام اسمه <code>gfqgrgbrg3rg34g3</code>، طلب انضمام مكرر لـ «مغسله العاشر»، عرضين «اختبار تكامل — خصم 20%»، وأسماء مكتوبة «مغسله» بدل «مغسلة».</p>
+  </div>
+</section>
+
+<div class="note">شغال كويس: إنشاء الحجز وتوقيته بتوقيت القاهرة، تسجيل الوصول، الملاحظات، إضافة خدمة وإعادة حساب السعر، حد الخصم 100٪ برسالة واضحة، الإلغاء مع إبلاغ العميل، سجل التدقيق، وتحديث أرقام لوحة الإدارة لحظيًا. مفيش أخطاء في الكونسول.</div>
+
+<footer>بيانات الاختبار: الطلب <code>CZ-70008</code> اتعمل واتلغى على مغسلة النصر لخدمات السيارات بعميل تجريبي. ما اتلمسش أي حجز أو مغسلة حقيقية.</footer>
+</div>
