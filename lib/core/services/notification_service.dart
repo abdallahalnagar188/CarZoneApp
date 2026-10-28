@@ -191,6 +191,8 @@ class NotificationService extends GetxService {
 
   bool _syncingToken = false;
   String? _tokenSyncedFor;
+  // The token last saved for the signed-in user, removed again on sign-out.
+  String? _savedToken;
 
   Future<void> syncToken() async {
     if (_syncingToken || SupabaseService.client.auth.currentUser == null) return;
@@ -243,7 +245,32 @@ class NotificationService extends GetxService {
     final userId = session?.userId ?? SupabaseService.client.auth.currentUser?.id;
     if (userId == null || userId.isEmpty) return false;
     await db.updateCustomerToken(userId, token);
+    _savedToken = token;
     return true;
+  }
+
+  /// Stops push for the signed-in account on this device. Must run before the
+  /// Supabase sign-out: push_devices rows can only be deleted by their owner.
+  /// Best effort and time-boxed, so an offline sign-out is not held up; the
+  /// next account to sign in on this device takes the token over anyway.
+  Future<void> unregisterDevice() async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    try {
+      if (userId == null) return;
+      // ignore: deprecated_member_use
+      final token = _savedToken ?? await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 3));
+      if (token == null) return;
+      await SupabaseService.client
+          .from('push_devices')
+          .delete()
+          .eq('user_id', userId)
+          .eq('token', token)
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      dev.log('[NotificationService] unregisterDevice error: $e');
+    } finally {
+      _savedToken = null;
+    }
   }
 
   bool _alreadyReceived(RemoteMessage message) {

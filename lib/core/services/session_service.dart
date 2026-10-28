@@ -21,6 +21,7 @@ import '../../features/auth/presentaion/controllers/auth_controller.dart';
 import 'carzone_db_service.dart';
 import 'connectivity_service.dart';
 import 'location_service.dart';
+import 'notification_service.dart';
 import 'supabase_service.dart';
 
 class SessionService extends GetxService {
@@ -292,6 +293,10 @@ class SessionService extends GetxService {
   }
 
   Future<void> signOut() async {
+    // While still signed in, so this device stops getting the account's push.
+    if (Get.isRegistered<NotificationService>()) {
+      await NotificationService.to.unregisterDevice();
+    }
     await clearToken();
     user.value = null;
     _db.favorites.clear();
