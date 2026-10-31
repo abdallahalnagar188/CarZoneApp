@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/utils/system_ui.dart';
 import '../../../../core/constance/app_colors.dart';
-import '../controllers/onboarding_controller.dart';
+import '../../../../core/utils/system_ui.dart';
+import '../controllers/onboarding_provider.dart';
 import '../widgets/onboarding_footer.dart';
 import '../widgets/onboarding_slide.dart';
 
-class OnboardingPage extends StatelessWidget {
+class OnboardingPage extends ConsumerWidget {
   const OnboardingPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<OnboardingController>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.watch(onboardingProvider.notifier);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUi.onBrand,
       child: Scaffold(
@@ -22,9 +22,9 @@ class OnboardingPage extends StatelessWidget {
           children: [
             Expanded(
               child: PageView.builder(
-                controller: controller.pageController,
-                onPageChanged: controller.onPageChanged,
-                itemCount: OnboardingController.count,
+                controller: notifier.pageController,
+                onPageChanged: notifier.onPageChanged,
+                itemCount: OnboardingNotifier.count,
                 itemBuilder: (_, i) => OnboardingSlide(index: i),
               ),
             ),

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../commons/widgets/dialogs/app_confirm_dialog.dart';
 import '../../commons/widgets/snack_bar/snack_bar.dart';
 import '../enums/enums.dart';
+import '../routing/navigator_keys.dart';
 
 class Utils {
   static OverlayEntry? _snackEntry;
@@ -16,7 +17,7 @@ class Utils {
     String? message,
     required TosterTypes? type,
   }) {
-    final overlayContext = Get.overlayContext;
+    final overlayContext = rootNavigatorKey.currentContext ?? Get.overlayContext;
     if (overlayContext == null) return;
     final overlay = Overlay.maybeOf(overlayContext, rootOverlay: true);
     if (overlay == null) return;
@@ -47,8 +48,6 @@ class Utils {
     _snackTimer = null;
     final entry = _snackEntry;
     _snackEntry = null;
-    // Not `entry.mounted`: an entry inserted in this same frame is not mounted
-    // yet, and skipping it would leave it on screen with nothing to remove it.
     entry?.remove();
   }
 
@@ -59,6 +58,20 @@ class Utils {
     String? cancelText,
     bool danger = false,
   }) async {
+    final context = rootNavigatorKey.currentContext;
+    if (context != null) {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (_) => AppConfirmDialog(
+          title: title,
+          body: body,
+          okText: okText,
+          cancelText: cancelText ?? 'common.cancel'.tr,
+          danger: danger,
+        ),
+      );
+      return result ?? false;
+    }
     final result = await Get.dialog<bool>(
       AppConfirmDialog(
         title: title,

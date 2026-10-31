@@ -1,6 +1,9 @@
+
 import 'package:get/get.dart';
 
+import '../routing/app_router.dart';
 import '../routing/app_routes.dart';
+import '../routing/navigator_keys.dart';
 import '../services/session_service.dart';
 
 class AuthGuard {
@@ -13,20 +16,27 @@ class AuthGuard {
   ];
 
   static void run(void Function() action) {
-    final session = Get.find<SessionService>();
-    if (session.isLoggedIn) {
+    final session = Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
+    if (session?.isLoggedIn ?? false) {
       action();
       return;
     }
-    session.pendingAction = action;
-    Get.toNamed(Routes.loginRoute);
+    if (session != null) {
+      session.pendingAction = action;
+    }
+    AppNav.to(Routes.loginRoute);
   }
 
   static void completeLogin() {
-    final session = Get.find<SessionService>();
-    final action = session.pendingAction;
-    session.clearReturn();
-    Get.until((route) => !_authRoutes.contains(route.settings.name));
+    final session = Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
+    final action = session?.pendingAction;
+    session?.clearReturn();
+    final nav = rootNavigatorKey.currentState;
+    if (nav != null) {
+      nav.popUntil((route) => !_authRoutes.contains(route.settings.name));
+    } else {
+      Get.until((route) => !_authRoutes.contains(route.settings.name));
+    }
     action?.call();
   }
 }

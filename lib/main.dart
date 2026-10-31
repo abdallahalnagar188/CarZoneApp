@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
+import 'binding/app_binding.dart';
 import 'core/local/cache_controller.dart';
 import 'core/local/cache_helper.dart';
 import 'core/local/theme_controller.dart';
@@ -30,7 +32,12 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   Get.put(ThemeController(), permanent: true);
+  AppBinding().dependencies();
   SystemUi.apply();
 
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }

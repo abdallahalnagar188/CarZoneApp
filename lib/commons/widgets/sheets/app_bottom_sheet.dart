@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../core/constance/app_colors.dart';
 import '../../../core/extensions/sized_box_extension.dart';
+import '../../../core/routing/navigator_keys.dart';
 
 class AppBottomSheet extends StatelessWidget {
   final String? title;
@@ -11,7 +12,16 @@ class AppBottomSheet extends StatelessWidget {
 
   const AppBottomSheet({super.key, this.title, required this.child});
 
-  static Future<T?> show<T>({String? title, required Widget child}) {
+  static Future<T?> show<T>({String? title, required Widget child, BuildContext? context}) {
+    final ctx = context ?? rootNavigatorKey.currentContext;
+    if (ctx != null) {
+      return showModalBottomSheet<T>(
+        context: ctx,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => AppBottomSheet(title: title, child: child),
+      );
+    }
     return Get.bottomSheet<T>(
       AppBottomSheet(title: title, child: child),
       isScrollControlled: true,

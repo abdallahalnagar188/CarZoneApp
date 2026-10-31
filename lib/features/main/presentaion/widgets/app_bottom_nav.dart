@@ -8,12 +8,15 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../core/constance/app_colors.dart';
-import '../controllers/main_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/routing/app_router.dart';
+import '../../../../core/routing/app_routes.dart';
+import '../controllers/main_provider.dart';
 
 /// Floating liquid-glass tab bar (same style as the Qhub app): a frosted
 /// capsule with the four tabs and a sliding selection pill, next to a round
 /// "wash now" button.
-class AppBottomNav extends StatelessWidget {
+class AppBottomNav extends ConsumerWidget {
   const AppBottomNav({super.key});
 
   static const _items = [
@@ -24,8 +27,8 @@ class AppBottomNav extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<MainController>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(mainNavIndexProvider);
     final height = 64.h.clamp(58.0, 76.0).toDouble();
 
     // Floats over the content; Scaffold.extendBody lets pages scroll beneath it.
@@ -42,44 +45,44 @@ class AppBottomNav extends StatelessWidget {
             Expanded(
               child: _GlassCapsule(
                 height: height,
-                child: Obx(() {
-                  final selected = controller.selectedIndex.value;
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final itemWidth = constraints.maxWidth / _items.length;
-                      return Stack(
-                        children: [
-                          _LiquidPill(position: selected, itemWidth: itemWidth),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (var i = 0; i < _items.length; i++)
-                                _NavItem(
-                                  icon: _items[i].$1,
-                                  label: _items[i].$2.tr,
-                                  isSelected: selected == i,
-                                  onTap: () => _select(controller, i),
-                                ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = constraints.maxWidth / _items.length;
+                    return Stack(
+                      children: [
+                        _LiquidPill(position: selected, itemWidth: itemWidth),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var i = 0; i < _items.length; i++)
+                              _NavItem(
+                                icon: _items[i].$1,
+                                label: _items[i].$2.tr,
+                                isSelected: selected == i,
+                                onTap: () => _select(ref, i),
+                              ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
             SizedBox(width: 10.w),
-            _WashNowButton(size: height, onTap: controller.openWashNow),
+            _WashNowButton(
+              size: height,
+              onTap: () => AppNav.to(Routes.resultsRoute, arguments: {'mode': 'washnow'}),
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _select(MainController controller, int index) {
-    if (controller.selectedIndex.value != index) HapticFeedback.selectionClick();
-    controller.changeTab(index);
+  void _select(WidgetRef ref, int index) {
+    if (ref.read(mainNavIndexProvider) != index) HapticFeedback.selectionClick();
+    ref.read(mainNavIndexProvider.notifier).changeTab(index);
   }
 }
 
