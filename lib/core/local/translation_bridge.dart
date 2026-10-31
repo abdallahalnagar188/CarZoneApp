@@ -25,3 +25,4 @@ extension AppTranslationExtension on String {
   String trParams([Map<String, String> params = const {}]) =>
       AppTranslationsBridge.getWithParams(this, params);
 }
+

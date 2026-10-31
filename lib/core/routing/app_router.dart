@@ -293,3 +293,4 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+

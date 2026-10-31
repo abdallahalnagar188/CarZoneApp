@@ -9,3 +9,4 @@ class MainNavNotifier extends StateNotifier<int> {
 final mainNavIndexProvider = StateNotifierProvider<MainNavNotifier, int>((ref) {
   return MainNavNotifier();
 });
+

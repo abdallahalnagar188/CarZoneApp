@@ -62,3 +62,4 @@ final deepLinkServiceProvider = Provider<DeepLinkService>((ref) {
   Get.put(service, permanent: true);
   return service;
 });
+
