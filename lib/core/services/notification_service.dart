@@ -13,7 +13,7 @@ import '../constance/app_colors.dart';
 import '../../commons/models/notification_model.dart';
 import '../routing/app_routes.dart';
 import 'app_ready_gate.dart';
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 import 'session_service.dart';
 import 'supabase_service.dart';
 
@@ -32,7 +32,7 @@ class NotificationService extends GetxService {
 
   final FlutterLocalNotificationsPlugin _localNotifs = FlutterLocalNotificationsPlugin();
 
-  static const String channelId = 'carzone_orders';
+  static const String channelId = 'washup_orders';
   static const String channelName = 'Wash Up Notifications';
   static const String channelDesc = 'Order status updates, reminders and offers';
 
@@ -78,7 +78,7 @@ class NotificationService extends GetxService {
       if (uid != null && uid != _tokenSyncedFor) unawaited(syncToken());
     }
 
-    // The token is saved through CarzoneDbService, which AppBinding registers
+    // The token is saved through WashUpDbService, which AppBinding registers
     // with the first frame; init() runs before that.
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => syncIfNeeded(SupabaseService.client.auth.currentUser?.id),
@@ -134,6 +134,10 @@ class NotificationService extends GetxService {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (androidImplementation != null) {
       await androidImplementation.createNotificationChannel(_channel);
+      // Channels from before the rename would stay listed in Android settings.
+      for (final oldId in const ['carzone_orders', 'carzone_live_booking']) {
+        await androidImplementation.deleteNotificationChannel(oldId);
+      }
     }
   }
 
@@ -238,8 +242,8 @@ class NotificationService extends GetxService {
 
   /// False when nothing could be saved yet (services not ready / signed out).
   Future<bool> _saveTokenToDb(String token) async {
-    if (!Get.isRegistered<CarzoneDbService>()) return false;
-    final db = Get.find<CarzoneDbService>();
+    if (!Get.isRegistered<WashUpDbService>()) return false;
+    final db = Get.find<WashUpDbService>();
     final session = Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
     // push_devices is keyed by the auth user; the customer id only updates the local cache.
     final userId = session?.userId ?? SupabaseService.client.auth.currentUser?.id;
@@ -275,8 +279,8 @@ class NotificationService extends GetxService {
 
   bool _alreadyReceived(RemoteMessage message) {
     final id = message.data['id']?.toString();
-    if (id == null || !Get.isRegistered<CarzoneDbService>()) return false;
-    return Get.find<CarzoneDbService>().notifications.any((n) => n.id == id);
+    if (id == null || !Get.isRegistered<WashUpDbService>()) return false;
+    return Get.find<WashUpDbService>().notifications.any((n) => n.id == id);
   }
 
   void _showRemoteNotification(RemoteMessage message) {
@@ -295,8 +299,8 @@ class NotificationService extends GetxService {
   }
 
   void _persistRemoteNotification(RemoteMessage message) {
-    if (!Get.isRegistered<CarzoneDbService>()) return;
-    final db = Get.find<CarzoneDbService>();
+    if (!Get.isRegistered<WashUpDbService>()) return;
+    final db = Get.find<WashUpDbService>();
     final session = Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
     final userId = session?.userId;
     if (userId == null) return;

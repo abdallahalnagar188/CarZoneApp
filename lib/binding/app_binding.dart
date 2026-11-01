@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 
 import '../core/local/lang_controller.dart';
 import '../core/local/theme_controller.dart';
-import '../core/services/carzone_db_service.dart';
+import '../core/services/washup_db_service.dart';
 import '../core/services/deep_link_service.dart';
 import '../core/services/live_booking_service.dart';
 import '../core/services/session_service.dart';
@@ -34,8 +34,8 @@ class AppBinding extends Bindings {
     if (!Get.isRegistered<ThemeController>()) {
       Get.put(ThemeController(), permanent: true);
     }
-    if (!Get.isRegistered<CarzoneDbService>()) {
-      Get.put(CarzoneDbService().init(), permanent: true);
+    if (!Get.isRegistered<WashUpDbService>()) {
+      Get.put(WashUpDbService().init(), permanent: true);
     }
     if (!Get.isRegistered<SessionService>()) {
       Get.put(SessionService().init(), permanent: true);

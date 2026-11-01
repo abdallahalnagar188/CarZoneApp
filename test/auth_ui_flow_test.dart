@@ -2,9 +2,9 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:carzone/core/local/app_translation.dart';
-import 'package:carzone/features/auth/data/repo/auth_repo.dart';
-import 'package:carzone/features/auth/presentaion/controllers/auth_controller.dart';
+import 'package:washup/core/local/app_translation.dart';
+import 'package:washup/features/auth/data/repo/auth_repo.dart';
+import 'package:washup/features/auth/presentaion/controllers/auth_controller.dart';
 
 void main() {
   setUpAll(() {

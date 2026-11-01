@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:carzone/core/network/pretty_http_logger.dart';
+import 'package:washup/core/network/pretty_http_logger.dart';
 
 void main() {
   test('PrettyHttpLogger logs request and response in pretty box format', () async {
@@ -11,7 +11,7 @@ void main() {
     // Mock HTTP client returning 200 JSON response
     final mockInner = MockClient((request) async {
       return http.Response(
-        jsonEncode({'success': true, 'data': {'name': 'CarZone'}}),
+        jsonEncode({'success': true, 'data': {'name': 'Wash Up'}}),
         200,
         headers: {'content-type': 'application/json'},
       );
@@ -22,7 +22,7 @@ void main() {
       logPrint: (msg) => printedLogs.add(msg),
     );
 
-    final req = http.Request('POST', Uri.parse('https://api.carzone.com/v1/auth/login'));
+    final req = http.Request('POST', Uri.parse('https://api.washup.com/v1/auth/login'));
     req.headers['content-type'] = 'application/json';
     req.headers['apikey'] = 'sb_test_apikey_12345678901234567890';
     req.body = jsonEncode({'phone': '+201012345678'});
@@ -38,7 +38,7 @@ void main() {
     expect(printedLogs.length, 2); // 1 request box + 1 response box
 
     final requestLog = printedLogs[0];
-    expect(requestLog, contains('[HTTP REQUEST] POST https://api.carzone.com/v1/auth/login'));
+    expect(requestLog, contains('[HTTP REQUEST] POST https://api.washup.com/v1/auth/login'));
     expect(requestLog, contains('Headers:'));
     expect(requestLog, contains('Body:'));
     expect(requestLog, contains('+201012345678'));
@@ -47,7 +47,7 @@ void main() {
 
     final responseLog = printedLogs[1];
     expect(responseLog, contains('🟢 [HTTP RESPONSE] 200 OK'));
-    expect(responseLog, contains('CarZone'));
+    expect(responseLog, contains('Wash Up'));
     expect(responseLog, contains('┌'));
     expect(responseLog, contains('└'));
   });

@@ -5,7 +5,7 @@ import '../../commons/models/branch_model.dart';
 import '../enums/enums.dart';
 import '../helpers/format_helper.dart';
 import 'availability_service.dart';
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 import 'pricing_service.dart';
 import 'session_service.dart';
 
@@ -57,7 +57,7 @@ class DiscoveryFilters {
 }
 
 class DiscoveryService {
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
   SessionService get _session => Get.find<SessionService>();
   final _availability = AvailabilityService();
   final _pricing = PricingService();

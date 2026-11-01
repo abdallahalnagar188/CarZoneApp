@@ -4,7 +4,7 @@ import '../../../../commons/models/order_model.dart';
 import '../../../../core/helpers/auth_guard.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/utils.dart';
@@ -22,7 +22,7 @@ class BookingsController extends GetxController {
 
   Worker? _reconnect;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
   SessionService get session => Get.find<SessionService>();
 
   @override

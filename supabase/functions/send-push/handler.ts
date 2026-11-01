@@ -45,7 +45,7 @@ export interface Deps {
   live?: LiveDeps;
 }
 
-const ANDROID_CHANNEL = "carzone_orders";
+const ANDROID_CHANNEL = "washup_orders";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -91,7 +91,7 @@ export function buildMessage(row: NotificationRow, locale: string | null, token:
 
   return {
     token,
-    notification: { title: title[lang] || "CarZone", body: body[lang] },
+    notification: { title: title[lang] || "Wash Up", body: body[lang] },
     data,
     android: {
       priority: "HIGH",

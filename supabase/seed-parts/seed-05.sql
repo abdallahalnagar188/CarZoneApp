@@ -1,4 +1,4 @@
--- Carzen demo seed · part 5 of 11 · apply in order
+-- Wash Up demo seed · part 5 of 11 · apply in order
 insert into public.order_items (id, order_id, service_id, name, type, price, duration_min, position) values
   ('oi_ord_CZ-18064_1', 'ord_CZ-18064', 'svc_br_nasr_air', '{"ar":"معطر جو","en":"Air Freshener"}'::jsonb, 'addon', 20, 2, 1),
   ('oi_ord_CZ-08060_0', 'ord_CZ-08060', 'svc_br_nasr_ext', '{"ar":"غسيل خارجي","en":"Exterior Wash"}'::jsonb, 'primary', 100, 20, 0),

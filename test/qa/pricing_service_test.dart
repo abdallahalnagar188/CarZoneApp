@@ -1,7 +1,7 @@
-import 'package:carzone/commons/models/localized_text.dart';
-import 'package:carzone/commons/models/offer_model.dart';
-import 'package:carzone/core/enums/enums.dart';
-import 'package:carzone/core/services/pricing_service.dart';
+import 'package:washup/commons/models/localized_text.dart';
+import 'package:washup/commons/models/offer_model.dart';
+import 'package:washup/core/enums/enums.dart';
+import 'package:washup/core/services/pricing_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'qa_helpers.dart';

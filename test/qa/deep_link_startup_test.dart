@@ -1,8 +1,8 @@
 // A link that opens the app from cold start arrives while the splash is on
 // screen. The splash then calls Get.offAllNamed(main), which used to wipe the
 // wash page the link had opened. The link must survive until the app is ready.
-import 'package:carzone/core/routing/app_routes.dart';
-import 'package:carzone/core/services/deep_link_service.dart';
+import 'package:washup/core/routing/app_routes.dart';
+import 'package:washup/core/services/deep_link_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -28,7 +28,7 @@ void main() {
     await _pumpApp(tester);
     final links = DeepLinkService();
 
-    expect(links.handleUri(Uri.parse('carzone://wash?id=br_nasr')), isTrue);
+    expect(links.handleUri(Uri.parse('washup://wash?id=br_nasr')), isTrue);
     await tester.pumpAndSettle();
     expect(Get.currentRoute, Routes.splashRoute, reason: 'must not navigate before the app is ready');
     expect(links.pendingBranchId, 'br_nasr');
@@ -50,7 +50,7 @@ void main() {
     links.markAppReady();
     await tester.pumpAndSettle();
 
-    links.handleUri(Uri.parse('carzone://wash/br_helio'));
+    links.handleUri(Uri.parse('washup://wash/br_helio'));
     await tester.pumpAndSettle();
     expect(Get.currentRoute, Routes.washDetailsRoute);
     expect(Get.arguments, 'br_helio');
@@ -59,7 +59,7 @@ void main() {
   testWidgets('auth callback links are left to Supabase', (tester) async {
     await _pumpApp(tester);
     final links = DeepLinkService()..markAppReady();
-    expect(links.handleUri(Uri.parse('carzone://login-callback?code=abc')), isFalse);
+    expect(links.handleUri(Uri.parse('washup://login-callback?code=abc')), isFalse);
     await tester.pumpAndSettle();
     expect(Get.currentRoute, Routes.splashRoute);
     expect(links.pendingBranchId, isNull);

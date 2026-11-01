@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../commons/models/order_model.dart';
 import '../../../../core/enums/enums.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/utils/utils.dart';
@@ -21,7 +21,7 @@ class ReviewController extends GetxController {
 
   OrderModel? order;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   String get branchName => order == null ? '' : (_db.branch(order!.branchId)?.name.value ?? '');
 

@@ -20,7 +20,7 @@ import 'connectivity_service.dart';
 import 'notification_service.dart';
 import 'supabase_service.dart';
 
-class CarzoneDbService extends GetxService {
+class WashUpDbService extends GetxService {
   RealtimeChannel? _notificationsChannel;
   String? _notificationsChannelFor;
   RealtimeChannel? _ordersChannel;
@@ -58,7 +58,7 @@ class CarzoneDbService extends GetxService {
     lng: 31.3301,
   );
 
-  CarzoneDbService init() {
+  WashUpDbService init() {
     _reconnectWorker = ConnectivityService.maybe?.onReconnect(_onReconnected);
     // Only fetch Home essentials on app startup — never download the entire database at once!
     fetchHomeData();
@@ -68,7 +68,7 @@ class CarzoneDbService extends GetxService {
   /// Realtime does not replay changes missed while offline: rejoin the
   /// channels and reload what the home screen and live booking show.
   Future<void> _onReconnected() async {
-    dev.log('[CarzoneDbService] connection back, resyncing');
+    dev.log('[WashUpDbService] connection back, resyncing');
     await _resubscribeRealtime();
     await fetchHomeData(areaId: _homeFetchArea);
   }
@@ -244,14 +244,14 @@ class CarzoneDbService extends GetxService {
           subscribeToCustomerOrders(lookupId);
         } catch (e) {
           // The catalog loaded; the user's part retries on the next refresh or reconnect.
-          dev.log('[CarzoneDbService] fetchHomeData user data error: $e');
+          dev.log('[WashUpDbService] fetchHomeData user data error: $e');
         }
       }
 
       isSynced.value = true;
       return true;
     } catch (e) {
-      dev.log('[CarzoneDbService] fetchHomeData error: $e');
+      dev.log('[WashUpDbService] fetchHomeData error: $e');
       hasError.value = true;
       errorMessage.value = ApiException.messageFor(e);
       return false;
@@ -275,7 +275,7 @@ class CarzoneDbService extends GetxService {
       upsertBranches(list);
       return list;
     } catch (e) {
-      dev.log('[CarzoneDbService] fetchMapBranches error: $e');
+      dev.log('[WashUpDbService] fetchMapBranches error: $e');
       if (throwOnError) rethrow;
       return [];
     }
@@ -316,7 +316,7 @@ class CarzoneDbService extends GetxService {
 
       return list;
     } catch (e) {
-      dev.log('[CarzoneDbService] fetchPaginatedBranches error: $e');
+      dev.log('[WashUpDbService] fetchPaginatedBranches error: $e');
       if (throwOnError) rethrow;
       return [];
     }
@@ -349,7 +349,7 @@ class CarzoneDbService extends GetxService {
 
       return branch(branchId);
     } catch (e) {
-      dev.log('[CarzoneDbService] fetchBranchDetails error: $e');
+      dev.log('[WashUpDbService] fetchBranchDetails error: $e');
       if (throwOnError) rethrow;
       return branch(branchId);
     }
@@ -381,7 +381,7 @@ class CarzoneDbService extends GetxService {
       upsertOrders(list);
       return list;
     } catch (e) {
-      dev.log('[CarzoneDbService] fetchUserBookings error: $e');
+      dev.log('[WashUpDbService] fetchUserBookings error: $e');
       if (throwOnError) rethrow;
       return [];
     }
@@ -401,7 +401,7 @@ class CarzoneDbService extends GetxService {
       final set = (res as List).map((e) => e['branch_id'].toString()).toSet();
       favorites.assignAll(set);
     } catch (e) {
-      dev.log('[CarzoneDbService] Error loading favorites from Supabase: $e');
+      dev.log('[WashUpDbService] Error loading favorites from Supabase: $e');
     }
   }
 
@@ -423,7 +423,7 @@ class CarzoneDbService extends GetxService {
       vehicles.addAll(list);
       return list;
     } catch (e) {
-      dev.log('[CarzoneDbService] Error fetching vehicles from Supabase: $e');
+      dev.log('[WashUpDbService] Error fetching vehicles from Supabase: $e');
       return [];
     }
   }
@@ -461,7 +461,7 @@ class CarzoneDbService extends GetxService {
       }
       return true;
     } catch (e) {
-      dev.log('[CarzoneDbService] Error toggling favorite in Supabase: $e');
+      dev.log('[WashUpDbService] Error toggling favorite in Supabase: $e');
       if (removing) {
         favorites.add(branchId);
       } else {
@@ -486,7 +486,7 @@ class CarzoneDbService extends GetxService {
         tag: 'migrate favorites',
       );
     } catch (e) {
-      dev.log('[CarzoneDbService] Error migrating guest favorites: $e');
+      dev.log('[WashUpDbService] Error migrating guest favorites: $e');
     }
   }
 
@@ -508,7 +508,7 @@ class CarzoneDbService extends GetxService {
       }
       await ApiCall.write(() => client.from('vehicles').upsert(vehicle.toJson()), tag: 'save vehicle');
     } catch (e) {
-      dev.log('[CarzoneDbService] Error saving vehicle to Supabase: $e');
+      dev.log('[WashUpDbService] Error saving vehicle to Supabase: $e');
       rethrow;
     }
   }
@@ -522,7 +522,7 @@ class CarzoneDbService extends GetxService {
       );
       return true;
     } catch (e) {
-      dev.log('[CarzoneDbService] Error deleting vehicle from Supabase: $e');
+      dev.log('[WashUpDbService] Error deleting vehicle from Supabase: $e');
       return false;
     }
   }
@@ -531,7 +531,7 @@ class CarzoneDbService extends GetxService {
     try {
       await ApiCall.write(() => SupabaseService.client.from('reviews').upsert(review.toJson()), tag: 'save review');
     } catch (e) {
-      dev.log('[CarzoneDbService] Error saving review to Supabase: $e');
+      dev.log('[WashUpDbService] Error saving review to Supabase: $e');
     }
   }
 
@@ -539,7 +539,7 @@ class CarzoneDbService extends GetxService {
     try {
       await ApiCall.write(() => SupabaseService.client.from('customers').upsert(customer.toJson()), tag: 'save customer');
     } catch (e) {
-      dev.log('[CarzoneDbService] Error saving customer to Supabase: $e');
+      dev.log('[WashUpDbService] Error saving customer to Supabase: $e');
     }
   }
 
@@ -578,7 +578,7 @@ class CarzoneDbService extends GetxService {
         }
       }
     } catch (e) {
-      dev.log('[CarzoneDbService] Error updating customer push device in Supabase: $e');
+      dev.log('[WashUpDbService] Error updating customer push device in Supabase: $e');
     }
   }
 
@@ -607,7 +607,7 @@ class CarzoneDbService extends GetxService {
       );
       return true;
     } catch (e) {
-      dev.log('[CarzoneDbService] followLiveBooking error: $e');
+      dev.log('[WashUpDbService] followLiveBooking error: $e');
       return false;
     }
   }
@@ -623,7 +623,7 @@ class CarzoneDbService extends GetxService {
         tag: 'unfollow live booking',
       );
     } catch (e) {
-      dev.log('[CarzoneDbService] unfollowLiveBooking error: $e');
+      dev.log('[WashUpDbService] unfollowLiveBooking error: $e');
     }
   }
 
@@ -634,7 +634,7 @@ class CarzoneDbService extends GetxService {
         tag: 'mark notification read',
       );
     } catch (e) {
-      dev.log('[CarzoneDbService] Error updating notification in Supabase: $e');
+      dev.log('[WashUpDbService] Error updating notification in Supabase: $e');
     }
   }
 
@@ -649,7 +649,7 @@ class CarzoneDbService extends GetxService {
         tag: 'mark all notifications read',
       );
     } catch (e) {
-      dev.log('[CarzoneDbService] Error updating all notifications in Supabase: $e');
+      dev.log('[WashUpDbService] Error updating all notifications in Supabase: $e');
     }
   }
 
@@ -657,7 +657,7 @@ class CarzoneDbService extends GetxService {
     try {
       await ApiCall.write(() => SupabaseService.client.from('complaints').upsert(complaint), tag: 'save complaint');
     } catch (e) {
-      dev.log('[CarzoneDbService] Error saving complaint to Supabase: $e');
+      dev.log('[WashUpDbService] Error saving complaint to Supabase: $e');
     }
   }
 
@@ -683,7 +683,7 @@ class CarzoneDbService extends GetxService {
       notifications.assignAll(list);
       return list;
     } catch (e) {
-      dev.log('[CarzoneDbService] fetchNotifications error: $e');
+      dev.log('[WashUpDbService] fetchNotifications error: $e');
       if (throwOnError) rethrow;
       return [];
     }
@@ -720,7 +720,7 @@ class CarzoneDbService extends GetxService {
           )
           .subscribe((status, error) => _onChannelStatus('orders', status, error));
     } catch (e) {
-      dev.log('[CarzoneDbService] subscribeToCustomerOrders error: $e');
+      dev.log('[WashUpDbService] subscribeToCustomerOrders error: $e');
     }
   }
 
@@ -740,7 +740,7 @@ class CarzoneDbService extends GetxService {
       upsertOrders([OrderModel.fromJson(Map<String, dynamic>.from(res))]);
       orders.refresh();
     } catch (e) {
-      dev.log('[CarzoneDbService] refreshOrder error: $e');
+      dev.log('[WashUpDbService] refreshOrder error: $e');
       if (throwOnError) rethrow;
     }
   }
@@ -778,13 +778,13 @@ class CarzoneDbService extends GetxService {
                   }
                 }
               } catch (e) {
-                dev.log('[CarzoneDbService] Realtime notification parse error: $e');
+                dev.log('[WashUpDbService] Realtime notification parse error: $e');
               }
             },
           )
           .subscribe((status, error) => _onChannelStatus('notifications', status, error));
     } catch (e) {
-      dev.log('[CarzoneDbService] subscribeToCustomerNotifications error: $e');
+      dev.log('[WashUpDbService] subscribeToCustomerNotifications error: $e');
     }
   }
 
@@ -792,7 +792,7 @@ class CarzoneDbService extends GetxService {
   /// still errors while we are online is rebuilt after a pause; offline, the
   /// reconnect handler rebuilds it.
   void _onChannelStatus(String name, RealtimeSubscribeStatus status, Object? error) {
-    dev.log('[CarzoneDbService] $name channel: ${status.name}${error == null ? '' : ' ($error)'}');
+    dev.log('[WashUpDbService] $name channel: ${status.name}${error == null ? '' : ' ($error)'}');
     if (status != RealtimeSubscribeStatus.channelError && status != RealtimeSubscribeStatus.timedOut) return;
     if (!ConnectivityService.online) return;
     _resubscribeTimer?.cancel();
@@ -821,7 +821,7 @@ class CarzoneDbService extends GetxService {
     try {
       await SupabaseService.client.removeChannel(channel).timeout(const Duration(seconds: 5));
     } catch (e) {
-      dev.log('[CarzoneDbService] removeChannel error: $e');
+      dev.log('[WashUpDbService] removeChannel error: $e');
     }
   }
 
@@ -855,7 +855,7 @@ class CarzoneDbService extends GetxService {
         );
       }
     } catch (e) {
-      dev.log('[CarzoneDbService] Local notification alert error: $e');
+      dev.log('[WashUpDbService] Local notification alert error: $e');
     }
   }
 

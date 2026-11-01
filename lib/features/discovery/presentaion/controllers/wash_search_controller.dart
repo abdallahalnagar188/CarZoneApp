@@ -8,7 +8,7 @@ import '../../../../commons/models/branch_listing_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/local/cache_controller.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/session_service.dart';
 
@@ -24,7 +24,7 @@ class WashSearchController extends GetxController {
 
   Timer? _debounce;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   bool get hasResults => washes.isNotEmpty || categories.isNotEmpty || areas.isNotEmpty;
 

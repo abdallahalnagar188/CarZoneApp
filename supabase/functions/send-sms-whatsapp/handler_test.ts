@@ -4,7 +4,7 @@ import { assert, assertEquals } from "jsr:@std/assert@1";
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 import { handleSendSms, maskPhone } from "./handler.ts";
 
-const SECRET = "v1,whsec_" + btoa("carzone-test-secret-0123456789abcdef");
+const SECRET = "v1,whsec_" + btoa("washup-test-secret-0123456789abcdef");
 const BASE_ENV: Record<string, string> = {
   SEND_SMS_HOOK_SECRET: SECRET,
   WHATSAPP_ACCESS_TOKEN: "token",

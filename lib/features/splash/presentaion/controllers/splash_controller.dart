@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/local/cache_helper.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/deep_link_service.dart';
 
 class SplashController extends GetxController with GetSingleTickerProviderStateMixin {
@@ -36,8 +36,8 @@ class SplashController extends GetxController with GetSingleTickerProviderStateM
 
   Future<void> _startPrewarming() async {
     final minDelay = Future.delayed(const Duration(milliseconds: 1800));
-    final fetchFuture = Get.isRegistered<CarzoneDbService>()
-        ? Get.find<CarzoneDbService>().fetchFromSupabase()
+    final fetchFuture = Get.isRegistered<WashUpDbService>()
+        ? Get.find<WashUpDbService>().fetchFromSupabase()
         : Future.value(true);
 
     // Concurrently wait for animation delay and remote pre-warm, with safety timeout

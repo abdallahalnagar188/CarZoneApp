@@ -2,7 +2,7 @@
 // A wrong value here does not fail the build; it fails on the phone.
 import 'dart:io';
 
-import 'package:carzone/core/constance/supabase_constants.dart';
+import 'package:washup/core/constance/supabase_constants.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String _plist() => File('ios/Runner/Info.plist').readAsStringSync();
@@ -15,13 +15,13 @@ String? _valueAfterKey(String plist, String key) {
 
 void main() {
   test('Flutter built-in deep linking is off (app_links handles links)', () {
-    // When on, Flutter also pushes carzone://wash?id=… as a route name,
+    // When on, Flutter also pushes washup://wash?id=… as a route name,
     // which GetX does not know, on top of what DeepLinkService opens.
     expect(_valueAfterKey(_plist(), 'FlutterDeepLinkingEnabled'), '<false/>');
   });
 
-  test('carzone:// and washup:// URL schemes are registered', () {
-    expect(_plist(), contains('<string>carzone</string>'));
+  test('washup:// and washup:// URL schemes are registered', () {
+    expect(_plist(), contains('<string>washup</string>'));
     expect(_plist(), contains('<string>washup</string>'));
   });
 

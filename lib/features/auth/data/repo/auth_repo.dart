@@ -12,7 +12,7 @@ import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 import '../../../../commons/models/customer_model.dart';
 import '../../../../core/constance/supabase_constants.dart';
 import '../../../../core/network/api_call.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/supabase_service.dart';
 
 /// The phone number is already linked to a different account (sync_customer_profile).
@@ -24,7 +24,7 @@ class ActiveBookingException implements Exception {}
 class AuthRepo {
   SupabaseClient get _client => SupabaseService.client;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   /// The last [sendOtp] / [verifyOtp] failed on the connection, not on the
   /// code, so it should not count as a wrong attempt.
@@ -323,7 +323,7 @@ class AuthRepo {
   static StreamSubscription<AuthState>? _oauthSub;
 
   /// In-app browser view OAuth fallback (opens in-app modal instead of separate Chrome app).
-  /// Requires washup://login-callback (and carzone://login-callback) in Supabase Auth -> URL Configuration -> Redirect URLs.
+  /// Requires washup://login-callback in Supabase Auth -> URL Configuration -> Redirect URLs.
   Future<bool> signInWithGoogleInAppBrowser() async {
     // supabase_flutter signs in from the washup://login-callback link but leaves
     // the in-app Safari sheet open on iOS, so close it once the session arrives.

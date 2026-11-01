@@ -1,14 +1,14 @@
 // Contract tests: every payload the app writes to Supabase must only use real
 // columns and must include every required column, checked against
 // supabase/database.types.ts. Regenerate that file whenever the schema changes.
-import 'package:carzone/commons/models/customer_model.dart';
-import 'package:carzone/commons/models/localized_text.dart';
-import 'package:carzone/commons/models/notification_model.dart';
-import 'package:carzone/commons/models/order_model.dart';
-import 'package:carzone/commons/models/review_model.dart';
-import 'package:carzone/commons/models/vehicle_model.dart';
-import 'package:carzone/core/enums/enums.dart';
-import 'package:carzone/core/services/order_service.dart';
+import 'package:washup/commons/models/customer_model.dart';
+import 'package:washup/commons/models/localized_text.dart';
+import 'package:washup/commons/models/notification_model.dart';
+import 'package:washup/commons/models/order_model.dart';
+import 'package:washup/commons/models/review_model.dart';
+import 'package:washup/commons/models/vehicle_model.dart';
+import 'package:washup/core/enums/enums.dart';
+import 'package:washup/core/services/order_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'qa_helpers.dart';

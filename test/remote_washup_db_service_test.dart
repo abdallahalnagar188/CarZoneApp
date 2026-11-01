@@ -1,17 +1,17 @@
 import 'dart:io';
 
-import 'package:carzone/core/constance/supabase_constants.dart';
-import 'package:carzone/core/enums/enums.dart';
-import 'package:carzone/core/local/cache_controller.dart';
-import 'package:carzone/core/local/cache_helper.dart';
-import 'package:carzone/core/network/dio_helper.dart';
-import 'package:carzone/core/services/carzone_db_service.dart';
-import 'package:carzone/core/services/session_service.dart';
+import 'package:washup/core/constance/supabase_constants.dart';
+import 'package:washup/core/enums/enums.dart';
+import 'package:washup/core/local/cache_controller.dart';
+import 'package:washup/core/local/cache_helper.dart';
+import 'package:washup/core/network/dio_helper.dart';
+import 'package:washup/core/services/washup_db_service.dart';
+import 'package:washup/core/services/session_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:carzone/commons/models/customer_model.dart';
+import 'package:washup/commons/models/customer_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _RealHttpOverrides extends HttpOverrides {}
@@ -35,8 +35,8 @@ void main() {
     Get.reset();
   });
 
-  test('CarzoneDbService loads 100% remote data from Supabase without dummy data', () async {
-    final db = Get.put(CarzoneDbService());
+  test('WashUpDbService loads 100% remote data from Supabase without dummy data', () async {
+    final db = Get.put(WashUpDbService());
 
     // Initially all collections should be empty (no mock seeding)
     expect(db.areas.isEmpty, isTrue);
@@ -81,7 +81,7 @@ void main() {
   });
 
   test('SessionService token lifecycle: save, cache, access, and clear', () async {
-    final db = Get.put(CarzoneDbService());
+    final db = Get.put(WashUpDbService());
     await db.fetchHomeData();
 
     final session = Get.put(SessionService().init());
@@ -119,7 +119,7 @@ void main() {
   });
 
   test('CustomerModel token serialization and Supabase DB token update', () async {
-    final db = Get.put(CarzoneDbService());
+    final db = Get.put(WashUpDbService());
     await db.fetchHomeData();
 
     // Add a test customer to test token update

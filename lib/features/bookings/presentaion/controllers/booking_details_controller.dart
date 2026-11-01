@@ -7,7 +7,7 @@ import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/maps_service.dart';
 import '../../../../core/services/order_service.dart';
@@ -30,7 +30,7 @@ class BookingDetailsController extends GetxController {
   late final String orderId;
   Worker? _reconnect;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   BranchModel? get branch => order.value == null ? null : _db.branch(order.value!.branchId);
 

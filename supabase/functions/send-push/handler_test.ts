@@ -69,7 +69,7 @@ Deno.test("message carries Android channel and iOS alert settings", () => {
     apns: { headers: Record<string, string>; payload: { aps: { sound: string } } };
   };
   assertEquals(m.android.priority, "HIGH");
-  assertEquals(m.android.notification.channel_id, "carzone_orders");
+  assertEquals(m.android.notification.channel_id, "washup_orders");
   assertEquals(m.android.notification.tag, ROW.id);
   assertEquals(m.apns.headers["apns-collapse-id"], ROW.id);
   assertEquals(m.apns.payload.aps.sound, "default");

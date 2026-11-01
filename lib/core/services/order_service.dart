@@ -9,7 +9,7 @@ import '../../commons/models/review_model.dart';
 import '../enums/enums.dart';
 import '../network/api_call.dart';
 import 'availability_service.dart';
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 import 'supabase_service.dart';
 
 class SlotTakenException implements Exception {}
@@ -28,7 +28,7 @@ class BookingException implements Exception {
 }
 
 class OrderService {
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   static const _toasts = {
     OrderStatus.confirmed: LocalizedText('تم تأكيد حجزك', 'Your booking is confirmed'),

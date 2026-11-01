@@ -6,7 +6,7 @@ import '../../../../commons/models/order_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/format_helper.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/pricing_service.dart';
@@ -35,7 +35,7 @@ class HomeController extends GetxController {
   final unreviewed = Rxn<OrderModel>();
   final unread = 0.obs;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
   SessionService get session => Get.find<SessionService>();
 
   /// The catalog is still on its way (first launch, nothing cached yet).

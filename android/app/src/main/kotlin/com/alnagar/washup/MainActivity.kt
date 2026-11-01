@@ -8,7 +8,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         val liveBooking = LiveBookingNotifier(applicationContext)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "carzone/live_booking").setMethodCallHandler { call, result ->
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "washup/live_booking").setMethodCallHandler { call, result ->
             try {
                 when (call.method) {
                     "show" -> liveBooking.show(call.arguments as Map<*, *>)

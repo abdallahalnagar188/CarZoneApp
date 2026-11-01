@@ -32,7 +32,6 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>washup</string>
-				<string>carzone</string>
 			</array>
 		</dict>
 		<dict>

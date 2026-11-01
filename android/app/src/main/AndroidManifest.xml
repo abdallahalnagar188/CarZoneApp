@@ -15,7 +15,7 @@
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="carzone_orders" />
+            android:value="washup_orders" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />
@@ -43,36 +43,32 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep Link Custom Schemes: washup://wash and carzone://wash -->
+            <!-- Deep Link Custom Scheme: washup://wash -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="washup" android:host="wash" />
-                <data android:scheme="carzone" android:host="wash" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="washup" android:host="branch" />
-                <data android:scheme="carzone" android:host="branch" />
             </intent-filter>
-            <!-- Live booking widget tap: washup://booking?id=... or carzone://booking?id=... -->
+            <!-- Live booking widget tap: washup://booking?id=... -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="washup" android:host="booking" />
-                <data android:scheme="carzone" android:host="booking" />
             </intent-filter>
-            <!-- Supabase OAuth Callback: washup://login-callback or carzone://login-callback -->
+            <!-- Supabase OAuth Callback: washup://login-callback -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="washup" android:host="login-callback" />
-                <data android:scheme="carzone" android:host="login-callback" />
             </intent-filter>
             <!-- App Links (HTTPS Universal Link via Supabase) -->
             <intent-filter android:autoVerify="true">

@@ -5,7 +5,7 @@ import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/utils.dart';
 import '../../../auth/data/repo/auth_repo.dart';
@@ -19,7 +19,7 @@ class ProfileController extends GetxController {
   final deleting = false.obs;
 
   SessionService get session => Get.find<SessionService>();
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   int get unread => _db.notifications.where((n) => n.userId == session.userId && !n.read).length;
 

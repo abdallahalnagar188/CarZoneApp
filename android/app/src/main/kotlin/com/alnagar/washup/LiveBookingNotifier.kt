@@ -27,7 +27,7 @@ import androidx.core.content.ContextCompat
 class LiveBookingNotifier(private val context: Context) {
 
     companion object {
-        private const val CHANNEL_ID = "carzone_live_booking"
+        private const val CHANNEL_ID = "washup_live_booking"
         private const val STAGES = 5
         private const val SEGMENT = 100
 

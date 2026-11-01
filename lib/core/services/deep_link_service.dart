@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 
 import '../routing/app_routes.dart';
 import 'app_ready_gate.dart';
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 
 class DeepLinkService extends GetxService {
   final _appLinks = AppLinks();
@@ -70,8 +70,8 @@ class DeepLinkService extends GetxService {
       return false;
     }
 
-    // washup://booking?id=<order id> or carzone://booking?id=...
-    if ((uri.scheme == 'washup' || uri.scheme == 'carzone') && uri.host == 'booking') {
+    // washup://booking?id=<order id>
+    if (uri.scheme == 'washup' && uri.host == 'booking') {
       final orderId = uri.queryParameters['id'];
       if (orderId == null || orderId.isEmpty) return false;
       AppReadyGate.run(() {
@@ -101,9 +101,9 @@ class DeepLinkService extends GetxService {
   }
 
   /// Extracts the target branchId from various supported URI formats:
-  /// - carzone://wash?id=br_oasis_nasr
-  /// - carzone://wash/br_oasis_nasr
-  /// - carzone://branch/br_oasis_nasr
+  /// - washup://wash?id=br_oasis_nasr
+  /// - washup://wash/br_oasis_nasr
+  /// - washup://branch/br_oasis_nasr
   /// - https://.../share-wash?id=br_oasis_nasr
   /// - https://.../wash/br_oasis_nasr
   String? extractBranchId(Uri uri) {
@@ -156,8 +156,8 @@ class DeepLinkService extends GetxService {
     }
     try {
       // Ensure DB master data is synced from Supabase before opening details
-      if (Get.isRegistered<CarzoneDbService>()) {
-        final db = Get.find<CarzoneDbService>();
+      if (Get.isRegistered<WashUpDbService>()) {
+        final db = Get.find<WashUpDbService>();
         if (!db.isSynced.value) {
           await db.fetchFromSupabase();
         }

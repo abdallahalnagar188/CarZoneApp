@@ -7,7 +7,7 @@ import '../../commons/models/branch_model.dart';
 import '../enums/enums.dart';
 import '../helpers/format_helper.dart';
 import '../network/api_call.dart';
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 import 'supabase_service.dart';
 
 class BranchTimeHelper {
@@ -90,7 +90,7 @@ class SlotModel {
 }
 
 class AvailabilityService {
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   static const _active = [
     OrderStatus.pending,

@@ -1,17 +1,17 @@
 import 'dart:io';
 
-import 'package:carzone/commons/models/branch_listing_model.dart';
-import 'package:carzone/commons/models/branch_model.dart';
-import 'package:carzone/commons/models/localized_text.dart';
-import 'package:carzone/commons/widgets/cards/wash_card.dart';
-import 'package:carzone/core/constance/app_colors.dart';
-import 'package:carzone/core/constance/supabase_constants.dart';
-import 'package:carzone/core/local/cache_controller.dart';
-import 'package:carzone/core/local/cache_helper.dart';
-import 'package:carzone/core/network/dio_helper.dart';
-import 'package:carzone/core/services/carzone_db_service.dart';
-import 'package:carzone/core/services/session_service.dart';
-import 'package:carzone/features/favorites/presentaion/controllers/favorites_controller.dart';
+import 'package:washup/commons/models/branch_listing_model.dart';
+import 'package:washup/commons/models/branch_model.dart';
+import 'package:washup/commons/models/localized_text.dart';
+import 'package:washup/commons/widgets/cards/wash_card.dart';
+import 'package:washup/core/constance/app_colors.dart';
+import 'package:washup/core/constance/supabase_constants.dart';
+import 'package:washup/core/local/cache_controller.dart';
+import 'package:washup/core/local/cache_helper.dart';
+import 'package:washup/core/network/dio_helper.dart';
+import 'package:washup/core/services/washup_db_service.dart';
+import 'package:washup/core/services/session_service.dart';
+import 'package:washup/features/favorites/presentaion/controllers/favorites_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -127,7 +127,7 @@ void main() {
   });
 
   test('FavoritesController toggles favorite locally and dispatches to Supabase', () async {
-    final db = Get.put(CarzoneDbService());
+    final db = Get.put(WashUpDbService());
     Get.put(SessionService());
     final favController = Get.put(FavoritesController());
 

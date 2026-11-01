@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../../commons/models/offer_model.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/pricing_service.dart';
 
 class OffersController extends GetxController {
@@ -11,7 +11,7 @@ class OffersController extends GetxController {
   final loading = true.obs;
   final offers = <OfferModel>[].obs;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   /// Why the offers could not be loaded; null after a successful load.
   String? get error => _db.hasError.value ? _db.errorMessage.value : null;

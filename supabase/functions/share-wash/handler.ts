@@ -2,8 +2,8 @@
 //
 // Supabase serves Edge Function responses on its default domain as text/plain,
 // so the HTML page (and its "open in app" script) never runs in a phone browser.
-// Phones are therefore sent straight to the app with a 302 to carzone://wash?id=…,
-// which iOS Safari and Android Chrome hand to CarZone. Link-preview bots
+// Phones are therefore sent straight to the app with a 302 to washup://wash?id=…,
+// which iOS Safari and Android Chrome hand to Wash Up. Link-preview bots
 // (WhatsApp, Telegram, …) and desktop browsers still get the HTML with Open Graph tags.
 // A custom domain would allow real universal links / app links (see QA report).
 //
@@ -43,7 +43,7 @@ export function branchIdFrom(url: URL): string | null {
 }
 
 export const appDeepLink = (id: string | null) =>
-  id ? `carzone://wash?id=${encodeURIComponent(id)}` : "carzone://";
+  id ? `washup://wash?id=${encodeURIComponent(id)}` : "washup://";
 
 function photoFor(id: string | null): string {
   let h = 0;
@@ -52,7 +52,7 @@ function photoFor(id: string | null): string {
 }
 
 export function renderPage(id: string | null, branch: Branch | null, pageUrl: string): string {
-  const name = escapeHtml(branch?.name || "مغسلة سيارات CarZone");
+  const name = escapeHtml(branch?.name || "مغسلة سيارات Wash Up");
   const address = escapeHtml(branch?.address || "القاهرة، مصر");
   const photo = escapeHtml(photoFor(id));
   const link = escapeHtml(appDeepLink(id));
@@ -63,17 +63,17 @@ export function renderPage(id: string | null, branch: Branch | null, pageUrl: st
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${name} - CarZone</title>
+  <title>${name} - Wash Up</title>
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="CarZone">
-  <meta property="og:title" content="${name} | CarZone">
-  <meta property="og:description" content="احجز غسيل وتلميع سيارتك الآن في ${name} (${address}) بأفضل الأسعار عبر تطبيق CarZone">
+  <meta property="og:site_name" content="Wash Up">
+  <meta property="og:title" content="${name} | Wash Up">
+  <meta property="og:description" content="احجز غسيل وتلميع سيارتك الآن في ${name} (${address}) بأفضل الأسعار عبر تطبيق Wash Up">
   <meta property="og:image" content="${photo}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="${url}">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${name} | CarZone">
+  <meta name="twitter:title" content="${name} | Wash Up">
   <meta name="twitter:description" content="احجز غسيل سيارتك الآن في ${name}">
   <meta name="twitter:image" content="${photo}">
   <style>
@@ -98,11 +98,11 @@ export function renderPage(id: string | null, branch: Branch | null, pageUrl: st
   <div class="card">
     <img src="${photo}" alt="${name}" class="cover-img">
     <div class="content">
-      <span class="badge">🚗 CarZone مغسلة معتمدة</span>
+      <span class="badge">🚗 Wash Up مغسلة معتمدة</span>
       <h1>${name}</h1>
       <p>📍 ${address}<br>احجز موعدك فوراً واستمتع بغسيل سيارة فائق الجودة بدون انتظار.</p>
-      <a href="${link}" class="btn">فتح في تطبيق CarZone</a>
-      <div class="footer-note">افتح الرابط من موبايل عليه تطبيق CarZone.</div>
+      <a href="${link}" class="btn">فتح في تطبيق Wash Up</a>
+      <div class="footer-note">افتح الرابط من موبايل عليه تطبيق Wash Up.</div>
     </div>
   </div>
 </body>

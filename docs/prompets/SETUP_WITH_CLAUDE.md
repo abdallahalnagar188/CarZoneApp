@@ -1,4 +1,4 @@
-# Carzen · Supabase setup runbook (for Claude)
+# Wash Up · Supabase setup runbook (for Claude)
 
 > **للمستخدم:** ابعت الملف ده لـ Claude على الحساب المربوط بـ Supabase واكتبله:
 > «اتبع الملف ده بالظبط وجهّز مشروع Supabase». ولو عايز بيانات العرض، ارفع معاه ملفات
@@ -8,12 +8,12 @@
 
 ## 0. Who you are and what you must do
 
-You are setting up the **Carzen** database on a Supabase project, using your Supabase MCP tools
+You are setting up the **Wash Up** database on a Supabase project, using your Supabase MCP tools
 (`list_projects`, `get_project`, `list_tables`, `list_migrations`, `apply_migration`,
 `execute_sql`, `get_advisors`, `generate_typescript_types`).
 
-Carzen is a car-wash marketplace + operating system in Cairo (EGP). One database serves four apps:
-Super Admin (Carzen staff), Vendor Portal (wash owners and branch managers), the customer mobile app
+Wash Up is a car-wash marketplace + operating system in Cairo (EGP). One database serves four apps:
+Super Admin (Wash Up staff), Vendor Portal (wash owners and branch managers), the customer mobile app
 and the employee mobile app. This runbook contains the **complete, final schema**: 8 migrations
 creating 40 tables, 25 enums, 9 functions and 23 triggers, plus RLS and storage. It was generated
 from the source repository and validated on PostgreSQL 17 (migrations + full demo seed + role
@@ -47,7 +47,7 @@ Run these and **show the user a short summary** before changing anything:
 4. Collision check with `execute_sql`:
 
 ```sql
--- Existing public objects that would collide with the Carzen schema
+-- Existing public objects that would collide with the Wash Up schema
 with ours(name) as (values
   ('areas'),('service_categories'),('amenities'),('platform_settings'),('admin_users'),('admin_role_permissions'),
   ('businesses'),('business_settings'),('branches'),('branch_working_hours'),('branch_amenities'),('branch_blocked_slots'),
@@ -84,11 +84,11 @@ order by 1, 2;
 
 - **Path A: no collisions** (the query returns no rows, or only the two buckets). Go to section 4 directly.
 - **Path B: collisions exist.** Do **not** apply anything yet. For every colliding object, report
-  to the user its name, its row count, and how it relates to the Carzen table (section 7 has the
+  to the user its name, its row count, and how it relates to the Wash Up table (section 7 has the
   common mappings). Then propose one of these, per object, and wait for an explicit choice:
   - **B1: empty or test-only:** drop it (show the exact `DROP … CASCADE` first), then apply.
   - **B2: has data to keep:** rename it to `legacy_<name>` (types: `legacy_<type>`), apply the
-    migrations, copy the data into the Carzen tables with `INSERT … SELECT` (show the SQL and get
+    migrations, copy the data into the Wash Up tables with `INSERT … SELECT` (show the SQL and get
     approval), compare counts, and only then offer to drop the legacy object.
   - Existing buckets with the same id are fine: M7 upserts their settings.
 
@@ -106,7 +106,7 @@ Apply with `apply_migration` → `name: "foundation"`, `project_id: "tbcmgdwzarf
 
 ```sql
 -- =============================================================================
--- Carzen · 01 · Foundation
+-- Wash Up · 01 · Foundation
 -- Shared helpers and every enum used by the domain tables.
 --
 -- Conventions (kept Laravel-friendly so the future backend can adopt this schema):
@@ -171,7 +171,7 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- Enums (values mirror @carzen/contracts exactly)
+-- Enums (values mirror @washup/contracts exactly)
 -- ---------------------------------------------------------------------------
 
 create type public.business_status        as enum ('pending', 'approved', 'active', 'suspended', 'rejected');
@@ -213,7 +213,7 @@ Apply with `apply_migration` → `name: "platform"`, `project_id: "tbcmgdwzarfdg
 
 ```sql
 -- =============================================================================
--- Carzen · 02 · Platform: catalogs, settings, Carzen admins and their roles
+-- Wash Up · 02 · Platform: catalogs, settings, Wash Up admins and their roles
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -262,7 +262,7 @@ create table public.platform_settings (
 comment on table public.platform_settings is 'Super Admin settings sections; every change is also written to audit_logs with a reason.';
 
 -- ---------------------------------------------------------------------------
--- Carzen staff (Super Admin users). Sign-in is Supabase Auth (email);
+-- Wash Up staff (Super Admin users). Sign-in is Supabase Auth (email);
 -- user_id links the auth identity to the admin profile.
 -- ---------------------------------------------------------------------------
 
@@ -314,7 +314,7 @@ Apply with `apply_migration` → `name: "washes"`, `project_id: "tbcmgdwzarfdgzz
 
 ```sql
 -- =============================================================================
--- Carzen · 03 · Washes: businesses, branches, services, staff, shifts
+-- Wash Up · 03 · Washes: businesses, branches, services, staff, shifts
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -523,7 +523,7 @@ Apply with `apply_migration` → `name: "customers_orders"`, `project_id: "tbcmg
 
 ```sql
 -- =============================================================================
--- Carzen · 04 · Customers, vehicles, orders, payments, finance, day closings
+-- Wash Up · 04 · Customers, vehicles, orders, payments, finance, day closings
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -783,11 +783,11 @@ Apply with `apply_migration` → `name: "engagement"`, `project_id: "tbcmgdwzarf
 
 ```sql
 -- =============================================================================
--- Carzen · 05 · Engagement: reviews, offers, complaints, wash applications
+-- Wash Up · 05 · Engagement: reviews, offers, complaints, wash applications
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
--- Reviews (one per order). The wash replies once and may report it to Carzen.
+-- Reviews (one per order). The wash replies once and may report it to Wash Up.
 -- ---------------------------------------------------------------------------
 
 create table public.reviews (
@@ -865,7 +865,7 @@ create trigger reviews_refresh_ratings
   for each row execute function public.refresh_review_ratings();
 
 -- ---------------------------------------------------------------------------
--- Offers: platform-wide (Carzen) or wash-scoped. Applied by server-side pricing.
+-- Offers: platform-wide (Wash Up) or wash-scoped. Applied by server-side pricing.
 -- ---------------------------------------------------------------------------
 
 create table public.offers (
@@ -909,7 +909,7 @@ alter table public.orders
 create index orders_offer_idx on public.orders (offer_id) where offer_id is not null;
 
 -- ---------------------------------------------------------------------------
--- Complaints (customer → Carzen support), with an internal notes thread.
+-- Complaints (customer → Wash Up support), with an internal notes thread.
 -- ---------------------------------------------------------------------------
 
 create sequence public.complaint_ticket_seq start 1001;
@@ -997,10 +997,10 @@ Apply with `apply_migration` → `name: "activity"`, `project_id: "tbcmgdwzarfdg
 
 ```sql
 -- =============================================================================
--- Carzen · 06 · Activity: notifications (admin + vendor) and the audit log
+-- Wash Up · 06 · Activity: notifications (admin + vendor) and the audit log
 -- =============================================================================
 
--- Carzen staff inbox (Super Admin bell).
+-- Wash Up staff inbox (Super Admin bell).
 create table public.admin_notifications (
   id          text primary key default public.gen_id('an'),
   type        public.admin_notification_type not null,
@@ -1076,10 +1076,10 @@ Apply with `apply_migration` → `name: "security_storage"`, `project_id: "tbcmg
 
 ```sql
 -- =============================================================================
--- Carzen · 07 · Security model and storage
+-- Wash Up · 07 · Security model and storage
 --
 -- The apps never talk to the database directly. Every read/write goes through the
--- Carzen API (/api/v1), which uses the service_role key on the server and enforces
+-- Wash Up API (/api/v1), which uses the service_role key on the server and enforces
 -- business rules + permissions (owner / branch manager / admin roles).
 --
 -- So for the Data API roles (anon, authenticated):
@@ -1143,7 +1143,7 @@ Apply with `apply_migration` → `name: "mobile_apps"`, `project_id: "tbcmgdwzar
 
 ```sql
 -- =============================================================================
--- Carzen · 08 · Mobile apps (customer app + employee app)
+-- Wash Up · 08 · Mobile apps (customer app + employee app)
 -- What the two mobile apps need beyond the web dashboards: favourites, the customer
 -- inbox, per-employee notices, push devices, branch photos, the manager PIN that
 -- authorises discounts above an employee's limit, and the shift's opening cash.
@@ -1307,7 +1307,7 @@ Business rules (pricing, the order state machine, owner/manager permissions) liv
 RLS is on everywhere with no policies, and table/function privileges are revoked from `anon`/`authenticated`.
 
 ### Common mappings (Path B)
-| Typical existing table | Carzen table(s) |
+| Typical existing table | Wash Up table(s) |
 |---|---|
 | `profiles` / `users` | `customers` · `staff` · `admin_users` (each with `user_id → auth.users`) |
 | `cars` | `vehicles` |
@@ -1335,7 +1335,7 @@ Your MCP tools can't change Auth settings or create Auth users. Tell the user to
    links them), or add a few users in Dashboard → Authentication, then run this linking SQL (you can run it):
 
 ```sql
--- Link Auth users to their Carzen profiles (Auth stores phones without "+")
+-- Link Auth users to their Wash Up profiles (Auth stores phones without "+")
 update public.staff s     set user_id = u.id from auth.users u where s.user_id is null and u.phone = ltrim(s.phone, '+');
 update public.customers c set user_id = u.id from auth.users u where c.user_id is null and u.phone = ltrim(c.phone, '+');
 update public.admin_users a set user_id = u.id from auth.users u where a.user_id is null and lower(u.email) = lower(a.email);

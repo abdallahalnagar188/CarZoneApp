@@ -2,7 +2,7 @@ import ActivityKit
 import Flutter
 import Foundation
 
-/// Bridges `carzone/live_booking` (Flutter's LiveBookingService) to ActivityKit.
+/// Bridges `washup/live_booking` (Flutter's LiveBookingService) to ActivityKit.
 /// Activities are started with a push token so the server (send-push) can update
 /// them while the app is closed; tokens go back to Flutter, which stores them.
 final class LiveBookingController {
@@ -12,7 +12,7 @@ final class LiveBookingController {
   private static var observed = Set<String>()
 
   static func register(with messenger: FlutterBinaryMessenger) {
-    let channel = FlutterMethodChannel(name: "carzone/live_booking", binaryMessenger: messenger)
+    let channel = FlutterMethodChannel(name: "washup/live_booking", binaryMessenger: messenger)
     self.channel = channel
     if #available(iOS 16.2, *) {
       // Activities left from an earlier launch keep receiving pushes; refresh their tokens.

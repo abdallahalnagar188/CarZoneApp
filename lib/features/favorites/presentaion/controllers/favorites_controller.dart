@@ -5,7 +5,7 @@ import '../../../../commons/models/branch_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/local/cache_controller.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/session_service.dart';
@@ -15,7 +15,7 @@ import '../../../../core/utils/utils.dart';
 class FavoritesController extends GetxController {
   final _discovery = DiscoveryService();
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   SessionService get _session => Get.find<SessionService>();
 

@@ -95,7 +95,7 @@ export async function handleSendSms(
       type: "text",
       text: {
         preview_url: false,
-        body: `رمز التحقق الخاص بك في CarZone هو: ${otp}\nلا تشارك هذا الرمز مع أي شخص.`,
+        body: `رمز التحقق الخاص بك في Wash Up هو: ${otp}\nلا تشارك هذا الرمز مع أي شخص.`,
       },
     };
 

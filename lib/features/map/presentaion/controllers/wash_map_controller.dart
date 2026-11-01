@@ -7,7 +7,7 @@ import '../../../../core/helpers/format_helper.dart';
 import '../../../../core/helpers/map_marker_helper.dart';
 import '../../../../core/local/theme_controller.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/maps_service.dart';
@@ -50,14 +50,14 @@ class WashMapController extends GetxController {
       _compute();
       recenter();
     });
-    ever(Get.find<CarzoneDbService>().orders, (_) => _compute());
-    ever(Get.find<CarzoneDbService>().branches, (_) => _compute());
+    ever(Get.find<WashUpDbService>().orders, (_) => _compute());
+    ever(Get.find<WashUpDbService>().branches, (_) => _compute());
     ever(Get.find<ThemeController>().isDarkMode, (_) => _loadStyle());
     _reconnect = ConnectivityService.maybe?.onReconnect(_loadMapData);
   }
 
   Future<void> _loadMapData() async {
-    await Get.find<CarzoneDbService>().fetchMapBranches(areaId: session.areaId.value);
+    await Get.find<WashUpDbService>().fetchMapBranches(areaId: session.areaId.value);
     _compute();
   }
 

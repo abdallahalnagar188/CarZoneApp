@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../commons/models/offer_model.dart';
 import '../../commons/models/order_model.dart';
 import '../../commons/models/wash_service_model.dart';
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 
 class PriceQuote {
   final List<OrderItem> items;
@@ -32,7 +32,7 @@ class PriceQuote {
 }
 
 class PricingService {
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   List<OfferModel> liveOffers([DateTime? now]) {
     final ref = now ?? DateTime.now();

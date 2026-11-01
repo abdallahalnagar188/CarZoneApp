@@ -8,7 +8,7 @@ import 'package:get/get.dart';
 import '../../commons/models/order_model.dart';
 import '../enums/enums.dart';
 import '../helpers/format_helper.dart';
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 import 'notification_service.dart';
 import 'session_service.dart';
 
@@ -22,7 +22,7 @@ import 'session_service.dart';
 /// sends it every status change (see supabase/functions/send-push/live.ts,
 /// which repeats this payload and its wording).
 class LiveBookingService extends GetxService with WidgetsBindingObserver {
-  static const _channel = MethodChannel('carzone/live_booking');
+  static const _channel = MethodChannel('washup/live_booking');
 
   /// Stages shown as the progress track: booked → confirmed → arrived → washing → ready.
   static const _stages = [
@@ -47,7 +47,7 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
   /// A final state stays visible this long before the system removes it.
   static const _finalLinger = Duration(minutes: 15);
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
   SessionService get _session => Get.find<SessionService>();
 
   String? _trackedId;

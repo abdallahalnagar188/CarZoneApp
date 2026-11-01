@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../commons/models/order_model.dart';
 import '../../../../core/enums/enums.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/utils/utils.dart';
@@ -23,7 +23,7 @@ class ReportController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    order = Get.find<CarzoneDbService>().order(Get.arguments?.toString() ?? '');
+    order = Get.find<WashUpDbService>().order(Get.arguments?.toString() ?? '');
   }
 
   void setCategory(String c) => category.value = c;

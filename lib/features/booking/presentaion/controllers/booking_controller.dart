@@ -11,7 +11,7 @@ import '../../../../core/helpers/format_helper.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/availability_service.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/services/pricing_service.dart';
@@ -38,7 +38,7 @@ class BookingController extends GetxController {
 
   bool _selectNewCar = false;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
   SessionService get _session => Get.find<SessionService>();
 
   BranchModel? get branch => _db.branch(branchId.value);

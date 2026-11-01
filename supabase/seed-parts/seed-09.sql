@@ -1,4 +1,4 @@
--- Carzen demo seed · part 9 of 11 · apply in order
+-- Wash Up demo seed · part 9 of 11 · apply in order
 insert into public.order_events (id, order_id, status, actor_type, actor_id, at) values
   ('oev_ord_CZ-18379_2', 'ord_CZ-18379', 'completed', 'staff', 'st_samir', '2026-09-28T16:21:00.000Z'),
   ('oev_ord_CZ-08254_0', 'ord_CZ-08254', 'pending', 'customer', 'cu_031', '2026-09-28T12:23:00.000Z'),

@@ -7,7 +7,7 @@ import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/pricing_service.dart';
@@ -16,7 +16,7 @@ import '../../../../core/utils/utils.dart';
 import '../widgets/filter_sheet.dart';
 
 class ResultsController extends GetxController {
-  final _db = Get.find<CarzoneDbService>();
+  final _db = Get.find<WashUpDbService>();
   final _session = Get.find<SessionService>();
   final _discovery = DiscoveryService();
   final _pricing = PricingService();

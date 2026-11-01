@@ -18,7 +18,7 @@ import '../helpers/format_helper.dart';
 import '../routing/app_routes.dart';
 import '../../features/auth/presentaion/controllers/auth_controller.dart';
 
-import 'carzone_db_service.dart';
+import 'washup_db_service.dart';
 import 'connectivity_service.dart';
 import 'location_service.dart';
 import 'notification_service.dart';
@@ -36,7 +36,7 @@ class SessionService extends GetxService {
   dynamic returnArguments;
   void Function()? pendingAction;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   bool get isLoggedIn => user.value != null;
 

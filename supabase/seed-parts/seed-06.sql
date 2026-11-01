@@ -1,4 +1,4 @@
--- Carzen demo seed · part 6 of 11 · apply in order
+-- Wash Up demo seed · part 6 of 11 · apply in order
 
 -- order_events: 4059 rows
 insert into public.order_events (id, order_id, status, actor_type, actor_id, at) values

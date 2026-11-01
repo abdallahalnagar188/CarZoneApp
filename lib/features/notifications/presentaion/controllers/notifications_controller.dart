@@ -4,12 +4,12 @@ import '../../../../commons/models/notification_model.dart';
 import '../../../../core/helpers/format_helper.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/session_service.dart';
 
 class NotificationsController extends GetxController {
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
   SessionService get _session => Get.find<SessionService>();
 
   final isLoading = false.obs;

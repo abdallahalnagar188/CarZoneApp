@@ -6,7 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../controllers/home_controller.dart';
 
 class AreaPickerSheet extends StatelessWidget {
@@ -15,7 +15,7 @@ class AreaPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
-    final areas = Get.find<CarzoneDbService>().areas;
+    final areas = Get.find<WashUpDbService>().areas;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

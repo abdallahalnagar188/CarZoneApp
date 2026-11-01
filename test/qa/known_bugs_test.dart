@@ -1,8 +1,8 @@
 // Regression tests for bugs found in the QA review (docs/qa/QA_REPORT.md).
 // They describe the CORRECT behaviour, so they fail until each bug is fixed.
-import 'package:carzone/commons/models/order_model.dart';
-import 'package:carzone/commons/models/offer_model.dart';
-import 'package:carzone/core/services/pricing_service.dart';
+import 'package:washup/commons/models/order_model.dart';
+import 'package:washup/commons/models/offer_model.dart';
+import 'package:washup/core/services/pricing_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'qa_helpers.dart';
@@ -16,7 +16,7 @@ void main() {
       // Exact shape returned by: offers?select=*,offer_branches(branch_id)
       'id': 'of_deep',
       'scope': 'wash',
-      'business_id': 'biz_carzen',
+      'business_id': 'biz_washup',
       'title': {'ar': 'خصم', 'en': 'Deal'},
       'description': {'ar': '', 'en': ''},
       'discount_type': 'percent',

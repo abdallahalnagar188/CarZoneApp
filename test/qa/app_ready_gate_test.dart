@@ -1,7 +1,7 @@
 // A notification tap that launches the app arrives during the splash; the
 // splash then calls Get.offAllNamed(main). The tap must open its page after that.
-import 'package:carzone/core/services/app_ready_gate.dart';
-import 'package:carzone/core/services/deep_link_service.dart';
+import 'package:washup/core/services/app_ready_gate.dart';
+import 'package:washup/core/services/deep_link_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

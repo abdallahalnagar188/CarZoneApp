@@ -13,7 +13,7 @@ import '../../../../core/enums/enums.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/availability_service.dart';
-import '../../../../core/services/carzone_db_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/services/discovery_service.dart';
@@ -45,7 +45,7 @@ class WashDetailsController extends GetxController {
   late final String branchId;
   Worker? _reconnect;
 
-  CarzoneDbService get _db => Get.find<CarzoneDbService>();
+  WashUpDbService get _db => Get.find<WashUpDbService>();
 
   BranchModel? get branch => listing.value?.branch;
 

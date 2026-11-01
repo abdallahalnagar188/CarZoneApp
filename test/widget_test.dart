@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:carzone/app.dart';
-import 'package:carzone/core/local/cache_controller.dart';
-import 'package:carzone/core/local/cache_helper.dart';
-import 'package:carzone/core/local/theme_controller.dart';
-import 'package:carzone/core/services/supabase_service.dart';
-import 'package:carzone/features/splash/presentaion/widgets/splash_brand.dart';
+import 'package:washup/app.dart';
+import 'package:washup/core/local/cache_controller.dart';
+import 'package:washup/core/local/cache_helper.dart';
+import 'package:washup/core/local/theme_controller.dart';
+import 'package:washup/core/services/supabase_service.dart';
+import 'package:washup/features/splash/presentaion/widgets/splash_brand.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';

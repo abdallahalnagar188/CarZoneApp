@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:carzone/commons/models/branch_model.dart';
-import 'package:carzone/commons/models/localized_text.dart';
-import 'package:carzone/commons/models/wash_service_model.dart';
-import 'package:carzone/core/enums/enums.dart';
-import 'package:carzone/core/services/carzone_db_service.dart';
+import 'package:washup/commons/models/branch_model.dart';
+import 'package:washup/commons/models/localized_text.dart';
+import 'package:washup/commons/models/wash_service_model.dart';
+import 'package:washup/core/enums/enums.dart';
+import 'package:washup/core/services/washup_db_service.dart';
 import 'package:get/get.dart';
 
 /// Insert columns of a table, read from the generated Supabase types
@@ -62,10 +62,10 @@ Map<String, TableSchema> _parseSchema(List<String> lines) {
   return result;
 }
 
-/// Registers a fresh, offline CarzoneDbService (no Supabase calls on startup).
-CarzoneDbService freshDb() {
+/// Registers a fresh, offline WashUpDbService (no Supabase calls on startup).
+WashUpDbService freshDb() {
   Get.reset();
-  return Get.put(CarzoneDbService());
+  return Get.put(WashUpDbService());
 }
 
 const _ln = LocalizedText('x', 'x');
