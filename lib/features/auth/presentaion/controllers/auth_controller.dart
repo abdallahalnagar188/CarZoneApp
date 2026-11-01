@@ -97,6 +97,17 @@ class AuthController extends GetxController {
     }
   }
 
+  /// App Review guideline 4: after Sign in with Apple the app must not ask for
+  /// a name or email, Apple already provides them. Profile setup only asks
+  /// such a user for the phone number the wash needs.
+  bool get signedInWithApple => isAppleUser(_repo.currentAuthUser?.appMetadata);
+
+  static bool isAppleUser(Map<String, dynamic>? appMetadata) {
+    if (appMetadata == null) return false;
+    final providers = appMetadata['providers'];
+    return appMetadata['provider'] == 'apple' || (providers is List && providers.contains('apple'));
+  }
+
   /// Native Sign in with Apple (shown on iOS only).
   Future<void> signInWithApple() async {
     if (appleSigningIn.value || googleSigningIn.value || sending.value) return;
@@ -151,6 +162,11 @@ class AuthController extends GetxController {
       if (authUser.phone != null && authUser.phone!.isNotEmpty) {
         phone = authUser.phone!;
         phoneController.text = authUser.phone!;
+      }
+      // Nothing left to ask an Apple user who already has a verified phone.
+      if (signedInWithApple && phone.isNotEmpty) {
+        await saveName();
+        return;
       }
       Get.toNamed(Routes.profileSetupRoute);
     }
@@ -307,17 +323,25 @@ class AuthController extends GetxController {
   }
 
   Future<void> saveName() async {
-    final name = nameController.text.trim();
-    if (name.length < 2) {
-      nameError.value = null;
-      Utils.getSnakBar(message: 'profile.nameErr'.tr, type: TosterTypes.warning);
-      return;
-    }
-
     final authUser = _repo.currentAuthUser;
     if (authUser == null) {
       nameError.value = null;
       Utils.getSnakBar(message: 'otp.error'.tr, type: TosterTypes.failed);
+      return;
+    }
+
+    var name = nameController.text.trim();
+    if (signedInWithApple && name.length < 2) {
+      // Read here, not on navigation: SessionService can open this page before
+      // the name Apple shared reaches the user metadata. Apple shares it on the
+      // first sign-in only, so the customer can still end up with the default
+      // and change it from their profile.
+      final appleName = authUser.userMetadata?['full_name']?.toString().trim() ?? '';
+      name = appleName.length >= 2 ? appleName : 'profile.defaultName'.tr;
+    }
+    if (name.length < 2) {
+      nameError.value = null;
+      Utils.getSnakBar(message: 'profile.nameErr'.tr, type: TosterTypes.warning);
       return;
     }
 

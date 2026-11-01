@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:carzone/core/local/app_translation.dart';
 import 'package:carzone/features/auth/data/repo/auth_repo.dart';
+import 'package:carzone/features/auth/presentaion/controllers/auth_controller.dart';
 
 void main() {
   setUpAll(() {
@@ -59,5 +60,27 @@ void main() {
 
     final mapped = repo.mapAuthError(wrongTokenException, isVerify: true);
     expect(mapped, contains('رمز التحقق غير صحيح'));
+  });
+
+  group('Sign in with Apple never asks for a name (App Review guideline 4)', () {
+    test('recognises Apple accounts from the auth metadata', () {
+      expect(AuthController.isAppleUser({'provider': 'apple', 'providers': ['apple']}), isTrue);
+      expect(AuthController.isAppleUser({'provider': 'phone', 'providers': ['phone', 'apple']}), isTrue);
+      expect(AuthController.isAppleUser({'provider': 'google', 'providers': ['google']}), isFalse);
+      expect(AuthController.isAppleUser({'provider': 'phone'}), isFalse);
+      expect(AuthController.isAppleUser(null), isFalse);
+    });
+
+    test('the default name fits the customers.name rule (2 to 80 characters)', () {
+      for (final locale in ['ar', 'en']) {
+        Get.locale = Locale(locale);
+        final name = 'profile.defaultName'.tr;
+        expect(name, isNot('profile.defaultName'));
+        expect(name.length, inInclusiveRange(2, 80));
+        expect('profile.setupPhone'.tr, isNot('profile.setupPhone'));
+        expect('profile.setupPhoneBody'.tr, isNot('profile.setupPhoneBody'));
+      }
+      Get.locale = const Locale('ar');
+    });
   });
 }

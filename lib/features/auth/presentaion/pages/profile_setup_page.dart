@@ -14,29 +14,31 @@ class ProfileSetupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<AuthController>();
+    // Sign in with Apple already gave us the name: only the phone is asked.
+    final askName = !controller.signedInWithApple;
     return Scaffold(
-      appBar: AppTopBar(title: 'profile.setup'.tr),
+      appBar: AppTopBar(title: (askName ? 'profile.setup' : 'profile.setupPhone').tr),
       body: ListView(
         padding: EdgeInsets.all(20.r),
         children: [
           Text(
-            'profile.setupBody'.tr,
+            (askName ? 'profile.setupBody' : 'profile.setupPhoneBody').tr,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.ink500),
           ),
           20.height,
-          Obx(
-            () => AppTextField(
-              controller: controller.nameController,
-              label: 'profile.name'.tr,
-              error: controller.nameError.value,
-              autofocus: true,
-              onChanged: (_) => controller.nameError.value = null,
+          if (askName) ...[
+            Obx(
+              () => AppTextField(
+                controller: controller.nameController,
+                label: 'profile.name'.tr,
+                error: controller.nameError.value,
+                autofocus: true,
+                onChanged: (_) => controller.nameError.value = null,
+              ),
             ),
-          ),
-          if (controller.phone.isEmpty) ...[
             18.height,
-            const PhoneInput(),
           ],
+          if (controller.phone.isEmpty) const PhoneInput(),
           28.height,
           Obx(
             () => AppButton(
