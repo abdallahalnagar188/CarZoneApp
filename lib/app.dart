@@ -18,34 +18,37 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
+
     return ScreenUtilInit(
       designSize: ResponsiveHelper.designSize,
       minTextAdapt: true,
       splitScreenMode: true,
-      builder: (context, child) {
-        ResponsiveHelper.configureClampedScreenUtil(context);
-        return GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: GetMaterialApp(
-            title: 'Wash Up',
-            debugShowCheckedModeBanner: false,
-            theme: MyAppTheme.lightTheme,
-            darkTheme: MyAppTheme.darkTheme,
-            themeMode: themeController.themeMode,
-            translations: AppTranslations(),
-            locale: LanguageGetxController.cachedLocale,
-            fallbackLocale: const Locale(LanguageGetxController.defaultLang),
-            initialBinding: AppBinding(),
-            getPages: appPages,
-            initialRoute: Routes.splashRoute,
-            builder: (context, child) {
-              ResponsiveHelper.configureClampedScreenUtil(context);
-              return AnnotatedRegion<SystemUiOverlayStyle>(
+      builder: (context, _) {
+        return GetMaterialApp(
+          title: 'Wash Up',
+          debugShowCheckedModeBanner: false,
+          theme: MyAppTheme.lightTheme,
+          darkTheme: MyAppTheme.darkTheme,
+          themeMode: themeController.themeMode,
+          translations: AppTranslations(),
+          locale: LanguageGetxController.cachedLocale,
+          fallbackLocale: const Locale(LanguageGetxController.defaultLang),
+          initialBinding: AppBinding(),
+          getPages: appPages,
+          initialRoute: Routes.splashRoute,
+          builder: (context, child) {
+            ResponsiveHelper.configureClampedScreenUtil(context);
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+              child: AnnotatedRegion<SystemUiOverlayStyle>(
                 value: SystemUi.adaptive,
-                child: OfflineBanner(child: child ?? const SizedBox.shrink()),
-              );
-            },
-          ),
+                child: OfflineBanner(
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
+            );
+          },
         );
       },
     );
