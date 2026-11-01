@@ -16,18 +16,21 @@ import 'core/utils/system_ui.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await CacheController().initSharedPreferences();
-  await CacheHelper.init();
-  await SupabaseService.init();
-  // Before any service fetches, so requests and the offline banner can use it.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  await Future.wait([
+    CacheController().initSharedPreferences(),
+    CacheHelper.init(),
+    SupabaseService.init(),
+    initializeDateFormatting(),
+  ]);
+
   Get.put(ConnectivityService().init(), permanent: true);
+  await DioHelper.init();
+
   final notificationService = NotificationService();
   await notificationService.init();
   Get.put(notificationService, permanent: true);
-  await DioHelper.init();
-  await initializeDateFormatting();
-
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   Get.put(ThemeController(), permanent: true);
   SystemUi.apply();
