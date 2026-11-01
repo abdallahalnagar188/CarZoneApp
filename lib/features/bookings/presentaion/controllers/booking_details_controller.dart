@@ -14,7 +14,6 @@ import '../../../../core/services/order_service.dart';
 import '../../../../core/utils/utils.dart';
 import '../../../booking/presentaion/controllers/booking_controller.dart';
 import '../widgets/cancel_sheet.dart';
-import '../widgets/qr_fullscreen.dart';
 
 class BookingDetailsController extends GetxController {
   final _orders = OrderService();
@@ -89,12 +88,6 @@ class BookingDetailsController extends GetxController {
     if (prev != null && next != null && prev != next.status) {
       Utils.getSnakBar(message: 'status.${next.status.key}'.tr, type: TosterTypes.sucsses);
     }
-  }
-
-  void openQr() {
-    final o = order.value;
-    if (o == null || !o.showsQr) return;
-    Get.dialog(QrFullscreen(code: o.code, number: o.number), useSafeArea: false);
   }
 
   void openCancel() {

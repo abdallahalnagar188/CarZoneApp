@@ -329,7 +329,7 @@ class _SlotCard extends StatelessWidget {
               border: isSelected
                   ? Border.all(color: AppColors.brandSky, width: 1.5)
                   : Border.all(color: AppColors.line, width: 1.4),
-              boxShadow: isSelected ? AppColors.buttonShadow : AppColors.softShadow,
+              boxShadow: isSelected ? null : AppColors.softShadow,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

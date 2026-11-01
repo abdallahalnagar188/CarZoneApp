@@ -120,7 +120,7 @@ class OrderModel {
   List<OrderItem> get addons =>
       items.where((i) => i.type == ServiceType.addon).toList();
 
-  bool get showsQr => const [
+  bool get showsCode => const [
         OrderStatus.confirmed,
         OrderStatus.waiting,
         OrderStatus.inService,

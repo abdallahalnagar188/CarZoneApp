@@ -12,7 +12,7 @@ import '../../../../core/helpers/format_helper.dart';
 import '../../../booking/presentaion/widgets/summary_section.dart';
 import '../controllers/booking_details_controller.dart';
 import '../widgets/booking_actions.dart';
-import '../widgets/qr_card.dart';
+import '../widgets/access_code_card.dart';
 import '../widgets/service_progress_card.dart';
 import '../widgets/status_timeline.dart';
 
@@ -72,7 +72,7 @@ class BookingDetailsPage extends StatelessWidget {
               12.height,
             ],
             if (order.status.isUpcoming) ...[
-              QrCard(order: order, onTap: controller.openQr),
+              AccessCodeCard(order: order),
               12.height,
             ],
             Text('book.timeline'.tr, style: theme.titleLarge),

@@ -42,7 +42,6 @@ class DateStrip extends StatelessWidget {
                   color: on ? null : AppColors.surface,
                   borderRadius: BorderRadius.circular(20.r),
                   border: on ? null : Border.all(color: AppColors.line, width: 1.5),
-                  boxShadow: on ? AppColors.buttonShadow : null,
                 ),
                 child: Opacity(
                   opacity: closed ? 0.4 : 1,
