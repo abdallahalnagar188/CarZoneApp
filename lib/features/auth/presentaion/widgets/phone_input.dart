@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../controllers/auth_controller.dart';
+import 'country_picker.dart';
 
 class PhoneInput extends StatefulWidget {
   const PhoneInput({super.key});
@@ -62,7 +63,7 @@ class _PhoneInputState extends State<PhoneInput> {
         ),
         10.height,
         // RTL container row
-        Row(
+        Obx(() => Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
            
@@ -96,12 +97,11 @@ class _PhoneInputState extends State<PhoneInput> {
                     controller: controller.phoneController,
                     focusNode: _focusNode,
                     keyboardType: TextInputType.phone,
-                    maxLength: 11,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => controller.sendCode(),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(11),
+                      LengthLimitingTextInputFormatter(15),
                     ],
                     style: theme.titleMedium?.copyWith(
                       color: AppColors.ink900,
@@ -112,7 +112,7 @@ class _PhoneInputState extends State<PhoneInput> {
                     cursorColor: AppColors.primary,
                     cursorWidth: 2.2,
                     decoration: InputDecoration(
-                      hintText: '010 1234 5678',
+                      hintText: controller.country.value.example,
                       hintStyle: theme.bodyMedium?.copyWith(
                         color: AppColors.hintGray,
                         letterSpacing: 0.8,
@@ -132,49 +132,65 @@ class _PhoneInputState extends State<PhoneInput> {
             ),
             10.width,
 
-             // Country Code Container (+20)
-            Container(
-              height: 56.h,
-              padding: EdgeInsets.symmetric(horizontal: 14.w),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.primarySoft,
+            // Country picker
+            Semantics(
+              button: true,
+              label: 'phone.country'.tr,
+              child: InkWell(
+                onTap: () async {
+                  final picked = await pickPhoneCountry(controller.country.value);
+                  if (picked != null) controller.country.value = picked;
+                },
                 borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(
-                  color: _isFocused ? AppColors.primary.withValues(alpha: 0.5) : AppColors.line,
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                child: Container(
+                  height: 56.h,
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: _isFocused ? AppColors.primary.withValues(alpha: 0.5) : AppColors.line,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '🇪🇬',
-                    style: TextStyle(fontSize: 16.sp),
-                  ),
-                  6.width,
-                  Text(
-                    '+20',
-                    style: theme.titleMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15.sp,
-                      letterSpacing: 0.5,
+                  child: Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          controller.country.value.flag,
+                          style: TextStyle(fontSize: 18.sp),
+                        ),
+                        6.width,
+                        Text(
+                          controller.country.value.dialCode,
+                          style: theme.titleMedium?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15.sp,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        2.width,
+                        Icon(Iconsax.arrow_down_1, size: 14.sp, color: AppColors.primary),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
       
           ],
-        ),
+        )),
       ],
     );
   }

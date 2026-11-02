@@ -1,4 +1,11 @@
-// Supabase Auth "Send SMS" hook: delivers the OTP over the WhatsApp Cloud API.
+// Supabase Auth "Send SMS" hook: delivers the OTP over WhatsApp.
+//
+// Provider (WHATSAPP_PROVIDER):
+// - "meta" (default): WhatsApp Cloud API with WHATSAPP_ACCESS_TOKEN and
+//   WHATSAPP_PHONE_NUMBER_ID, optionally an approved WHATSAPP_TEMPLATE_NAME.
+// - "wapilot": a QR-linked Wapilot instance with WAPILOT_TOKEN and
+//   WAPILOT_INSTANCE_ID. The webhook id is sent as the Idempotency-Key so a
+//   retried hook call does not send the code twice.
 //
 // Security (QA-C2, QA-M13):
 // - Fails closed: every request must carry a valid Standard Webhooks signature
@@ -59,11 +66,13 @@ export async function handleSendSms(
     return hookError(400, "Invalid phone or OTP");
   }
 
-  const whatsappToken = env("WHATSAPP_ACCESS_TOKEN");
-  const phoneNumberId = env("WHATSAPP_PHONE_NUMBER_ID");
-  const templateName = env("WHATSAPP_TEMPLATE_NAME");
+  const provider = env("WHATSAPP_PROVIDER") === "wapilot" ? "wapilot" : "meta";
+  const to = phone.replace(/\D/g, "");
+  const delivery = provider === "wapilot"
+    ? wapilotRequest(env, to, otp, req.headers.get("webhook-id"))
+    : metaRequest(env, to, otp);
 
-  if (!whatsappToken || !phoneNumberId) {
+  if (!delivery) {
     if (env("SMS_DEV_SIMULATION") === "true") {
       console.log(`[send-sms] DEV SIMULATION: OTP for ${maskPhone(phone)} not sent (credentials missing)`);
       return json(200, { simulated: true });
@@ -72,7 +81,42 @@ export async function handleSendSms(
     return hookError(500, "SMS provider is not configured");
   }
 
-  const to = phone.replace(/\D/g, "");
+  try {
+    const res = await fetchImpl(delivery.url, {
+      method: "POST",
+      headers: { ...delivery.headers, "Content-Type": "application/json" },
+      body: JSON.stringify(delivery.body),
+    });
+    const detail = await res.text().catch(() => "");
+    // Wapilot can answer 200 with success: false, so the body decides too.
+    if (!res.ok || /"success"\s*:\s*false/.test(detail)) {
+      const safe = detail.replaceAll(otp, "••••").replaceAll(to, maskPhone(to)).slice(0, 500);
+      console.error(`[send-sms] ${provider} API ${res.status} for ${maskPhone(phone)}: ${safe}`);
+      return hookError(502, "Failed to deliver verification code");
+    }
+  } catch (err) {
+    console.error(`[send-sms] ${provider} API unreachable for ${maskPhone(phone)}:`, err);
+    return hookError(502, "Failed to deliver verification code");
+  }
+
+  console.log(`[send-sms] OTP delivered to ${maskPhone(phone)} via ${provider}`);
+  return json(200, {});
+}
+
+interface Delivery {
+  url: string;
+  headers: Record<string, string>;
+  body: unknown;
+}
+
+const otpText = (otp: string) => `رمز التحقق الخاص بك في Wash Up هو: ${otp}\nلا تشارك هذا الرمز مع أي شخص.`;
+
+function metaRequest(env: Env, to: string, otp: string): Delivery | null {
+  const whatsappToken = env("WHATSAPP_ACCESS_TOKEN");
+  const phoneNumberId = env("WHATSAPP_PHONE_NUMBER_ID");
+  const templateName = env("WHATSAPP_TEMPLATE_NAME");
+  if (!whatsappToken || !phoneNumberId) return null;
+
   const body = templateName
     ? {
       messaging_product: "whatsapp",
@@ -93,28 +137,24 @@ export async function handleSendSms(
       recipient_type: "individual",
       to,
       type: "text",
-      text: {
-        preview_url: false,
-        body: `رمز التحقق الخاص بك في Wash Up هو: ${otp}\nلا تشارك هذا الرمز مع أي شخص.`,
-      },
+      text: { preview_url: false, body: otpText(otp) },
     };
 
-  try {
-    const res = await fetchImpl(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${whatsappToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error(`[send-sms] WhatsApp API ${res.status} for ${maskPhone(phone)}: ${detail.slice(0, 500)}`);
-      return hookError(502, "Failed to deliver verification code");
-    }
-  } catch (err) {
-    console.error(`[send-sms] WhatsApp API unreachable for ${maskPhone(phone)}:`, err);
-    return hookError(502, "Failed to deliver verification code");
-  }
+  return {
+    url: `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+    headers: { Authorization: `Bearer ${whatsappToken}` },
+    body,
+  };
+}
 
-  console.log(`[send-sms] OTP delivered to ${maskPhone(phone)}`);
-  return json(200, {});
+function wapilotRequest(env: Env, to: string, otp: string, webhookId: string | null): Delivery | null {
+  const token = env("WAPILOT_TOKEN");
+  const instanceId = env("WAPILOT_INSTANCE_ID");
+  if (!token || !instanceId) return null;
+
+  return {
+    url: `https://api.wapilot.net/api/v2/${encodeURIComponent(instanceId)}/send-message`,
+    headers: { token, ...(webhookId ? { "Idempotency-Key": `otp-${webhookId}` } : {}) },
+    body: { chat_id: `${to}@c.us`, text: otpText(otp) },
+  };
 }

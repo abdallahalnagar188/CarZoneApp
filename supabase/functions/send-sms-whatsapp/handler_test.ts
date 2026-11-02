@@ -144,6 +144,56 @@ Deno.test("OTP never appears in logs", async () => {
   assert(lines.every((l) => !l.includes("201001234567")), "full phone number logged");
 });
 
+const WAPILOT_ENV = { WHATSAPP_PROVIDER: "wapilot", WAPILOT_TOKEN: "wp-token", WAPILOT_INSTANCE_ID: "instance6098" };
+
+Deno.test("wapilot provider sends the OTP text to the QR instance", async () => {
+  const calls: { url: string; headers: Headers; body: any }[] = [];
+  const impl = (async (url: string | URL | Request, init?: RequestInit) => {
+    calls.push({ url: String(url), headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) });
+    return new Response(JSON.stringify({ success: true, message_id: "m1" }), { status: 200 });
+  }) as typeof fetch;
+  const req = signedRequest(good);
+  const res = await handleSendSms(req, envOf(WAPILOT_ENV), impl);
+  assertEquals(res.status, 200);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].url, "https://api.wapilot.net/api/v2/instance6098/send-message");
+  assertEquals(calls[0].headers.get("token"), "wp-token");
+  assertEquals(calls[0].headers.get("idempotency-key"), `otp-${req.headers.get("webhook-id")}`);
+  assertEquals(calls[0].body.chat_id, "201001234567@c.us");
+  assert(calls[0].body.text.includes("123456"));
+});
+
+Deno.test("wapilot success: false is treated as a failed delivery", async () => {
+  const impl = (async () =>
+    new Response(JSON.stringify({ success: false, code: "INSTANCE_NOT_READY" }), { status: 200 })) as typeof fetch;
+  const res = await handleSendSms(signedRequest(good), envOf(WAPILOT_ENV), impl);
+  assertEquals(res.status, 502);
+});
+
+Deno.test("wapilot without its credentials is an error, not a fallback to Meta", async () => {
+  const { impl, calls } = stubFetch();
+  const res = await handleSendSms(signedRequest(good), envOf({ ...WAPILOT_ENV, WAPILOT_TOKEN: undefined }), impl);
+  assertEquals(res.status, 500);
+  assertEquals(calls.length, 0);
+});
+
+Deno.test("provider error echoing the OTP or phone is scrubbed from logs", async () => {
+  const lines: string[] = [];
+  const orig = console.error;
+  console.error = (...a: unknown[]) => void lines.push(a.map(String).join(" "));
+  try {
+    const impl = (async () =>
+      new Response(JSON.stringify({ success: false, chat_id: "201001234567@c.us", text: "code 123456" }), {
+        status: 422,
+      })) as typeof fetch;
+    await handleSendSms(signedRequest(good), envOf(WAPILOT_ENV), impl);
+  } finally {
+    console.error = orig;
+  }
+  assert(lines.length > 0);
+  assert(lines.every((l) => !l.includes("123456") && !l.includes("201001234567")), lines.join("\n"));
+});
+
 Deno.test("maskPhone keeps only the last 3 digits", () => {
   assertEquals(maskPhone("+201001234567"), "+•••••••••567");
 });
