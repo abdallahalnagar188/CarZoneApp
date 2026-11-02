@@ -108,14 +108,4 @@ class FormatHelper {
     final parts = hhmm.split(':').map(int.parse).toList();
     return parts[0] * 60 + parts[1];
   }
-
-  static String? parseEgPhone(String input) {
-    var digits = input.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('20') && digits.length == 12) {
-      digits = digits.substring(2);
-    }
-    if (digits.startsWith('0')) digits = digits.substring(1);
-    if (!RegExp(r'^1[0125]\d{8}$').hasMatch(digits)) return null;
-    return '+20 ${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}';
-  }
 }

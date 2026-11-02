@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../commons/models/customer_model.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
-import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/helpers/phone_helper.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/session_service.dart';
@@ -22,6 +22,7 @@ class AuthController extends GetxController {
   final nameController = TextEditingController();
   final otpController = TextEditingController();
 
+  final country = PhoneHelper.defaultCountry.obs;
   final phoneError = RxnString();
   final otpError = RxnString();
   final nameError = RxnString();
@@ -33,7 +34,7 @@ class AuthController extends GetxController {
   final resendIn = 0.obs;
   final lockedFor = 0.obs;
 
-  /// Pretty-formatted Egyptian phone e.g. "+20 100 123 4567"
+  /// Pretty-formatted phone e.g. "+20 100 123 4567"
   String phone = '';
 
   /// E.164 phone number e.g. "+201001234567" (for Supabase Auth)
@@ -177,21 +178,24 @@ class AuthController extends GetxController {
     final rawInput = phoneController.text.trim();
     if (rawInput.isEmpty) {
       phoneError.value = null;
-      Utils.getSnakBar(message: 'login.bad'.tr, type: TosterTypes.failed);
+      Utils.getSnakBar(message: 'login.bad'.trParams({'example': country.value.exampleLtr}), type: TosterTypes.failed);
       return;
     }
 
-    final pretty = FormatHelper.parseEgPhone(rawInput);
-    if (pretty == null) {
+    final parsed = PhoneHelper.parse(rawInput, country.value);
+    if (parsed == null) {
       phoneError.value = null;
-      Utils.getSnakBar(message: 'login.bad'.tr, type: TosterTypes.failed);
+      Utils.getSnakBar(
+        message: 'login.bad'.trParams({'example': country.value.exampleLtr}),
+        type: TosterTypes.failed,
+      );
       return;
     }
 
     phoneError.value = null;
-    phone = pretty;
-    // Convert pretty "+20 100 123 4567" to E.164 "+201001234567"
-    _e164Phone = pretty.replaceAll(' ', '');
+    country.value = parsed.country;
+    phone = parsed.pretty;
+    _e164Phone = parsed.e164;
 
     sending.value = true;
     final error = await _repo.sendOtp(_e164Phone);
@@ -209,7 +213,7 @@ class AuthController extends GetxController {
     _startTimer(resend: 30);
     Get.toNamed(Routes.otpRoute);
     Utils.getSnakBar(
-      message: 'otp.sent'.trParams({'phone': phone}),
+      message: 'otp.sent'.trParams({'phone': '\u2066$phone\u2069'}),
       type: TosterTypes.sucsses,
     );
   }
@@ -238,7 +242,7 @@ class AuthController extends GetxController {
     _otpVerified = false;
     _startTimer(resend: 30);
     Utils.getSnakBar(
-      message: 'otp.sent'.trParams({'phone': phone}),
+      message: 'otp.sent'.trParams({'phone': '\u2066$phone\u2069'}),
       type: TosterTypes.sucsses,
     );
   }
@@ -351,13 +355,17 @@ class AuthController extends GetxController {
 
     if (effectivePhone.isEmpty) {
       final input = phoneController.text.trim();
-      final parsed = FormatHelper.parseEgPhone(input);
+      final parsed = PhoneHelper.parse(input, country.value);
       if (parsed == null) {
         phoneError.value = null;
-        Utils.getSnakBar(message: 'login.bad'.tr, type: TosterTypes.warning);
+        Utils.getSnakBar(
+          message: 'login.bad'.trParams({'example': country.value.exampleLtr}),
+          type: TosterTypes.warning,
+        );
         return;
       }
-      effectivePhone = parsed.replaceAll(' ', '');
+      country.value = parsed.country;
+      effectivePhone = parsed.e164;
     }
 
     final token = _repo.currentSessionToken;
