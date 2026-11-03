@@ -26,6 +26,7 @@ class MyAppTheme {
       useMaterial3: true,
       fontFamily: fontFamily,
       brightness: brightness,
+      typography: MyAppTextTheme.typography(),
       textTheme: MyAppTextTheme.textThemeFor(brightness).apply(fontFamily: fontFamily),
       primaryColor: primary,
       hintColor: isDark ? const Color(0xFF8D9BB5) : const Color(0xFF5B6B85),
