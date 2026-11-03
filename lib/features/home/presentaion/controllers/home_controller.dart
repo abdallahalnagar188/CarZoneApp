@@ -18,9 +18,10 @@ import '../widgets/area_picker_sheet.dart';
 
 class HomeCategory {
   final String id;
-  final int? from;
+  final String name;
+  final num? from;
 
-  const HomeCategory(this.id, this.from);
+  const HomeCategory(this.id, this.name, this.from);
 }
 
 class HomeController extends GetxController {
@@ -44,8 +45,6 @@ class HomeController extends GetxController {
   /// Why the last catalog fetch failed; null after a successful one.
   String? get syncError => _db.hasError.value ? _db.errorMessage.value : null;
 
-  static const categoryIds = ['exterior', 'interior', 'full', 'deep'];
-
   @override
   void onInit() {
     super.onInit();
@@ -58,11 +57,22 @@ class HomeController extends GetxController {
       _db.orders,
       _db.reviews,
       _db.notifications,
+      _db.categories,
       session.user,
       session.areaId,
       session.position,
+      session.countryCode,
     ], (_) => _compute());
+    // Another place means other washes: fetch the ones nearest to it.
+    debounce<Object?>(_place, (_) => refreshHome(), time: const Duration(milliseconds: 400));
+    everAll([session.areaId, session.position, session.countryCode], (_) => _place.value = Object());
   }
+
+  final _place = Rxn<Object>();
+
+  /// Washes in the country being browsed: branches from elsewhere stay cached
+  /// (an open booking may need them) but are not offered on this screen.
+  bool _inCountry(String branchId) => _db.countryOfBranch(branchId).code == session.countryCode.value;
 
   Future<void> load() async {
     loading.value = true;
@@ -85,17 +95,24 @@ class HomeController extends GetxController {
 
   void _compute() {
     nearby.assignAll(
-      _discovery.apply(_discovery.listings(), const DiscoveryFilters()).take(8),
+      _discovery
+          .apply(_discovery.listings().where((r) => _inCountry(r.branch.id)).toList(), const DiscoveryFilters())
+          .take(8),
     );
-    categories.assignAll(categoryIds.map((id) {
+    categories.assignAll(_db.categories.map((c) {
       final prices = _db.services
-          .where((s) => s.category == id && s.isPrimary && (_db.branch(s.branchId)?.bookable ?? false))
+          .where((s) =>
+              s.category == c.id && s.isPrimary && (_db.branch(s.branchId)?.bookable ?? false) && _inCountry(s.branchId))
           .map((s) => s.price)
           .toList()
         ..sort();
-      return HomeCategory(id, prices.isEmpty ? null : prices.first);
+      return HomeCategory(c.id, c.name.value, prices.isEmpty ? null : prices.first);
     }));
-    offers.assignAll(_pricing.liveOffers().take(6));
+    // Offers of washes in this country; Wash Up's own offers only where it has washes.
+    offers.assignAll(_pricing
+        .liveOffers()
+        .where((o) => o.platform || o.branchIds.isEmpty ? nearby.isNotEmpty : o.branchIds.any(_inCountry))
+        .take(6));
     final uid = session.userId;
     final now = DateTime.now();
     activeOrder.value = uid == null
@@ -141,8 +158,9 @@ class HomeController extends GetxController {
   void openOffers() => Get.toNamed(Routes.offersRoute);
 
   void openOffer(OfferModel offer) {
-    final defaultId = nearby.firstOrNull?.branch.id ?? 'br_nasr';
-    final targetId = offer.platform ? defaultId : (offer.branchIds.firstOrNull ?? defaultId);
+    final targetId = offer.platform ? nearby.firstOrNull?.branch.id : (offer.branchIds.firstOrNull ?? nearby.firstOrNull?.branch.id);
+    // A platform offer with no wash near the customer: the offers list explains it.
+    if (targetId == null) return openOffers();
     Get.toNamed(Routes.washDetailsRoute, arguments: targetId);
   }
 
@@ -172,6 +190,11 @@ class HomeController extends GetxController {
 
   Future<void> selectArea(String id) async {
     await session.setArea(id);
+    Get.back();
+  }
+
+  Future<void> selectCountry(String code) async {
+    await session.setCountry(code);
     Get.back();
   }
 }

@@ -2,7 +2,10 @@ import 'dart:math' as math;
 
 import 'package:get/get.dart';
 
+import '../../commons/models/country_model.dart';
 import '../services/availability_service.dart';
+import '../services/session_service.dart';
+import '../services/washup_db_service.dart';
 
 class FormatHelper {
   FormatHelper._();
@@ -22,35 +25,45 @@ class FormatHelper {
 
   static bool get isAr => (Get.locale?.languageCode ?? 'ar') == 'ar';
 
-  static String money(num amount) {
-    final n = amount.round().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (_) => ',',
-        );
-    return isAr ? '$n ج.م' : '$n EGP';
+  /// [amount] in the currency of [branchId]'s country, or of the country
+  /// being browsed when there is no branch. Whole amounts drop the decimals;
+  /// others keep as many as the currency has (3 for the Kuwaiti dinar).
+  static String money(num amount, {String? branchId}) {
+    final db = Get.isRegistered<WashUpDbService>() ? Get.find<WashUpDbService>() : null;
+    final country = branchId != null && db != null
+        ? db.countryOfBranch(branchId)
+        : Get.isRegistered<SessionService>()
+            ? Get.find<SessionService>().country
+            : CountryModel.egypt;
+    final whole = amount == amount.roundToDouble();
+    final fixed = whole ? amount.round().toString() : amount.toStringAsFixed(math.max(country.currencyDecimals, 1));
+    final parts = fixed.split('.');
+    final n = parts.first.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    final text = parts.length > 1 ? '$n.${parts[1]}' : n;
+    return '$text ${country.currencySymbol.value}';
   }
 
-  static String time(DateTime d) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+  static String time(DateTime d, {String? timezone}) {
+    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
     final pm = local.hour >= 12;
     final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
     final m = local.minute.toString().padLeft(2, '0');
     return isAr ? '$h:$m ${pm ? 'م' : 'ص'}' : '$h:$m ${pm ? 'PM' : 'AM'}';
   }
 
-  static String dayName(DateTime d) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+  static String dayName(DateTime d, {String? timezone}) {
+    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
     return isAr ? _arDays[local.weekday - 1] : _enDays[local.weekday - 1];
   }
 
-  static String date(DateTime d) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+  static String date(DateTime d, {String? timezone}) {
+    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
     final month = isAr ? _arMonths[local.month - 1] : _enMonths[local.month - 1];
     return '${dayName(local)} ${local.day} $month';
   }
 
-  static String shortDate(DateTime d) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.cairoOffset(d)) : d;
+  static String shortDate(DateTime d, {String? timezone}) {
+    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
     final month = isAr ? _arMonths[local.month - 1] : _enMonths[local.month - 1];
     return '${local.day} $month';
   }

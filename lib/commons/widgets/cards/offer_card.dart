@@ -27,7 +27,14 @@ class OfferCard extends StatelessWidget {
 
   String get _badge => offer.discountType == DiscountType.percent
       ? '${offer.discountValue}%'
-      : FormatHelper.money(offer.discountValue);
+      : FormatHelper.money(offer.discountValue, branchId: offer.branchIds.firstOrNull);
+
+  bool get _titleRepeatsBadge {
+    String digits(String s) => FormatHelper.latinDigits(s).replaceAll(RegExp(r'[^0-9.]'), '');
+    final title = offer.title.value.trim();
+    return title.isEmpty ||
+        (RegExp(r'^[\d٠-٩.\s%٪]+$').hasMatch(title) && digits(title) == digits('${offer.discountValue}'));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,13 +77,16 @@ class OfferCard extends StatelessWidget {
                     'offers.off'.trParams({'v': _badge}),
                     style: theme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
-                  2.height,
-                  Text(
-                    offer.title.value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.titleSmall?.copyWith(color: Colors.white),
-                  ),
+                  // A title that only repeats the discount ("20%") adds nothing.
+                  if (!_titleRepeatsBadge) ...[
+                    2.height,
+                    Text(
+                      offer.title.value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.titleSmall?.copyWith(color: Colors.white),
+                    ),
+                  ],
                   Text(
                     washName,
                     maxLines: 1,

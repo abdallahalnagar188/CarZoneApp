@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../../core/utils/system_ui.dart';
 import '../../../../commons/widgets/common_widgets.dart';
@@ -55,7 +56,16 @@ class HomePage extends StatelessWidget {
               child: Obx(() {
                 final empty = controller.nearby.isEmpty;
                 if (empty && !controller.loading.value && !controller.syncing && controller.syncError == null) {
-                  return const SizedBox.shrink();
+                  // Nothing here yet (a new country): say so, and offer another place.
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 0),
+                    child: CustomEmptyState(
+                      icon: Iconsax.location_cross,
+                      title: 'home.noWashesHere'.trParams({'place': controller.session.locationLabel}),
+                      actionText: 'home.changePlace'.tr,
+                      onAction: controller.pickArea,
+                    ),
+                  );
                 }
                 return Column(
                   children: [

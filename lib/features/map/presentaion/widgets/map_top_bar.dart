@@ -50,7 +50,7 @@ class MapTopBar extends StatelessWidget {
                                 6.width,
                                 Obx(
                                   () => Text(
-                                    controller.session.area.name.value,
+                                    controller.session.locationLabel,
                                     style: theme.labelLarge?.copyWith(color: Colors.white),
                                   ),
                                 ),

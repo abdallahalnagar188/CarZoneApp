@@ -13,6 +13,35 @@ import 'supabase_service.dart';
 class BranchTimeHelper {
   BranchTimeHelper._();
 
+  /// Standard UTC offsets of the Arab countries' time zones. Only Egypt,
+  /// Lebanon and Palestine change their clocks; their rules are below.
+  static const _fixedHours = {
+    'Asia/Riyadh': 3, 'Asia/Kuwait': 3, 'Asia/Qatar': 3, 'Asia/Bahrain': 3, 'Asia/Baghdad': 3,
+    'Asia/Amman': 3, 'Asia/Damascus': 3, 'Asia/Aden': 3, 'Africa/Mogadishu': 3, 'Africa/Djibouti': 3,
+    'Indian/Comoro': 3, 'Asia/Dubai': 4, 'Asia/Muscat': 4, 'Africa/Tripoli': 2, 'Africa/Khartoum': 2,
+    'Africa/Tunis': 1, 'Africa/Algiers': 1, 'Africa/Casablanca': 1, 'Africa/Nouakchott': 0,
+  };
+
+  /// UTC offset of [timezone] at [date] (now by default); Cairo for an unknown zone.
+  static Duration offsetFor(String? timezone, [DateTime? date]) {
+    final fixed = _fixedHours[timezone];
+    if (fixed != null) return Duration(hours: fixed);
+    if (timezone == 'Asia/Beirut' || timezone == 'Asia/Hebron' || timezone == 'Asia/Gaza') {
+      // Summer time from the last Sunday of March to the last Sunday of October.
+      final d = (date ?? DateTime.now()).toUtc();
+      DateTime lastSunday(int month, int lastDay) {
+        var day = lastDay;
+        while (DateTime.utc(d.year, month, day).weekday != DateTime.sunday) {
+          day--;
+        }
+        return DateTime.utc(d.year, month, day);
+      }
+      final summer = d.isAfter(lastSunday(3, 31)) && d.isBefore(lastSunday(10, 31));
+      return Duration(hours: summer ? 3 : 2);
+    }
+    return cairoOffset(date);
+  }
+
   /// Computes Egypt / Cairo timezone offset for [date] (defaults to current instant).
   /// Egypt DST: Starts last Friday of April, ends last Thursday of October (UTC+3 summer, UTC+2 winter).
   static Duration cairoOffset([DateTime? date]) {
@@ -44,9 +73,9 @@ class BranchTimeHelper {
   }
 
   /// Converts a branch local wall-clock [DateTime] or [slot] to UTC [DateTime]
-  static DateTime toUtcDateTime(DateTime slot) {
+  static DateTime toUtcDateTime(DateTime slot, {String? timezone}) {
     if (slot.isUtc) return slot;
-    final offset = cairoOffset(slot);
+    final offset = offsetFor(timezone, slot);
     return DateTime.utc(slot.year, slot.month, slot.day, slot.hour, slot.minute).subtract(offset);
   }
 
@@ -135,7 +164,7 @@ class AvailabilityService {
     final result = <SlotModel>[];
     for (var m = open; m + durationMin <= close; m += branch.settings.slotIntervalMin) {
       final slotLocal = DateTime(day.year, day.month, day.day, m ~/ 60, m % 60);
-      final slotUtc = BranchTimeHelper.toUtcDateTime(slotLocal);
+      final slotUtc = BranchTimeHelper.toUtcDateTime(slotLocal, timezone: _db.countryOfBranch(branch.id).timezone);
       if (BranchTimeHelper.isSlotTooSoon(slotUtc, branch.settings.bookingLeadMin)) continue;
 
       final endUtc = slotUtc.add(Duration(minutes: durationMin));

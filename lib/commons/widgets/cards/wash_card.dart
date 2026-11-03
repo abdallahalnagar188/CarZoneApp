@@ -174,7 +174,7 @@ class WashCard extends StatelessWidget {
                       const Spacer(),
                       if (row.fromPrice != null)
                         Text(
-                          FormatHelper.money(row.fromPrice!),
+                          FormatHelper.money(row.fromPrice!, branchId: row.branch.id),
                           style: theme.titleMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
                         ),
                     ],

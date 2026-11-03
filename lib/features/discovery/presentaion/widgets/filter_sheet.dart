@@ -18,6 +18,9 @@ class FilterSheet extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     return Obx(() {
       final f = controller.draft.value;
+      final range = controller.priceRange;
+      final lo = range == null ? 0.0 : (f.priceMin ?? range.min).clamp(range.min, range.max);
+      final hi = range == null ? 0.0 : (f.priceMax ?? range.max).clamp(range.min, range.max);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -33,7 +36,7 @@ class FilterSheet extends StatelessWidget {
                 selected: f.maxKm == null,
                 onTap: () => controller.updateDraft(f.copyWith(maxKm: () => null)),
               ),
-              for (final km in [1.0, 3.0, 5.0, 10.0])
+              for (final km in [1.0, 3.0, 5.0, 10.0, 20.0])
                 AppChip(
                   label: FormatHelper.distance(km),
                   flat: true,
@@ -63,25 +66,32 @@ class FilterSheet extends StatelessWidget {
                 ),
             ],
           ),
-          20.height,
-          Row(
-            children: [
-              Expanded(child: Text('f.price'.tr, style: theme.titleSmall)),
-              Text(
-                '${FormatHelper.money(f.priceMin)} – ${FormatHelper.money(f.priceMax)}',
-                style: theme.labelMedium?.copyWith(color: AppColors.primary),
-              ),
-            ],
-          ),
-          RangeSlider(
-            values: RangeValues(f.priceMin, f.priceMax),
-            min: 0,
-            max: 500,
-            divisions: 20,
-            activeColor: AppColors.primary,
-            inactiveColor: AppColors.primarySoft2,
-            onChanged: (v) => controller.updateDraft(f.copyWith(priceMin: v.start, priceMax: v.end)),
-          ),
+          // The range is the results' own prices, in the browsed country's currency.
+          if (range != null) ...[
+            20.height,
+            Row(
+              children: [
+                Expanded(child: Text('f.price'.tr, style: theme.titleSmall)),
+                Text(
+                  '${FormatHelper.money(lo)} – ${FormatHelper.money(hi)}',
+                  style: theme.labelMedium?.copyWith(color: AppColors.primary),
+                ),
+              ],
+            ),
+            RangeSlider(
+              values: RangeValues(lo, hi),
+              min: range.min,
+              max: range.max,
+              divisions: ((range.max - range.min) / _step(range)).round().clamp(1, 40),
+              activeColor: AppColors.primary,
+              inactiveColor: AppColors.primarySoft2,
+              // A handle back at the edge means no bound on that side.
+              onChanged: (v) => controller.updateDraft(f.copyWith(
+                priceMin: () => v.start <= range.min ? null : v.start,
+                priceMax: () => v.end >= range.max ? null : v.end,
+              )),
+            ),
+          ],
           8.height,
           _SwitchRow(
             label: 'f.open'.tr,
@@ -129,6 +139,14 @@ class FilterSheet extends StatelessWidget {
       );
     });
   }
+}
+
+/// Slider steps: tens for a wide range, ones for a narrow one (dinars).
+double _step(({double min, double max}) range) {
+  final span = range.max - range.min;
+  if (span >= 200) return 10;
+  if (span >= 40) return 5;
+  return 1;
 }
 
 class _SwitchRow extends StatelessWidget {

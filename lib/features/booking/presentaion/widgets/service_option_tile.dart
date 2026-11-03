@@ -64,7 +64,7 @@ class ServiceOptionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  FormatHelper.money(service.price),
+                  FormatHelper.money(service.price, branchId: service.branchId),
                   style: theme.titleMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
                 ),
                 4.height,
@@ -119,7 +119,7 @@ class AddonTile extends StatelessWidget {
             ),
             12.width,
             Expanded(child: Text(service.name.value, style: theme.bodyLarge)),
-            Text('+${FormatHelper.money(service.price)}', style: theme.titleSmall),
+            Text('+${FormatHelper.money(service.price, branchId: service.branchId)}', style: theme.titleSmall),
           ],
         ),
       ),

@@ -133,7 +133,7 @@ class _BranchCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          row.fromPrice == null ? '' : FormatHelper.money(row.fromPrice!),
+                          row.fromPrice == null ? '' : FormatHelper.money(row.fromPrice!, branchId: row.branch.id),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.titleMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),

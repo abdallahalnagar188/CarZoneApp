@@ -2,9 +2,11 @@ import 'dart:developer' as dev;
 
 import 'package:get/get.dart';
 
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../commons/models/area_model.dart';
+import '../../commons/models/country_model.dart';
 import '../../commons/models/customer_model.dart';
 import '../enums/enums.dart';
 import '../local/cache_controller.dart';
@@ -15,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../helpers/auth_guard.dart';
 import '../helpers/format_helper.dart';
+import '../helpers/phone_helper.dart';
 import '../routing/app_routes.dart';
 import '../../features/auth/presentaion/controllers/auth_controller.dart';
 
@@ -27,10 +30,22 @@ import 'supabase_service.dart';
 class SessionService extends GetxService {
   final user = Rxn<CustomerModel>();
   final userToken = RxnString();
-  final areaId = 'nasr'.obs;
+  /// The area picked (or found near the customer); empty to browse around the
+  /// position, or the country's centre, with no area.
+  final areaId = ''.obs;
+
+  /// The country browsed: from the location, an area or country pick, or the
+  /// customer's phone number, in that order.
+  final countryCode = 'EG'.obs;
+
+  /// The town the location is in, shown when no area of ours is near it.
+  final placeName = RxnString();
 
   /// Real device position; null until located or after a manual area pick.
   final position = Rxn<Position>();
+
+  /// An area further than this from the customer is not "their" area.
+  static const _areaRadiusKm = 25.0;
 
   String? returnRoute;
   dynamic returnArguments;
@@ -44,11 +59,16 @@ class SessionService extends GetxService {
 
   String? get accessToken => userToken.value;
 
-  AreaModel get area => _db.area(areaId.value);
+  AreaModel? get area => _db.area(areaId.value.isEmpty ? null : areaId.value);
 
-  double get lat => position.value?.latitude ?? area.lat;
+  CountryModel get country => _db.country(countryCode.value);
 
-  double get lng => position.value?.longitude ?? area.lng;
+  double get lat => position.value?.latitude ?? area?.lat ?? country.lat;
+
+  double get lng => position.value?.longitude ?? area?.lng ?? country.lng;
+
+  /// What the header shows: the area, else the town, else the country.
+  String get locationLabel => area?.name.value ?? placeName.value ?? country.name.value;
 
   SessionService init() {
     ensureValidSession();
@@ -113,6 +133,17 @@ class SessionService extends GetxService {
 
     final cachedArea = CacheController().getter(key: CacheKeys.areaId);
     if (cachedArea is String) areaId.value = cachedArea;
+    final cachedCountry = CacheController().getter(key: CacheKeys.countryCode);
+    if (cachedCountry is String && cachedCountry.isNotEmpty) {
+      countryCode.value = cachedCountry;
+    } else {
+      // Until a location or a pick says otherwise, the phone number's country.
+      ever(user, (u) {
+        final c = u == null ? null : PhoneHelper.fromE164(u.phone);
+        if (c != null && CacheController().getter(key: CacheKeys.countryCode) == null) countryCode.value = c.iso.name;
+      });
+    }
+    _db.origin = () => (lat: lat, lng: lng, country: countryCode.value);
     locate();
     return this;
   }
@@ -312,10 +343,21 @@ class SessionService extends GetxService {
     }
   }
 
-  /// Manual area pick: drops the device position so the area center is used.
+  /// Manual area pick: drops the device position so the area centre is used.
   Future<void> setArea(String id) async {
     position.value = null;
+    placeName.value = null;
+    final a = _db.area(id);
+    if (a != null) await _saveCountry(a.countryCode);
     await _saveArea(id);
+  }
+
+  /// Manual country pick: no area, the country's centre until one is picked.
+  Future<void> setCountry(String code) async {
+    position.value = null;
+    placeName.value = null;
+    await _saveArea('');
+    await _saveCountry(code);
   }
 
   Future<void> _saveArea(String id) async {
@@ -323,25 +365,57 @@ class SessionService extends GetxService {
     await CacheController().setter(key: CacheKeys.areaId, value: id);
   }
 
-  /// Uses the device's real location and switches to the nearest area.
+  Future<void> _saveCountry(String code) async {
+    countryCode.value = code;
+    await CacheController().setter(key: CacheKeys.countryCode, value: code);
+  }
+
+  /// Uses the device's real location: its country, and our nearest area when
+  /// one is close enough; otherwise the town's name.
   Future<bool> locate({bool request = true}) async {
     final pos = await LocationService.current(request: request);
     if (pos == null) return false;
     position.value = pos;
     if (_db.areas.isEmpty) {
-      once(_db.areas, (_) => _snapToNearestArea());
+      once(_db.areas, (_) => _placePosition());
     } else {
-      await _snapToNearestArea();
+      await _placePosition();
     }
     return true;
   }
 
-  Future<void> _snapToNearestArea() async {
+  Future<void> _placePosition() async {
     final pos = position.value;
-    if (pos == null || _db.areas.isEmpty) return;
-    double km(AreaModel a) => FormatHelper.haversineKm(pos.latitude, pos.longitude, a.lat, a.lng);
-    final nearest = _db.areas.reduce((a, b) => km(a) <= km(b) ? a : b);
-    if (nearest.id != areaId.value) await _saveArea(nearest.id);
+    if (pos == null) return;
+
+    String? iso;
+    String? town;
+    try {
+      await setLocaleIdentifier(FormatHelper.isAr ? 'ar' : 'en');
+      final marks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      final m = marks.firstOrNull;
+      iso = m?.isoCountryCode?.toUpperCase();
+      town = [m?.locality, m?.subAdministrativeArea, m?.administrativeArea]
+          .firstWhereOrNull((x) => x != null && x.trim().isNotEmpty);
+    } catch (e) {
+      dev.log('[SessionService] reverse geocoding failed: $e');
+    }
+
+    double km(double? lat, double? lng) =>
+        lat == null || lng == null ? double.infinity : FormatHelper.haversineKm(pos.latitude, pos.longitude, lat, lng);
+    final placed = _db.areas.where((a) => a.placed && (iso == null || a.countryCode == iso)).toList()
+      ..sort((a, b) => km(a.lat, a.lng).compareTo(km(b.lat, b.lng)));
+    final nearest = placed.firstOrNull;
+    final near = nearest != null && km(nearest.lat, nearest.lng) <= _areaRadiusKm;
+
+    // Without the geocoder: our nearest area's country, else the nearest country centre.
+    iso ??= near
+        ? nearest.countryCode
+        : (_db.countries.toList()..sort((a, b) => km(a.lat, a.lng).compareTo(km(b.lat, b.lng)))).firstOrNull?.code;
+
+    if (iso != null) await _saveCountry(iso);
+    await _saveArea(near ? nearest.id : '');
+    placeName.value = near ? null : town;
   }
 
   void rememberReturn(String route, {dynamic arguments, void Function()? action}) {

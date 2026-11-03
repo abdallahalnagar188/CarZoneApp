@@ -46,8 +46,13 @@ class WashMapController extends GetxController {
       _resetSelection();
       recenter();
     });
-    ever(session.position, (_) {
-      _compute();
+    ever(session.position, (_) async {
+      await _loadMapData();
+      recenter();
+    });
+    ever(session.countryCode, (_) async {
+      await _loadMapData();
+      _resetSelection();
       recenter();
     });
     ever(Get.find<WashUpDbService>().orders, (_) => _compute());
@@ -57,7 +62,12 @@ class WashMapController extends GetxController {
   }
 
   Future<void> _loadMapData() async {
-    await Get.find<WashUpDbService>().fetchMapBranches(areaId: session.areaId.value);
+    await Get.find<WashUpDbService>().discover(
+      lat: session.lat,
+      lng: session.lng,
+      country: session.countryCode.value,
+      limit: 50,
+    );
     _compute();
   }
 
@@ -111,7 +121,7 @@ class WashMapController extends GetxController {
       final r = rows[i];
       final isSelected = i == selected.value;
       final state = isSelected ? PinState.selected : (r.open ? PinState.normal : PinState.closed);
-      final label = r.fromPrice == null ? r.rating.toStringAsFixed(1) : FormatHelper.money(r.fromPrice!);
+      final label = r.fromPrice == null ? r.rating.toStringAsFixed(1) : FormatHelper.money(r.fromPrice!, branchId: r.branch.id);
       next.add(Marker(
         markerId: MarkerId(r.branch.id),
         position: LatLng(r.branch.lat, r.branch.lng),

@@ -43,7 +43,7 @@ class BookNowBar extends StatelessWidget {
                       children: [
                         Text('wash.from'.trParams({'price': ''}).trim(), style: theme.bodySmall),
                         Text(
-                          row.fromPrice == null ? '' : FormatHelper.money(row.fromPrice!),
+                          row.fromPrice == null ? '' : FormatHelper.money(row.fromPrice!, branchId: row.branch.id),
                           style: theme.headlineSmall?.copyWith(color: AppColors.primary),
                         ),
                       ],

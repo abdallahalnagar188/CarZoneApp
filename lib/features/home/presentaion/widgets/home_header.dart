@@ -139,7 +139,7 @@ class _TopRow extends StatelessWidget {
                 children: [
                   Icon(Iconsax.location, size: 16.sp, color: Colors.white),
                   6.width,
-                  Text(controller.session.area.name.value, style: theme.labelLarge?.copyWith(color: Colors.white)),
+                  Text(controller.session.locationLabel, style: theme.labelLarge?.copyWith(color: Colors.white)),
                   4.width,
                   Icon(Iconsax.arrow_down_1, size: 14.sp, color: Colors.white),
                 ],

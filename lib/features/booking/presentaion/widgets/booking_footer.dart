@@ -45,11 +45,11 @@ class BookingFooter extends StatelessWidget {
                 children: [
                   Text('book.total'.tr, style: theme.bodySmall),
                   8.width,
-                  Text(FormatHelper.money(quote.total), style: theme.headlineSmall?.copyWith(color: AppColors.primary)),
+                  Text(FormatHelper.money(quote.total, branchId: controller.branchId.value), style: theme.headlineSmall?.copyWith(color: AppColors.primary)),
                   if (quote.discount > 0) ...[
                     8.width,
                     Text(
-                      FormatHelper.money(quote.subtotal),
+                      FormatHelper.money(quote.subtotal, branchId: controller.branchId.value),
                       style: theme.bodySmall?.copyWith(decoration: TextDecoration.lineThrough),
                     ),
                   ],

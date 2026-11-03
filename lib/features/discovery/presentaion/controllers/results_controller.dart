@@ -40,7 +40,7 @@ class ResultsController extends GetxController {
   bool get isWashNow => mode == 'washnow';
 
   String get title {
-    if (category != null) return 'cat.$category'.tr;
+    if (category != null) return _db.categoryName(category!);
     if (isWashNow) return 'home.washNow'.tr;
     return 'home.nearby'.tr;
   }
@@ -65,7 +65,7 @@ class ResultsController extends GetxController {
 
     scrollController.addListener(_onScroll);
 
-    ever(_session.areaId, (_) => load());
+    everAll([_session.areaId, _session.countryCode, _session.position], (_) => load());
     ever(_db.orders, (_) {
       if (!loading.value) _compute();
     });
@@ -101,14 +101,7 @@ class ResultsController extends GetxController {
     page.value = 0;
     hasMore.value = true;
     try {
-      final areaId = _session.areaId.value;
-      final fetched = await _db.fetchPaginatedBranches(
-        page: 0,
-        pageSize: pageSize,
-        areaId: areaId.isNotEmpty ? areaId : null,
-        category: category,
-        throwOnError: true,
-      );
+      final fetched = await _fetch(0);
       if (fetched.length < pageSize) {
         hasMore.value = false;
       }
@@ -129,14 +122,7 @@ class ResultsController extends GetxController {
     loadingMore.value = true;
     try {
       final nextPage = page.value + 1;
-      final areaId = _session.areaId.value;
-      final fetched = await _db.fetchPaginatedBranches(
-        page: nextPage,
-        pageSize: pageSize,
-        areaId: areaId.isNotEmpty ? areaId : null,
-        category: category,
-        throwOnError: true,
-      );
+      final fetched = await _fetch(nextPage);
       if (fetched.isEmpty) {
         hasMore.value = false;
       } else {
@@ -160,8 +146,27 @@ class ResultsController extends GetxController {
     }
   }
 
+  /// One page of washes in the browsed country, nearest first, so later pages
+  /// never hold a wash closer than one already shown.
+  Future<List<BranchModel>> _fetch(int page) async {
+    final rows = await _db.discover(
+      lat: _session.lat,
+      lng: _session.lng,
+      country: _session.countryCode.value,
+      category: category,
+      maxKm: filters.value.maxKm,
+      limit: pageSize,
+      offset: page * pageSize,
+      throwOnError: true,
+    );
+    return rows.map((r) => r.branch).toList();
+  }
+
   void _compute() {
-    final branchesToUse = _loadedBranches.isNotEmpty ? _loadedBranches : _db.branches;
+    final country = _session.countryCode.value;
+    final branchesToUse = (_loadedBranches.isNotEmpty ? _loadedBranches : _db.branches)
+        .where((b) => _db.countryOfBranch(b.id).code == country)
+        .toList();
     List<BranchListingModel> base;
     if (isWashNow) {
       final limit = DateTime.now().add(const Duration(minutes: 90));
@@ -194,11 +199,24 @@ class ResultsController extends GetxController {
           .toList();
     }
 
+    _unfiltered = base;
     var list = _discovery.apply(base, filters.value);
     if (category != null) {
       list = list.map((r) => r.withPrice(_pricing.fromPrice(r.branch.id, category: category))).toList();
     }
     rows.assignAll(list);
+  }
+
+  List<BranchListingModel> _unfiltered = const [];
+
+  /// Lowest and highest "from" price among the results, for the price slider;
+  /// null when there is nothing to choose between.
+  ({double min, double max})? get priceRange {
+    final prices = _unfiltered.map((r) => r.fromPrice).whereType<num>().toList();
+    if (prices.length < 2) return null;
+    final lo = prices.reduce((a, b) => a < b ? a : b).floorToDouble();
+    final hi = prices.reduce((a, b) => a > b ? a : b).ceilToDouble();
+    return hi > lo ? (min: lo, max: hi) : null;
   }
 
   void setSort(SortMode sort) {
@@ -216,14 +234,17 @@ class ResultsController extends GetxController {
   void resetDraft() => draft.value = DiscoveryFilters(sort: filters.value.sort);
 
   void applyDraft() {
+    final radiusChanged = draft.value.maxKm != filters.value.maxKm;
     filters.value = draft.value;
     Get.back();
-    _compute();
+    // The distance limit is applied by the server, so a new one needs a reload.
+    radiusChanged ? load() : _compute();
   }
 
   void clearFilters() {
+    final hadRadius = filters.value.maxKm != null;
     filters.value = DiscoveryFilters(sort: filters.value.sort);
-    _compute();
+    hadRadius ? load() : _compute();
   }
 
   void openWash(String id) => Get.toNamed(Routes.washDetailsRoute, arguments: id);
