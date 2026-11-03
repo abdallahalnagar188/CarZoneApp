@@ -24,6 +24,10 @@ class AuthController extends GetxController {
 
   final country = PhoneHelper.defaultCountry.obs;
   final phoneError = RxnString();
+
+  /// The number a Google/Apple sign-up tried to claim that already has an
+  /// account: the setup page then offers to sign in with that number instead.
+  final phoneInUse = RxnString();
   final otpError = RxnString();
   final nameError = RxnString();
   final sending = false.obs;
@@ -326,6 +330,23 @@ class AuthController extends GetxController {
     AuthGuard.completeLogin();
   }
 
+  /// Leaves the Google/Apple session that cannot own [phoneInUse] and sends a
+  /// login code to that number, which signs in to its existing account.
+  Future<void> signInWithTakenPhone() async {
+    final number = phoneInUse.value;
+    if (number == null) return;
+    phoneInUse.value = null;
+    await _repo.signOut();
+    phoneController.text = number;
+    // Back to the login page the setup page was opened from, or onto it.
+    if (Get.previousRoute == Routes.loginRoute) {
+      Get.back();
+    } else {
+      Get.offNamed(Routes.loginRoute);
+    }
+    await sendCode();
+  }
+
   Future<void> saveName() async {
     final authUser = _repo.currentAuthUser;
     if (authUser == null) {
@@ -374,6 +395,7 @@ class AuthController extends GetxController {
     try {
       row = await _repo.register(authUser.id, effectivePhone, name, token: token);
     } on PhoneInUseException {
+      phoneInUse.value = effectivePhone;
       Utils.getSnakBar(message: 'auth.phoneInUse'.tr, type: TosterTypes.failed);
       return;
     } on ApiException catch (e) {

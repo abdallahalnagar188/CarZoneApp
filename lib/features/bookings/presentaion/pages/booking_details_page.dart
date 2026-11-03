@@ -13,6 +13,7 @@ import '../../../booking/presentaion/widgets/summary_section.dart';
 import '../controllers/booking_details_controller.dart';
 import '../widgets/booking_actions.dart';
 import '../widgets/access_code_card.dart';
+import '../widgets/cancel_info_card.dart';
 import '../widgets/service_progress_card.dart';
 import '../widgets/status_timeline.dart';
 
@@ -65,6 +66,10 @@ class BookingDetailsPage extends StatelessWidget {
                 color: AppColors.tint(AppColors.statusNoShow),
                 child: Text('noShow.banner'.tr, style: theme.bodyMedium),
               ),
+              12.height,
+            ],
+            if (order.status == OrderStatus.cancelled) ...[
+              CancelInfoCard(order: order),
               12.height,
             ],
             if (order.status == OrderStatus.inService) ...[
@@ -134,13 +139,17 @@ class BookingDetailsPage extends StatelessWidget {
                     ),
                   Divider(color: AppColors.line, height: 18.h),
                   PriceLine(label: 'book.total'.tr, value: FormatHelper.money(order.total), bold: true),
-                  10.height,
-                  Row(
-                    children: [
-                      Expanded(child: Text('book.payStatus'.tr, style: theme.bodySmall)),
-                      StatusBadge.payment(order.paymentStatus),
-                    ],
-                  ),
+                  // Nothing is owed on a booking that ended without the service.
+                  if (!(order.paymentStatus == PaymentStatus.pending &&
+                      (order.status == OrderStatus.cancelled || order.status == OrderStatus.noShow))) ...[
+                    10.height,
+                    Row(
+                      children: [
+                        Expanded(child: Text('book.payStatus'.tr, style: theme.bodySmall)),
+                        StatusBadge.payment(order.paymentStatus),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

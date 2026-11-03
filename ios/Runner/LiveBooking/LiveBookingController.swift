@@ -68,7 +68,11 @@ final class LiveBookingController {
       branchName: args["branchName"] as? String ?? "",
       serviceName: args["serviceName"] as? String ?? "",
       stageLabels: args["stageLabels"] as? [String] ?? [],
-      isArabic: args["isArabic"] as? Bool ?? true
+      isArabic: args["isArabic"] as? Bool ?? true,
+      total: args["total"] as? String,
+      totalLabel: args["totalLabel"] as? String,
+      startsInLabel: args["startsInLabel"] as? String,
+      readyInLabel: args["readyInLabel"] as? String
     )
     do {
       observeToken(try Activity.request(attributes: attributes, content: content, pushType: .token))

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A2670DD03C0A2C6EC2B956F0 /* IBMPlexSansArabic-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DD709029F79970C7B834F196 /* IBMPlexSansArabic-Medium.ttf */; };
+		A672042C8E5DC9CCB768873F /* IBMPlexSansArabic-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2D6F6533109355E70D7BA10F /* IBMPlexSansArabic-SemiBold.ttf */; };
+		184E18FCFD12B682FD65BA6E /* IBMPlexSansArabic-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4858D98B62919D4C85F30CFD /* IBMPlexSansArabic-Bold.ttf */; };
+		C2B924E56521338CAADA6C1B /* LiveMark.png in Resources */ = {isa = PBXBuildFile; fileRef = 12886F6D8B91DD7DC236C81C /* LiveMark.png */; };
 		042747930E3ACEE609DC95B0 /* BookingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A93D6C6C57A5E41B33209F /* BookingActivityAttributes.swift */; };
 		10D03534C7DA7A04DC498E48 /* BookingLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 09CE530A3E88277328C52334 /* BookingLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -67,6 +71,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DD709029F79970C7B834F196 /* IBMPlexSansArabic-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = IBMPlexSansArabic-Medium.ttf; sourceTree = "<group>"; };
+		2D6F6533109355E70D7BA10F /* IBMPlexSansArabic-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = IBMPlexSansArabic-SemiBold.ttf; sourceTree = "<group>"; };
+		4858D98B62919D4C85F30CFD /* IBMPlexSansArabic-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = IBMPlexSansArabic-Bold.ttf; sourceTree = "<group>"; };
+		12886F6D8B91DD7DC236C81C /* LiveMark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LiveMark.png; sourceTree = "<group>"; };
 		09CE530A3E88277328C52334 /* BookingLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BookingLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E7346D698A983EFE6ED7DDD /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
@@ -141,6 +149,10 @@
 			children = (
 				3EACA48A24CFFB0D3F0EDA50 /* BookingLiveActivity.swift */,
 				605122897EC47F28EFE7202D /* Info.plist */,
+				DD709029F79970C7B834F196 /* IBMPlexSansArabic-Medium.ttf */,
+				2D6F6533109355E70D7BA10F /* IBMPlexSansArabic-SemiBold.ttf */,
+				4858D98B62919D4C85F30CFD /* IBMPlexSansArabic-Bold.ttf */,
+				12886F6D8B91DD7DC236C81C /* LiveMark.png */,
 			);
 			name = BookingLiveActivity;
 			path = BookingLiveActivity;
@@ -356,6 +368,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2670DD03C0A2C6EC2B956F0 /* IBMPlexSansArabic-Medium.ttf in Resources */,
+				A672042C8E5DC9CCB768873F /* IBMPlexSansArabic-SemiBold.ttf in Resources */,
+				184E18FCFD12B682FD65BA6E /* IBMPlexSansArabic-Bold.ttf in Resources */,
+				C2B924E56521338CAADA6C1B /* LiveMark.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

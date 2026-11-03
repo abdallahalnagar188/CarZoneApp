@@ -28,4 +28,11 @@ struct BookingActivityAttributes: ActivityAttributes {
   var serviceName: String
   var stageLabels: [String]
   var isArabic: Bool
+  /// Optional so activities started by an older build still decode.
+  /// The order total, formatted ("80 ج.م"), shown once the car is ready.
+  var total: String?
+  var totalLabel: String?
+  /// Captions over the countdown: time left to the slot, and to the car being ready.
+  var startsInLabel: String?
+  var readyInLabel: String?
 }

@@ -74,6 +74,8 @@ class OrderModel {
   final String? note;
   final List<TimelineEntry> timeline;
   String? cancelReason;
+  /// Who cancelled: customer · vendor (the wash) · admin · system.
+  String? cancelledBy;
   bool lateCancel;
   String? complaintId;
   final DateTime createdAt;
@@ -97,6 +99,7 @@ class OrderModel {
     this.offerId,
     this.note,
     this.cancelReason,
+    this.cancelledBy,
     this.lateCancel = false,
     this.complaintId,
     List<TimelineEntry>? timeline,
@@ -168,6 +171,7 @@ class OrderModel {
       note: json['note']?.toString(),
       timeline: timeline,
       cancelReason: json['cancel_reason']?.toString() ?? json['cancelReason']?.toString(),
+      cancelledBy: json['cancelled_by_type']?.toString() ?? json['cancelledBy']?.toString(),
       lateCancel: json['late_cancel'] ?? json['lateCancel'] ?? false,
       complaintId: json['complaint_id']?.toString() ?? json['complaintId']?.toString(),
       createdAt: DateTime.tryParse(json['created_at'] ?? json['createdAt'] ?? '')?.toLocal() ?? DateTime.now(),
@@ -193,6 +197,7 @@ class OrderModel {
     'note': note,
     'timeline': timeline.map((t) => t.toJson()).toList(),
     'cancel_reason': cancelReason,
+    'cancelled_by_type': cancelledBy,
     'late_cancel': lateCancel,
     'complaint_id': complaintId,
     'created_at': createdAt.toUtc().toIso8601String(),

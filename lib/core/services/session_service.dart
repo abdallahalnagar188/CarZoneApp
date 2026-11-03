@@ -157,6 +157,7 @@ class SessionService extends GetxService {
           CacheController().setter(key: CacheKeys.userId, value: authUser.id);
           CacheController().setter(key: CacheKeys.loggedIn, value: true);
           _db.fetchVehicles(user.value!.id);
+          _db.fetchMyReviews(user.value!.id);
         } else {
           refreshProfile();
         }
@@ -246,6 +247,7 @@ class SessionService extends GetxService {
           await _db.updateCustomerToken(cust.id, userToken.value);
         }
         await _db.fetchVehicles(cust.id);
+        await _db.fetchMyReviews(cust.id);
       }
     } catch (e) {
       final errStr = e.toString();
@@ -290,6 +292,7 @@ class SessionService extends GetxService {
     }
     await _db.loadFavorites(customer.id);
     await _db.fetchVehicles(customer.id);
+    await _db.fetchMyReviews(customer.id);
   }
 
   Future<void> signOut() async {

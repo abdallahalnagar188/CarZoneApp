@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../commons/models/order_model.dart';
 import '../../../../core/enums/enums.dart';
+import '../../../../core/network/api_call.dart';
 import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/order_service.dart';
@@ -45,14 +46,26 @@ class ReviewController extends GetxController {
       error.value = 'review.need'.tr;
       return;
     }
-    // Saved in the background after the screen closes, so it must not start offline.
+    // Saving needs the server, so it must not start offline.
     if (!ConnectivityService.online) {
       Utils.getSnakBar(message: 'offline.action'.tr, type: TosterTypes.warning);
       return;
     }
+    // One review per visit.
+    if (_db.reviews.any((r) => r.orderId == o.id)) {
+      Get.back();
+      Utils.getSnakBar(message: 'review.already'.tr, type: TosterTypes.warning);
+      return;
+    }
     sending.value = true;
-    await _orders.review(o, stars.value, tags.toList(), commentController.text.trim());
-    sending.value = false;
+    try {
+      await _orders.review(o, stars.value, tags.toList(), commentController.text.trim());
+    } catch (e) {
+      Utils.getSnakBar(message: ApiException.messageFor(e, fallback: 'review.failed'.tr), type: TosterTypes.failed);
+      return;
+    } finally {
+      sending.value = false;
+    }
     Get.back();
     Utils.getSnakBar(message: 'review.done'.tr, type: TosterTypes.sucsses);
   }

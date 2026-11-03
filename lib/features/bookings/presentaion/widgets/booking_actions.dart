@@ -12,7 +12,12 @@ class BookingActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<BookingDetailsController>();
+    // Its own Obx: the page builds this as a const widget, which the page's
+    // rebuilds skip, so a new review would not swap the button otherwise.
+    return Obx(() => _buttons(Get.find<BookingDetailsController>()));
+  }
+
+  Widget _buttons(BookingDetailsController controller) {
     final order = controller.order.value!;
     final buttons = <Widget>[
       if (order.status == OrderStatus.completed)
