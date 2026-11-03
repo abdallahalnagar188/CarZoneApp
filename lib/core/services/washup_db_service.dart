@@ -527,11 +527,36 @@ class WashUpDbService extends GetxService {
     }
   }
 
+  /// Throws when the review was not saved, so the screen does not claim it was.
   Future<void> saveReview(ReviewModel review) async {
+    await ApiCall.write(() => SupabaseService.client.from('reviews').upsert(review.toJson()), tag: 'save review');
+  }
+
+  /// Every review the customer wrote, so the rate prompts (home, notifications,
+  /// booking details) skip visits that are already rated.
+  Future<void> fetchMyReviews(String customerId) async {
     try {
-      await ApiCall.write(() => SupabaseService.client.from('reviews').upsert(review.toJson()), tag: 'save review');
+      final rows = await ApiCall.read(
+        () => SupabaseService.client.from('reviews').select().eq('customer_id', customerId),
+        tag: 'my reviews',
+      );
+      upsertReviews(_rows(rows, ReviewModel.fromJson));
     } catch (e) {
-      dev.log('[WashUpDbService] Error saving review to Supabase: $e');
+      dev.log('[WashUpDbService] Error loading the customer reviews: $e');
+    }
+  }
+
+  /// The customer's review of [orderId], if any: only branch reviews are cached
+  /// otherwise, so a booking reopened later would offer to rate it again.
+  Future<void> fetchOrderReview(String orderId) async {
+    try {
+      final rows = await ApiCall.read(
+        () => SupabaseService.client.from('reviews').select().eq('order_id', orderId).limit(1),
+        tag: 'order review',
+      );
+      upsertReviews(_rows(rows, ReviewModel.fromJson));
+    } catch (e) {
+      dev.log('[WashUpDbService] Error loading the order review: $e');
     }
   }
 

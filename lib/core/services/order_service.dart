@@ -63,6 +63,7 @@ class OrderService {
       ..paymentStatus = fresh.paymentStatus
       ..scheduledAt = fresh.scheduledAt
       ..cancelReason = fresh.cancelReason
+      ..cancelledBy = fresh.cancelledBy
       ..timeline.clear()
       ..timeline.addAll(fresh.timeline);
     _db.orders.refresh();
@@ -112,8 +113,8 @@ class OrderService {
     order.timeline.add(TimelineEntry('rescheduled', DateTime.now()));
   }
 
+  /// Throws when the server did not save it.
   Future<void> review(OrderModel order, int stars, List<String> tags, String comment) async {
-    await Future.delayed(const Duration(milliseconds: 500));
     final customer = _db.customerById(order.customerId);
     final branch = _db.branch(order.branchId);
     final rev = ReviewModel(
@@ -130,8 +131,8 @@ class OrderService {
       tags: tags,
       createdAt: DateTime.now(),
     );
+    await _db.saveReview(rev);
     _db.reviews.insert(0, rev);
-    _db.saveReview(rev);
   }
 
   Future<String> report(OrderModel order, String category, String description) async {

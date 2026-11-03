@@ -66,6 +66,9 @@ class BookingDetailsController extends GetxController {
       if (branchId != null && _db.branch(branchId) == null) {
         await _db.fetchBranchDetails(branchId, throwOnError: true);
       }
+      if (_db.order(orderId)?.status == OrderStatus.completed && !hasReview) {
+        await _db.fetchOrderReview(orderId);
+      }
       error.value = null;
     } catch (e) {
       error.value = ApiException.messageFor(e);
@@ -102,7 +105,8 @@ class BookingDetailsController extends GetxController {
     if (o == null) return;
     cancelling.value = true;
     try {
-      await _orders.cancel(o, cancelReason.value);
+      // The wash reads this reason, so it goes as text, not as a translation key.
+      await _orders.cancel(o, cancelReason.value.tr);
       Get.back();
       Utils.getSnakBar(message: 'toast.cancelled'.tr, type: TosterTypes.sucsses);
     } on BookingException catch (e) {

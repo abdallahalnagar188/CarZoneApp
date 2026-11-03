@@ -47,6 +47,18 @@ class ProfileSetupPage extends StatelessWidget {
               onTap: controller.saveName,
             ),
           ),
+          Obx(
+            () => controller.phoneInUse.value == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: EdgeInsets.only(top: 12.h),
+                    child: AppButton(
+                      title: 'auth.usePhone'.tr,
+                      variant: AppButtonVariant.ghost,
+                      onTap: controller.signInWithTakenPhone,
+                    ),
+                  ),
+          ),
         ],
       ),
     );
