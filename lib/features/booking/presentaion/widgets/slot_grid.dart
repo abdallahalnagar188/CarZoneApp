@@ -7,6 +7,7 @@ import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/helpers/format_helper.dart';
 import '../../../../core/services/availability_service.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../controllers/booking_controller.dart';
 
 class SlotGrid extends StatelessWidget {
@@ -17,7 +18,8 @@ class SlotGrid extends StatelessWidget {
       return int.tryParse(s.localTime!.split(':')[0]) ?? s.start.hour;
     }
     if (s.start.isUtc) {
-      return s.start.add(BranchTimeHelper.cairoOffset(s.start)).hour;
+      final tz = Get.find<WashUpDbService>().countryOfBranch(Get.find<BookingController>().branchId.value).timezone;
+      return s.start.add(BranchTimeHelper.offsetFor(tz, s.start)).hour;
     }
     return s.start.hour;
   }

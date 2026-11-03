@@ -7,6 +7,7 @@ import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../controllers/wash_search_controller.dart';
 import '../widgets/search_result_tile.dart';
 
@@ -94,7 +95,7 @@ class SearchPage extends StatelessWidget {
               10.height,
               ...controller.categories.map((c) => SearchResultTile(
                     icon: Iconsax.magic_star,
-                    title: 'cat.$c'.tr,
+                    title: Get.find<WashUpDbService>().categoryName(c),
                     onTap: () => controller.openCategory(c),
                   )),
               16.height,

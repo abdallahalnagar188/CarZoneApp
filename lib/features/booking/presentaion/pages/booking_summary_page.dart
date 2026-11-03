@@ -8,6 +8,7 @@ import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/helpers/format_helper.dart';
 import '../../../../core/routing/app_routes.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../controllers/booking_controller.dart';
 import '../widgets/booking_footer.dart';
 import '../widgets/booking_step_header.dart';
@@ -21,6 +22,7 @@ class BookingSummaryPage extends StatelessWidget {
     final controller = Get.find<BookingController>();
     final theme = Theme.of(context).textTheme;
     final branch = controller.branch!;
+    final tz = Get.find<WashUpDbService>().countryOfBranch(branch.id).timezone;
     return Scaffold(
       appBar: AppTopBar(title: 'book.summary'.tr),
       bottomNavigationBar: Obx(
@@ -73,7 +75,7 @@ class BookingSummaryPage extends StatelessWidget {
                     onEdit: () => controller.editStep(Routes.bookServiceRoute),
                     child: Column(
                       children: quote.items
-                          .map((i) => PriceLine(label: i.name.value, value: FormatHelper.money(i.price)))
+                          .map((i) => PriceLine(label: i.name.value, value: FormatHelper.money(i.price, branchId: branch.id)))
                           .toList(),
                     ),
                   ),
@@ -84,7 +86,10 @@ class BookingSummaryPage extends StatelessWidget {
                       onEdit: () => controller.editStep(Routes.bookSlotRoute),
                       child: Column(
                         children: [
-                          PriceLine(label: FormatHelper.date(slot), value: FormatHelper.time(slot)),
+                          PriceLine(
+                            label: FormatHelper.date(slot, timezone: tz),
+                            value: FormatHelper.time(slot, timezone: tz),
+                          ),
                           PriceLine(label: 'book.duration'.tr, value: FormatHelper.minutes(quote.durationMin)),
                         ],
                       ),
@@ -94,15 +99,15 @@ class BookingSummaryPage extends StatelessWidget {
                     title: 'book.total'.tr,
                     child: Column(
                       children: [
-                        PriceLine(label: 'book.subtotal'.tr, value: FormatHelper.money(quote.subtotal)),
+                        PriceLine(label: 'book.subtotal'.tr, value: FormatHelper.money(quote.subtotal, branchId: branch.id)),
                         if (quote.discount > 0)
                           PriceLine(
                             label: 'book.discount'.tr,
-                            value: '−${FormatHelper.money(quote.discount)}',
+                            value: '−${FormatHelper.money(quote.discount, branchId: branch.id)}',
                             color: AppColors.success,
                           ),
                         Divider(color: AppColors.line, height: 18.h),
-                        PriceLine(label: 'book.total'.tr, value: FormatHelper.money(quote.total), bold: true),
+                        PriceLine(label: 'book.total'.tr, value: FormatHelper.money(quote.total, branchId: branch.id), bold: true),
                         8.height,
                         Row(
                           children: [

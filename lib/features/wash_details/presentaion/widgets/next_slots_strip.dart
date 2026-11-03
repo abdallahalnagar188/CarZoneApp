@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/services/washup_db_service.dart';
 import '../controllers/wash_details_controller.dart';
 
 class NextSlotsStrip extends StatelessWidget {
@@ -15,6 +16,7 @@ class NextSlotsStrip extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     return Obx(() {
       final slots = controller.nextSlots;
+      final tz = Get.find<WashUpDbService>().countryOfBranch(controller.branchId).timezone;
       if (slots.isEmpty) return const SizedBox.shrink();
       final today = FormatHelper.sameDay(slots.first.start, DateTime.now());
       return Padding(
@@ -27,7 +29,7 @@ class NextSlotsStrip extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: 10.h),
                 child: Text(
                   'wash.fullToday'.trParams({
-                    'when': '${FormatHelper.relativeDay(slots.first.start)} ${FormatHelper.time(slots.first.start)}',
+                    'when': '${FormatHelper.relativeDay(slots.first.start)} ${FormatHelper.time(slots.first.start, timezone: tz)}',
                   }),
                   style: theme.bodySmall,
                 ),
@@ -48,7 +50,7 @@ class NextSlotsStrip extends StatelessWidget {
                         boxShadow: AppColors.softShadow,
                       ),
                       child: Text(
-                        FormatHelper.time(s.start),
+                        FormatHelper.time(s.start, timezone: tz),
                         style: theme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),

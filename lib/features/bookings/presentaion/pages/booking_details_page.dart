@@ -130,15 +130,15 @@ class BookingDetailsPage extends StatelessWidget {
               title: 'book.total'.tr,
               child: Column(
                 children: [
-                  ...order.items.map((i) => PriceLine(label: i.name.value, value: FormatHelper.money(i.price))),
+                  ...order.items.map((i) => PriceLine(label: i.name.value, value: FormatHelper.money(i.price, branchId: order.branchId))),
                   if (order.discount > 0)
                     PriceLine(
                       label: 'book.discount'.tr,
-                      value: '−${FormatHelper.money(order.discount)}',
+                      value: '−${FormatHelper.money(order.discount, branchId: order.branchId)}',
                       color: AppColors.success,
                     ),
                   Divider(color: AppColors.line, height: 18.h),
-                  PriceLine(label: 'book.total'.tr, value: FormatHelper.money(order.total), bold: true),
+                  PriceLine(label: 'book.total'.tr, value: FormatHelper.money(order.total, branchId: order.branchId), bold: true),
                   // Nothing is owed on a booking that ended without the service.
                   if (!(order.paymentStatus == PaymentStatus.pending &&
                       (order.status == OrderStatus.cancelled || order.status == OrderStatus.noShow))) ...[

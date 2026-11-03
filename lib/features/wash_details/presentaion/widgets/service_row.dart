@@ -50,7 +50,7 @@ class ServiceRow extends StatelessWidget {
             ),
             10.width,
             Text(
-              FormatHelper.money(service.price),
+              FormatHelper.money(service.price, branchId: service.branchId),
               style: theme.titleMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
             ),
             10.width,

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../commons/models/area_model.dart';
 import '../../commons/models/branch_model.dart';
+import '../../commons/models/country_model.dart';
 import '../../commons/models/customer_model.dart';
 import '../../commons/models/localized_text.dart';
 import '../../commons/models/notification_model.dart';
@@ -29,10 +30,17 @@ class WashUpDbService extends GetxService {
   Worker? _reconnectWorker;
 
   Future<bool>? _homeFetch;
-  String? _homeFetchArea;
+
+  /// Where the customer is browsing from (set by SessionService), so the home
+  /// fetch loads the washes nearest to them in their country.
+  ({double lat, double lng, String country}) Function()? origin;
 
   // Remote reactive collections
+  final countries = <CountryModel>[].obs;
   final areas = <AreaModel>[].obs;
+
+  /// Service categories (exterior, interior…) in their display order.
+  final categories = <({String id, LocalizedText name})>[].obs;
   final branches = <BranchModel>[].obs;
   final services = <WashServiceModel>[].obs;
   final offers = <OfferModel>[].obs;
@@ -50,14 +58,6 @@ class WashUpDbService extends GetxService {
   final hasError = false.obs;
   final errorMessage = ''.obs;
 
-
-  static const AreaModel defaultArea = AreaModel(
-    id: 'nasr',
-    name: LocalizedText('مدينة نصر', 'Nasr City'),
-    lat: 30.0566,
-    lng: 31.3301,
-  );
-
   WashUpDbService init() {
     _reconnectWorker = ConnectivityService.maybe?.onReconnect(_onReconnected);
     // Only fetch Home essentials on app startup — never download the entire database at once!
@@ -70,7 +70,7 @@ class WashUpDbService extends GetxService {
   Future<void> _onReconnected() async {
     dev.log('[WashUpDbService] connection back, resyncing');
     await _resubscribeRealtime();
-    await fetchHomeData(areaId: _homeFetchArea);
+    await fetchHomeData();
   }
 
   /// Customer id that rows are stored under for [userId] (auth id or customer id).
@@ -127,9 +127,40 @@ class WashUpDbService extends GetxService {
   // Safe entity accessors with null/empty fallbacks
   BranchModel? branch(String id) => branches.firstWhereOrNull((b) => b.id == id);
 
-  AreaModel area(String id) =>
-      areas.firstWhereOrNull((a) => a.id == id) ??
-      (areas.isNotEmpty ? areas.first : defaultArea);
+  AreaModel? area(String? id) => id == null ? null : areas.firstWhereOrNull((a) => a.id == id);
+
+  CountryModel country(String? code) =>
+      countries.firstWhereOrNull((c) => c.code == code) ?? (code == 'EG' || code == null ? CountryModel.egypt : _unknownCountry(code));
+
+  /// A country the table does not list yet: Egypt's money and time are wrong
+  /// for it, but it still gets its own code so nothing is shown under Egypt.
+  CountryModel _unknownCountry(String code) => CountryModel(
+        code: code,
+        name: LocalizedText(code, code),
+        currency: CountryModel.egypt.currency,
+        currencySymbol: CountryModel.egypt.currencySymbol,
+        currencyDecimals: 2,
+        timezone: CountryModel.egypt.timezone,
+        lat: CountryModel.egypt.lat,
+        lng: CountryModel.egypt.lng,
+      );
+
+  /// The branch's country, through its area.
+  CountryModel countryOfBranch(String? branchId) {
+    final b = branchId == null ? null : branch(branchId);
+    return country(area(b?.areaId)?.countryCode);
+  }
+
+  /// A category's name from the database, or the built-in one while it loads.
+  String categoryName(String id) => categories.firstWhereOrNull((c) => c.id == id)?.name.value ?? 'cat.$id'.tr;
+
+  List<AreaModel> areasIn(String countryCode) => areas.where((a) => a.countryCode == countryCode).toList();
+
+  /// Countries that have at least one area, for the area picker.
+  List<CountryModel> get servedCountries {
+    final codes = areas.map((a) => a.countryCode).toSet();
+    return countries.where((c) => codes.contains(c.code)).toList();
+  }
 
   WashServiceModel? service(String id) => services.firstWhereOrNull((s) => s.id == id);
 
@@ -170,11 +201,10 @@ class WashUpDbService extends GetxService {
   /// 1. Home Page startup fetch: lightweight call loading ONLY areas, active offers (limit 6),
   /// and top branches (limit 10) for the user's selected area.
   /// Concurrent calls for the same area share one request (splash + service init).
-  Future<bool> fetchHomeData({String? areaId}) {
+  Future<bool> fetchHomeData() {
     final inFlight = _homeFetch;
-    if (inFlight != null && _homeFetchArea == areaId) return inFlight;
-    _homeFetchArea = areaId;
-    final fetch = _fetchHomeData(areaId);
+    if (inFlight != null) return inFlight;
+    final fetch = _fetchHomeData();
     _homeFetch = fetch;
     fetch.whenComplete(() {
       if (identical(_homeFetch, fetch)) _homeFetch = null;
@@ -182,7 +212,7 @@ class WashUpDbService extends GetxService {
     return fetch;
   }
 
-  Future<bool> _fetchHomeData(String? areaId) async {
+  Future<bool> _fetchHomeData() async {
     try {
       isSyncing.value = true;
       hasError.value = false;
@@ -190,22 +220,30 @@ class WashUpDbService extends GetxService {
       final client = SupabaseService.client;
 
       final catalogResults = await Future.wait<dynamic>([
-        ApiCall.read(() => client.from('areas').select(), tag: 'areas'),
-        ApiCall.read(() {
-          var branchQuery = client.from('branches').select();
-          if (areaId != null && areaId.isNotEmpty) {
-            branchQuery = branchQuery.eq('area_id', areaId);
-          }
-          return branchQuery.limit(10);
-        }, tag: 'home branches'),
+        ApiCall.read(() => client.from('areas').select().eq('active', true).order('sort_order'), tag: 'areas'),
+        ApiCall.read(() => client.from('countries').select().eq('active', true).order('sort_order'), tag: 'countries'),
+        ApiCall.read(() => client.from('service_categories').select('id, name').order('id'), tag: 'categories'),
         ApiCall.read(() => client.from('offers').select('*, offer_branches(branch_id)').limit(8), tag: 'offers'),
-        ApiCall.read(() => client.from('services').select().limit(25), tag: 'home services'),
       ]);
 
       areas.assignAll(_rows(catalogResults[0], AreaModel.fromJson));
-      offers.assignAll(_rows(catalogResults[2], OfferModel.fromJson));
-      upsertBranches(_rows(catalogResults[1], BranchModel.fromJson));
-      upsertServices(_rows(catalogResults[3], WashServiceModel.fromJson));
+      countries.assignAll(_rows(catalogResults[1], CountryModel.fromJson));
+      categories.assignAll([
+        for (final r in catalogResults[2] as List)
+          (id: (r as Map)['id'].toString(), name: LocalizedText.fromJson(r['name'])),
+      ]..sort((a, b) => _categoryOrder(a.id).compareTo(_categoryOrder(b.id))));
+      offers.assignAll(_rows(catalogResults[3], OfferModel.fromJson));
+
+      // The nearest washes in the customer's country; any 20 before a position is known.
+      final from = origin?.call();
+      if (from != null) {
+        await discover(lat: from.lat, lng: from.lng, country: from.country, limit: 20, throwOnError: true);
+      } else {
+        final res = await ApiCall.read(() => client.from('branches').select().eq('active', true).limit(20), tag: 'home branches');
+        final list = _rows(res, BranchModel.fromJson);
+        upsertBranches(list);
+        await _fetchPrimaryServices(list.map((b) => b.id).toList());
+      }
 
       // Authenticated user active order lookup only
       final currentUser = client.auth.currentUser;
@@ -260,69 +298,72 @@ class WashUpDbService extends GetxService {
     }
   }
 
-  /// 2. Map Page fetch: called on-demand when user opens the map. Loads branches with coordinates (limit 60).
-  /// Errors return an empty list, or are rethrown as-is with [throwOnError].
-  Future<List<BranchModel>> fetchMapBranches({String? areaId, bool throwOnError = false}) async {
-    try {
-      final res = await ApiCall.read(() {
-        var query = SupabaseService.client.from('branches').select();
-        if (areaId != null && areaId.isNotEmpty) {
-          query = query.eq('area_id', areaId);
-        }
-        return query.limit(60);
-      }, tag: 'map branches');
-      final list = _rows(res, BranchModel.fromJson);
-      upsertBranches(list);
-      return list;
-    } catch (e) {
-      dev.log('[WashUpDbService] fetchMapBranches error: $e');
-      if (throwOnError) rethrow;
-      return [];
-    }
-  }
-
-  /// 3. Search / Results Page fetch: loads branches page by page using database pagination (.range).
-  Future<List<BranchModel>> fetchPaginatedBranches({
-    required int page,
-    int pageSize = 10,
-    String? areaId,
+  /// Washes around a point, nearest first (the discover_branches RPC). Each
+  /// row carries its distance and lowest primary price; the branches and
+  /// their primary services are cached for the screens that list them.
+  Future<List<({BranchModel branch, double km, num? fromPrice})>> discover({
+    required double lat,
+    required double lng,
+    String? country,
     String? category,
+    String? query,
+    double? maxKm,
+    int limit = 20,
+    int offset = 0,
     bool throwOnError = false,
   }) async {
     try {
-      final client = SupabaseService.client;
-      final from = page * pageSize;
-      final to = from + pageSize - 1;
-
-      final res = await ApiCall.read(() {
-        var query = client.from('branches').select();
-        if (areaId != null && areaId.isNotEmpty) {
-          query = query.eq('area_id', areaId);
-        }
-        return query.range(from, to);
-      }, tag: 'branches page $page');
-      final list = _rows(res, BranchModel.fromJson);
-      upsertBranches(list);
-
-      // Fetch primary services for these branches so prices calculate correctly
-      if (list.isNotEmpty) {
-        final bIds = list.map((b) => b.id).toList();
-        final sRes = await ApiCall.read(
-          () => client.from('services').select().inFilter('branch_id', bIds).eq('type', 'primary'),
-          tag: 'branches page $page services',
-        );
-        upsertServices(_rows(sRes, WashServiceModel.fromJson));
-      }
-
-      return list;
+      final res = await ApiCall.read(
+        () => SupabaseService.client.rpc('discover_branches', params: {
+          'p_lat': lat,
+          'p_lng': lng,
+          'p_country': country,
+          'p_category': category,
+          'p_query': (query?.trim().isEmpty ?? true) ? null : query!.trim(),
+          'p_max_km': maxKm,
+          'p_limit': limit,
+          'p_offset': offset,
+        }),
+        tag: 'discover branches',
+      );
+      final rows = [
+        for (final r in res as List)
+          (
+            branch: BranchModel.fromJson(Map<String, dynamic>.from((r as Map)['branch'] as Map)),
+            km: (r['km'] as num).toDouble(),
+            fromPrice: r['from_price'] as num?,
+          ),
+      ];
+      upsertBranches(rows.map((r) => r.branch).toList());
+      await _fetchPrimaryServices(rows.map((r) => r.branch.id).toList());
+      return rows;
     } catch (e) {
-      dev.log('[WashUpDbService] fetchPaginatedBranches error: $e');
+      dev.log('[WashUpDbService] discover error: $e');
       if (throwOnError) rethrow;
-      return [];
+      return const [];
     }
   }
 
-  /// 4. Wash Details Page fetch: loads single branch info, its specific services, and recent reviews.
+  static const _knownCategoryOrder = ['exterior', 'interior', 'full', 'deep'];
+
+  /// The four first categories keep the order the home screen always had.
+  static int _categoryOrder(String id) {
+    final i = _knownCategoryOrder.indexOf(id);
+    return i < 0 ? 100 : i;
+  }
+
+  /// Primary services of [branchIds] not loaded yet, so their prices show.
+  Future<void> _fetchPrimaryServices(List<String> branchIds) async {
+    final missing = branchIds.where((id) => !services.any((s) => s.branchId == id)).toList();
+    if (missing.isEmpty) return;
+    final res = await ApiCall.read(
+      () => SupabaseService.client.from('services').select().inFilter('branch_id', missing).eq('type', 'primary'),
+      tag: 'primary services',
+    );
+    upsertServices(_rows(res, WashServiceModel.fromJson));
+  }
+
+  /// Wash Details Page fetch: loads single branch info, its specific services, and recent reviews.
   /// On failure returns the cached branch (if any), or rethrows with [throwOnError].
   Future<BranchModel?> fetchBranchDetails(String branchId, {bool throwOnError = false}) async {
     try {

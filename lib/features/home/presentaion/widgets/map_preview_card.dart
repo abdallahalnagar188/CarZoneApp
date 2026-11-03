@@ -91,7 +91,8 @@ class MapPreviewCard extends StatelessWidget {
                                       style: theme.titleMedium?.copyWith(color: AppColors.ink900),
                                     ),
                                     Obx(() {
-                                      final count = controller.nearby.length;
+                                      // "Near you" means within 10 km, not every wash in the country.
+                                      final count = controller.nearby.where((r) => r.km <= 10).length;
                                       return Text(
                                         count == 0
                                             ? 'home.mapExplore'.tr

@@ -44,10 +44,9 @@ void main() {
     expect(db.services.isEmpty, isTrue);
     expect(db.offers.isEmpty, isTrue);
 
-    // Verify safe area fallback when empty
-    final fallbackArea = db.area('any_id');
-    expect(fallbackArea.id, equals('nasr'));
-    expect(fallbackArea.lat, equals(30.0566));
+    // No made-up area when none is known; Egypt until the countries load
+    expect(db.area('any_id'), isNull);
+    expect(db.country(null).code, equals('EG'));
 
     // Fetch from Supabase (Home essentials)
     final success = await db.fetchHomeData();
@@ -70,10 +69,14 @@ void main() {
     final branchServices = db.servicesFor(branchId);
     expect(branchServices, isNotEmpty);
 
-    // Test on-demand pagination
-    final paged = await db.fetchPaginatedBranches(page: 0, pageSize: 5);
+    // Nearest washes around Nasr City, closest first, at most 5
+    expect(db.countries.any((c) => c.code == 'AE'), isTrue);
+    final paged = await db.discover(lat: 30.0566, lng: 31.3301, country: 'EG', limit: 5);
     expect(paged.length, greaterThan(0));
     expect(paged.length, lessThanOrEqualTo(5));
+    for (var i = 1; i < paged.length; i++) {
+      expect(paged[i].km, greaterThanOrEqualTo(paged[i - 1].km));
+    }
 
     // Order numbers and check-in codes are assigned by the server (create_order).
     final ticket = db.nextTicket();

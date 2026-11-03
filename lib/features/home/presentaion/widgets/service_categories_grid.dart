@@ -44,7 +44,7 @@ class ServiceCategoriesGrid extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  AppNetworkImage(photoId: AppRes.category[c.id]!, width: 500, height: 360),
+                  AppNetworkImage(photoId: AppRes.category[c.id] ?? AppRes.category.values.first, width: 500, height: 360),
                   DecoratedBox(decoration: BoxDecoration(gradient: AppColors.photoShade)),
                   PositionedDirectional(
                     top: 10.h,
@@ -57,7 +57,7 @@ class ServiceCategoriesGrid extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                       ),
-                      child: Icon(icons[c.id], size: 18.sp, color: Colors.white),
+                      child: Icon(icons[c.id] ?? Iconsax.drop, size: 18.sp, color: Colors.white),
                     ),
                   ),
                   PositionedDirectional(
@@ -67,7 +67,7 @@ class ServiceCategoriesGrid extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('cat.${c.id}'.tr, style: theme.titleMedium?.copyWith(color: Colors.white)),
+                        Text(c.name, style: theme.titleMedium?.copyWith(color: Colors.white)),
                         if (c.from != null)
                           Text(
                             'home.from'.trParams({'price': FormatHelper.money(c.from!)}),

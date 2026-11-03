@@ -174,7 +174,7 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
       'subtitle': subtitle,
       'codeLabel': 'live.code'.tr,
       'stageLabels': [for (final s in _stages) 'live.stage.${s.key}'.tr],
-      'total': FormatHelper.money(o.total),
+      'total': FormatHelper.money(o.total, branchId: o.branchId),
       'totalLabel': 'live.total'.tr,
       'startsInLabel': 'live.startsIn'.tr,
       'readyInLabel': 'live.readyIn'.tr,

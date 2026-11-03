@@ -10,6 +10,7 @@ enum CacheKeys {
   name,
   mobile,
   areaId,
+  countryCode,
   recentSearches,
   notifReminders,
   notifOffers,

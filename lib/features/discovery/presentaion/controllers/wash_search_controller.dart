@@ -40,7 +40,10 @@ class WashSearchController extends GetxController {
     _debounce = Timer(const Duration(milliseconds: 250), () => _search(value));
   }
 
-  void _search(String value) {
+  /// The latest query sent, so a slower earlier answer is not shown over it.
+  int _ticket = 0;
+
+  Future<void> _search(String value) async {
     query.value = value.trim();
     if (query.value.isEmpty) {
       washes.clear();
@@ -49,16 +52,20 @@ class WashSearchController extends GetxController {
       return;
     }
     final q = query.value;
-    washes.assignAll(
-      _discovery.listings().where((r) => r.branch.name.matches(q) || _db.area(r.branch.areaId).name.matches(q)),
-    );
+    final session = Get.find<SessionService>();
+    final country = session.countryCode.value;
     categories.assignAll(
-      ['exterior', 'interior', 'full', 'deep'].where((c) {
-        final svc = _db.services.firstWhereOrNull((s) => s.category == c && s.isPrimary);
-        return ('cat.$c'.tr.toLowerCase().contains(q.toLowerCase())) || (svc?.name.matches(q) ?? false);
-      }),
+      _db.categories.where((c) => c.name.matches(q) || 'cat.${c.id}'.tr.toLowerCase().contains(q.toLowerCase())).map((c) => c.id),
     );
-    areas.assignAll(_db.areas.where((a) => a.name.matches(q)));
+    areas.assignAll(_db.areasIn(country).where((a) => a.name.matches(q)));
+
+    // Every wash in the country matching the name or area, not only the loaded ones.
+    final ticket = ++_ticket;
+    final rows = await _db.discover(lat: session.lat, lng: session.lng, country: country, query: q, limit: 30);
+    if (ticket != _ticket) return;
+    final ids = rows.map((r) => r.branch.id).toSet();
+    washes.assignAll(_discovery.listings().where((r) => ids.contains(r.branch.id)).toList()
+      ..sort((a, b) => a.km.compareTo(b.km)));
   }
 
   void useRecent(String value) {

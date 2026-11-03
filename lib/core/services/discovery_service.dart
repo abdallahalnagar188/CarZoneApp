@@ -12,8 +12,9 @@ import 'session_service.dart';
 class DiscoveryFilters {
   final double? maxKm;
   final double? minRating;
-  final double priceMin;
-  final double priceMax;
+  /// Price bounds in the browsed country's currency; null for no bound.
+  final double? priceMin;
+  final double? priceMax;
   final bool openNow;
   final bool availableToday;
   final SortMode sort;
@@ -21,8 +22,8 @@ class DiscoveryFilters {
   const DiscoveryFilters({
     this.maxKm,
     this.minRating,
-    this.priceMin = 0,
-    this.priceMax = 500,
+    this.priceMin,
+    this.priceMax,
     this.openNow = false,
     this.availableToday = false,
     this.sort = SortMode.nearest,
@@ -31,7 +32,7 @@ class DiscoveryFilters {
   int get activeCount => [
         maxKm != null,
         minRating != null,
-        priceMin > 0 || priceMax < 500,
+        priceMin != null || priceMax != null,
         openNow,
         availableToday,
       ].where((x) => x).length;
@@ -39,8 +40,8 @@ class DiscoveryFilters {
   DiscoveryFilters copyWith({
     double? Function()? maxKm,
     double? Function()? minRating,
-    double? priceMin,
-    double? priceMax,
+    double? Function()? priceMin,
+    double? Function()? priceMax,
     bool? openNow,
     bool? availableToday,
     SortMode? sort,
@@ -48,8 +49,8 @@ class DiscoveryFilters {
       DiscoveryFilters(
         maxKm: maxKm != null ? maxKm() : this.maxKm,
         minRating: minRating != null ? minRating() : this.minRating,
-        priceMin: priceMin ?? this.priceMin,
-        priceMax: priceMax ?? this.priceMax,
+        priceMin: priceMin != null ? priceMin() : this.priceMin,
+        priceMax: priceMax != null ? priceMax() : this.priceMax,
         openNow: openNow ?? this.openNow,
         availableToday: availableToday ?? this.availableToday,
         sort: sort ?? this.sort,
@@ -89,8 +90,9 @@ class DiscoveryService {
     final list = rows.where((r) {
       if (f.maxKm != null && r.km > f.maxKm!) return false;
       if (f.minRating != null && r.rating < f.minRating!) return false;
-      final price = r.fromPrice ?? 0;
-      if (price < f.priceMin || price > f.priceMax) return false;
+      final price = r.fromPrice;
+      if (f.priceMin != null && (price == null || price < f.priceMin!)) return false;
+      if (f.priceMax != null && (price == null || price > f.priceMax!)) return false;
       if (f.openNow && !r.open) return false;
       if (f.availableToday &&
           (r.nextSlot == null || !FormatHelper.sameDay(r.nextSlot!, now))) {

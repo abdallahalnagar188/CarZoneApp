@@ -60,7 +60,7 @@ class WashDetailsPage extends StatelessWidget {
                     address: controller.branch!.address.value,
                     pinLabel: controller.listing.value!.fromPrice == null
                         ? controller.branch!.name.value
-                        : FormatHelper.money(controller.listing.value!.fromPrice!),
+                        : FormatHelper.money(controller.listing.value!.fromPrice!, branchId: controller.listing.value!.branch.id),
                   ),
                 ),
               ),

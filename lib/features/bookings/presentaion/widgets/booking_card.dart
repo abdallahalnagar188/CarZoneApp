@@ -57,7 +57,7 @@ class BookingCard extends StatelessWidget {
                         6.width,
                         Expanded(child: Text(FormatHelper.dateTime(order.scheduledAt), style: theme.labelMedium)),
                         Text(
-                          FormatHelper.money(order.total),
+                          FormatHelper.money(order.total, branchId: order.branchId),
                           style: theme.titleSmall?.copyWith(color: AppColors.primary),
                         ),
                       ],
