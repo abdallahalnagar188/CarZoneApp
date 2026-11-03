@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../core/constance/app_colors.dart';
 import '../../../core/extensions/sized_box_extension.dart';
+import '../../../core/helpers/plate_helper.dart';
 import '../../models/vehicle_model.dart';
 
 class PlateBadge extends StatelessWidget {
@@ -23,7 +24,8 @@ class PlateBadge extends StatelessWidget {
       ),
       child: Text(
         plate,
-        textDirection: TextDirection.ltr,
+        // Egyptian plates read letters on the right, digits on the left.
+        textDirection: PlateHelper.isArabic(plate) ? TextDirection.rtl : TextDirection.ltr,
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w700,

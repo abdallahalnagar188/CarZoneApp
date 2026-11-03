@@ -93,8 +93,8 @@ class _BookingSlotPageState extends State<BookingSlotPage> {
                         ),
                         Text(
                           FormatHelper.isAr
-                              ? 'المواعيد المعروضة بالتوقيت المحلي للفرع (مصر)'
-                              : 'Times displayed in Egypt branch local time',
+                              ? 'المواعيد المعروضة بالتوقيت المحلي للفرع'
+                              : 'Times are in the branch\'s local time',
                           style: theme.labelSmall?.copyWith(fontSize: 10.sp, color: AppColors.ink500),
                         ),
                       ],

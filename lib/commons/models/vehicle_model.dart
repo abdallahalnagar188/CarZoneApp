@@ -34,15 +34,16 @@ class VehicleModel {
     'beige': Color(0xFFE5D3B3),
   };
 
-  static const Map<String, List<String>> makes = {
-    'Toyota': ['Corolla', 'Camry', 'Yaris', 'Fortuner'],
-    'Hyundai': ['Elantra', 'Tucson', 'Accent', 'Creta'],
-    'Kia': ['Sportage', 'Cerato', 'Picanto', 'Sorento'],
-    'Nissan': ['Sunny', 'Qashqai', 'Sentra'],
-    'Chevrolet': ['Optra', 'Captiva', 'Aveo'],
-    'MG': ['MG 5', 'HS', 'ZS'],
-    'Mercedes': ['C 200', 'E 200', 'GLC'],
-    'BMW': ['320i', 'X3', 'X5'],
+  /// Spoken names for the swatches, so a selected white is not just an empty circle.
+  static const colorNames = {
+    'white': 'color.white',
+    'black': 'color.black',
+    'silver': 'color.silver',
+    'gray': 'color.gray',
+    'blue': 'color.blue',
+    'red': 'color.red',
+    'green': 'color.green',
+    'beige': 'color.beige',
   };
 
   Color get swatch => colors[color] ?? colors['white']!;
