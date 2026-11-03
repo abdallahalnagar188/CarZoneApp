@@ -87,8 +87,21 @@ class FormatHelper {
     return value.isEmpty ? '؟' : value;
   }
 
-  static String normalizePlate(String plate) =>
-      plate.toUpperCase().replaceAll(RegExp(r'[\s-]'), '');
+  /// Arabic-Indic (٠١٢) and Persian (۰۱۲) digits as 0-9: an Arabic keyboard
+  /// types those, and plates and years are compared and stored with 0-9.
+  static String latinDigits(String text) => text.replaceAllMapped(
+        RegExp('[\u0660-\u0669\u06F0-\u06F9]'),
+        (m) => String.fromCharCode(48 + (m[0]!.codeUnitAt(0) & 0xF)),
+      );
+
+  /// One spelling per plate, for comparing and searching: 0-9 digits, no
+  /// spaces or dashes, and the Arabic letter forms people mix up made the same.
+  static String normalizePlate(String plate) => latinDigits(plate)
+      .toUpperCase()
+      .replaceAll(RegExp(r'[\s\-_.]'), '')
+      .replaceAll(RegExp('[أإآ]'), 'ا')
+      .replaceAll('ى', 'ي')
+      .replaceAll('ة', 'ه');
 
   static double haversineKm(double lat1, double lng1, double lat2, double lng2) {
     const r = 6371.0;
