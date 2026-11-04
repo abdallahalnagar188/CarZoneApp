@@ -130,8 +130,10 @@ class AvailabilityService {
 
   static String toUtcIsoString(DateTime slot) => BranchTimeHelper.toUtcIsoString(slot);
 
+  /// [now] is a wall clock in the branch; by default the branch's own clock,
+  /// not the phone's.
   bool isOpenNow(BranchModel branch, [DateTime? now]) {
-    final ref = now ?? DateTime.now();
+    final ref = now ?? FormatHelper.wallClock(DateTime.now(), branchId: branch.id);
     final day = branch.hoursFor(ref);
     if (day.closed || !branch.bookable) return false;
     final mins = ref.hour * 60 + ref.minute;

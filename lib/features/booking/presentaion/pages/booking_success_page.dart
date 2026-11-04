@@ -57,7 +57,7 @@ class BookingSuccessPage extends StatelessWidget {
                       10.height,
                       StatusBadge.order(order.status),
                       12.height,
-                      Text(FormatHelper.dateTime(order.scheduledAt), style: theme.bodyMedium),
+                      Text(FormatHelper.dateTime(order.scheduledAt, branchId: order.branchId), style: theme.bodyMedium),
                     ],
                   ),
                 ),

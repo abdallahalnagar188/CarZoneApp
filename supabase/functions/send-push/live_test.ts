@@ -68,6 +68,11 @@ Deno.test("payload matches the app's live booking payload", () => {
   assertEquals((p.stageLabels as string[]).length, 5);
 });
 
+Deno.test("times use the branch's time zone", () => {
+  const p = buildLivePayload({ ...ORDER, timezone: "Asia/Dubai" }, "en", NOW);
+  assertEquals(p.subtitle, "Your slot is at 5:30 PM");
+});
+
 Deno.test("in service: ready time counts from the in_service event", () => {
   const p = buildLivePayload(
     { ...ORDER, status: "in_service", serviceStartedAt: "2026-10-21T13:00:00Z" },

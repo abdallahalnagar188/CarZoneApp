@@ -92,7 +92,7 @@ class BookingDetailsPage extends StatelessWidget {
               lat: branch.lat,
               lng: branch.lng,
               address: branch.address.value,
-              pinLabel: FormatHelper.time(order.scheduledAt),
+              pinLabel: FormatHelper.time(order.scheduledAt, branchId: order.branchId),
             ),
             10.height,
             AppButton(
@@ -120,7 +120,10 @@ class BookingDetailsPage extends StatelessWidget {
               title: 'book.slot'.tr,
               child: Column(
                 children: [
-                  PriceLine(label: FormatHelper.date(order.scheduledAt), value: FormatHelper.time(order.scheduledAt)),
+                  PriceLine(
+                    label: FormatHelper.date(order.scheduledAt, branchId: order.branchId),
+                    value: FormatHelper.time(order.scheduledAt, branchId: order.branchId),
+                  ),
                   PriceLine(label: 'book.duration'.tr, value: FormatHelper.minutes(order.durationMin)),
                 ],
               ),

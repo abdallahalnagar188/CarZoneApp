@@ -126,7 +126,8 @@ class BookingController extends GetxController {
   void startReschedule(OrderModel order) {
     _reset(order.branchId);
     rescheduleOrder.value = order;
-    day.value = DateTime(order.scheduledAt.year, order.scheduledAt.month, order.scheduledAt.day);
+    final wall = FormatHelper.wallClock(order.scheduledAt, branchId: order.branchId);
+    day.value = DateTime(wall.year, wall.month, wall.day);
     loadSlots();
     Get.toNamed(Routes.bookSlotRoute);
   }
@@ -207,7 +208,7 @@ class BookingController extends GetxController {
         includeFull: false,
       );
       final available = remote
-          .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.leadTimeMin))
+          .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.bookingLeadMin))
           .toList();
       slots.assignAll(available);
     } catch (_) {
@@ -219,7 +220,7 @@ class BookingController extends GetxController {
         includeFull: false,
       );
       final available = local
-          .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.leadTimeMin))
+          .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.bookingLeadMin))
           .toList();
       slots.assignAll(available);
     } finally {
@@ -259,7 +260,7 @@ class BookingController extends GetxController {
     final s = slot.value;
     if (s == null) return;
     final b = branch;
-    if (b != null && BranchTimeHelper.isSlotTooSoon(s, b.settings.leadTimeMin)) {
+    if (b != null && BranchTimeHelper.isSlotTooSoon(s, b.settings.bookingLeadMin)) {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(
@@ -305,16 +306,19 @@ class BookingController extends GetxController {
             : 'The selected slot is outside branch operating hours. Please pick an available time.',
         type: TosterTypes.warning,
       );
-    } on SlotTakenException {
+    } on SlotTakenException catch (e) {
       confirming.value = false;
       slot.value = null;
       await loadSlots();
-      Utils.getSnakBar(message: 'book.slotTaken'.tr, type: TosterTypes.warning);
+      Utils.getSnakBar(message: e is SlotTooFarException ? _tooFar : 'book.slotTaken'.tr, type: TosterTypes.warning);
     } catch (e) {
       confirming.value = false;
       Utils.getSnakBar(message: _bookingError(e, 'reschedule.failed'), type: TosterTypes.failed);
     }
   }
+
+  /// The server refused a day past the branch's booking window.
+  String get _tooFar => 'book.slotTooFar'.trParams({'days': '${branch?.settings.maxAdvanceDays ?? 7}'});
 
   void editStep(String route) => Get.until((r) => r.settings.name == route);
 
@@ -372,11 +376,14 @@ class BookingController extends GetxController {
         type: TosterTypes.warning,
       );
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
-    } on SlotTakenException {
+    } on SlotTakenException catch (e) {
       confirming.value = false;
       slot.value = null;
       await loadSlots();
-      Utils.getSnakBar(message: '${'book.slotTaken'.tr}\n${'book.slotTakenBody'.tr}', type: TosterTypes.warning);
+      Utils.getSnakBar(
+        message: e is SlotTooFarException ? _tooFar : '${'book.slotTaken'.tr}\n${'book.slotTakenBody'.tr}',
+        type: TosterTypes.warning,
+      );
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
     } catch (e) {
       confirming.value = false;

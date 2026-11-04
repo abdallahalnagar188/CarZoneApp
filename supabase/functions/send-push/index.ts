@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) =>
         const { data, error } = await db
           .from("orders")
           .select(
-            "id, number, code, status, scheduled_at, duration_min, branches(name), order_items(name, type, position), order_events(status, at)",
+            "id, number, code, status, scheduled_at, duration_min, branches(name, areas(countries(timezone))), order_items(name, type, position), order_events(status, at)",
           )
           .eq("id", orderId)
           .maybeSingle();
@@ -80,6 +80,8 @@ Deno.serve(async (req: Request) =>
           scheduledAt: data.scheduled_at,
           durationMin: data.duration_min,
           branchName: (data.branches as { name?: unknown } | null)?.name ?? null,
+          timezone: (data.branches as { areas?: { countries?: { timezone?: string } | null } | null } | null)?.areas
+            ?.countries?.timezone ?? null,
           serviceName: primary?.name ?? null,
           serviceStartedAt: started ?? null,
         };
