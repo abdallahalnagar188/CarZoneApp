@@ -55,7 +55,7 @@ class BookingCard extends StatelessWidget {
                       children: [
                         Icon(Iconsax.calendar_1, size: 14.sp, color: AppColors.ink500),
                         6.width,
-                        Expanded(child: Text(FormatHelper.dateTime(order.scheduledAt), style: theme.labelMedium)),
+                        Expanded(child: Text(FormatHelper.dateTime(order.scheduledAt, branchId: order.branchId), style: theme.labelMedium)),
                         Text(
                           FormatHelper.money(order.total, branchId: order.branchId),
                           style: theme.titleSmall?.copyWith(color: AppColors.primary),

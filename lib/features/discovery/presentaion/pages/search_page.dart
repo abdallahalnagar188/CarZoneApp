@@ -85,7 +85,7 @@ class SearchPage extends StatelessWidget {
                     icon: Iconsax.shop,
                     title: r.branch.name.value,
                     subtitle:
-                        '${FormatHelper.distance(r.km)} · ${(r.open ? 'open' : 'closed').tr} · ${r.nextSlot == null ? '—' : FormatHelper.time(r.nextSlot!)}',
+                        '${FormatHelper.distance(r.km)} · ${(r.open ? 'open' : 'closed').tr} · ${r.nextSlot == null ? '—' : FormatHelper.time(r.nextSlot!, branchId: r.branch.id)}',
                     onTap: () => controller.openWash(r.branch.id),
                   )),
               16.height,

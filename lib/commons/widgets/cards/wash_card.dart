@@ -165,7 +165,7 @@ class WashCard extends StatelessWidget {
                             Icon(Iconsax.clock, size: 13.sp, color: AppColors.primary),
                             4.width,
                             Text(
-                              row.nextSlot == null ? '—' : FormatHelper.time(row.nextSlot!),
+                              row.nextSlot == null ? '—' : FormatHelper.time(row.nextSlot!, branchId: row.branch.id),
                               style: theme.labelMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
                             ),
                           ],

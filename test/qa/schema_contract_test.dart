@@ -9,6 +9,8 @@ import 'package:washup/commons/models/review_model.dart';
 import 'package:washup/commons/models/vehicle_model.dart';
 import 'package:washup/core/enums/enums.dart';
 import 'package:washup/core/services/order_service.dart';
+import 'package:washup/core/services/washup_db_service.dart';
+import 'package:get/get.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'qa_helpers.dart';
@@ -87,10 +89,25 @@ void main() {
 
   // QA-H7: complaints are never saved (ticket_number/reason/details are not columns).
   test('complaints: OrderService.report payload matches schema', () async {
-    final db = freshDb();
+    Get.reset();
+    final db = Get.put<WashUpDbService>(_ComplaintDb());
     final order = _order();
     db.orders.add(order);
-    await OrderService().report(order, 'quality', 'bad wash');
+    final ticket = await OrderService().report(order, 'quality', 'bad wash');
     expectMatchesSchema('complaints', Map<String, dynamic>.from(db.complaints.single));
+    // The ticket shown is the one the database gave, not one made on the phone.
+    expect(ticket, 'TK-1041');
+    expect((db as _ComplaintDb).sent!.containsKey('ticket'), isFalse);
   });
+}
+
+/// Answers the complaint insert like the database: it numbers the ticket.
+class _ComplaintDb extends WashUpDbService {
+  Map<String, dynamic>? sent;
+
+  @override
+  Future<String> insertComplaint(Map<String, dynamic> complaint) async {
+    sent = complaint;
+    return 'TK-1041';
+  }
 }

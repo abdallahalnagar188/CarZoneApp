@@ -22,6 +22,8 @@ export interface LiveOrder {
   serviceName: unknown;
   /** Latest in_service event, if any. */
   serviceStartedAt: string | null;
+  /** The branch country's time zone; Cairo when unknown. */
+  timezone?: string | null;
 }
 
 export interface LiveDevice {
@@ -111,9 +113,9 @@ const STRINGS: Record<Lang, Record<string, string>> = {
 };
 
 /** Branch time, as FormatHelper.time shows it: "4:05 م" / "4:05 PM". */
-export function branchTime(ms: number, lang: Lang): string {
+export function branchTime(ms: number, lang: Lang, timeZone = "Africa/Cairo"): string {
   const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Africa/Cairo",
+    timeZone,
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -137,6 +139,7 @@ export function buildLivePayload(order: LiveOrder, locale: string | null, now = 
   const status = order.status;
   const isFinal = !UPCOMING.includes(status);
   const scheduledAt = Date.parse(order.scheduledAt);
+  const tz = order.timezone || "Africa/Cairo";
   const startedAt = status === "in_service"
     ? (order.serviceStartedAt ? Date.parse(order.serviceStartedAt) : now)
     : null;
@@ -144,9 +147,9 @@ export function buildLivePayload(order: LiveOrder, locale: string | null, now = 
 
   let subtitle: string;
   if (status === "pending" || status === "confirmed") {
-    subtitle = tr("sub.appointment").replace("@time", branchTime(scheduledAt, lang));
+    subtitle = tr("sub.appointment").replace("@time", branchTime(scheduledAt, lang, tz));
   } else if (status === "in_service" && readyAt != null) {
-    subtitle = tr("sub.readyAt").replace("@time", branchTime(readyAt, lang));
+    subtitle = tr("sub.readyAt").replace("@time", branchTime(readyAt, lang, tz));
   } else {
     subtitle = tr(`sub.${status}`);
   }

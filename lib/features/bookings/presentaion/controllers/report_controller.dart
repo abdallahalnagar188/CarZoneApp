@@ -42,8 +42,15 @@ class ReportController extends GetxController {
       return;
     }
     sending.value = true;
-    final ticket = await _orders.report(o, category.value, descriptionController.text.trim());
-    sending.value = false;
+    final String ticket;
+    try {
+      ticket = await _orders.report(o, category.value, descriptionController.text.trim());
+    } catch (_) {
+      error.value = 'report.failed'.tr;
+      return;
+    } finally {
+      sending.value = false;
+    }
     Get.back();
     Utils.getSnakBar(
       message: '${'report.done'.tr} · ${'report.ticket'.trParams({'n': ticket})}',

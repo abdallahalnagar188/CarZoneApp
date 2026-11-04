@@ -16,6 +16,9 @@ class SlotTakenException implements Exception {}
 class SlotTooSoonException implements Exception {}
 class SlotOutsideHoursException implements Exception {}
 
+/// Past the branch's booking window (max_advance_days).
+class SlotTooFarException extends SlotTakenException {}
+
 /// A booking RPC refused the request. [code] is the server's reason,
 /// e.g. `branch_unavailable`, `order_not_cancellable` (see migration 20261019120000).
 class BookingException implements Exception {
@@ -50,6 +53,7 @@ class OrderService {
       dev.log('[OrderService] $fn refused: ${e.code} ${e.message}');
       if (e.message == 'slot_too_soon') throw SlotTooSoonException();
       if (e.message == 'slot_outside_hours') throw SlotOutsideHoursException();
+      if (e.message == 'slot_too_far') throw SlotTooFarException();
       if (e.message.startsWith('slot_')) throw SlotTakenException();
       throw BookingException(e.message);
     }
@@ -137,11 +141,9 @@ class OrderService {
 
   Future<String> report(OrderModel order, String category, String description) async {
     await Future.delayed(const Duration(milliseconds: 50));
-    final ticket = _db.nextTicket();
     final branch = _db.branch(order.branchId);
     final row = {
       'id': 'cp_${DateTime.now().microsecondsSinceEpoch}',
-      'ticket': ticket,
       'order_id': order.id,
       'customer_id': order.customerId,
       'branch_id': order.branchId,
@@ -151,8 +153,9 @@ class OrderService {
       'status': 'open',
       'created_at': DateTime.now().toUtc().toIso8601String(),
     };
-    _db.complaints.add(row);
-    _db.saveComplaint(row);
+    // The database numbers the ticket; the one shown is the one support sees.
+    final ticket = await _db.insertComplaint(row);
+    _db.complaints.add({...row, 'ticket': ticket});
     order.complaintId = ticket;
     _db.orders.refresh();
     return ticket;

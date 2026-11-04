@@ -156,9 +156,9 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
     final title = 'live.title.${o.status.key}'.tr;
     final subtitle = switch (o.status) {
       OrderStatus.pending || OrderStatus.confirmed =>
-        'live.sub.appointment'.trParams({'time': FormatHelper.time(o.scheduledAt)}),
+        'live.sub.appointment'.trParams({'time': FormatHelper.time(o.scheduledAt, branchId: o.branchId)}),
       OrderStatus.inService when ready != null =>
-        'live.sub.readyAt'.trParams({'time': FormatHelper.time(ready)}),
+        'live.sub.readyAt'.trParams({'time': FormatHelper.time(ready, branchId: o.branchId)}),
       _ => 'live.sub.${o.status.key}'.tr,
     };
     return {

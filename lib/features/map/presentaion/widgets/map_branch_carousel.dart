@@ -122,7 +122,7 @@ class _BranchCard extends StatelessWidget {
                       4.width,
                       Flexible(
                         child: Text(
-                          row.nextSlot == null ? '—' : FormatHelper.time(row.nextSlot!),
+                          row.nextSlot == null ? '—' : FormatHelper.time(row.nextSlot!, branchId: row.branch.id),
                           maxLines: 1,
                           style: theme.labelMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
                         ),

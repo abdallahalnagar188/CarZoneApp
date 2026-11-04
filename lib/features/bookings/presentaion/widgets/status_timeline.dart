@@ -130,7 +130,7 @@ class StatusTimeline extends StatelessWidget {
                         ),
                         if (at != null)
                           Text(
-                            FormatHelper.time(at),
+                            FormatHelper.time(at, branchId: order.branchId),
                             style: theme.labelSmall?.copyWith(
                               color: isCurrent ? color : AppColors.ink500,
                               fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,

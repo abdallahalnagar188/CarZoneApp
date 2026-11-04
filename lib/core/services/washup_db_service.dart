@@ -719,12 +719,14 @@ class WashUpDbService extends GetxService {
     }
   }
 
-  Future<void> saveComplaint(Map<String, dynamic> complaint) async {
-    try {
-      await ApiCall.write(() => SupabaseService.client.from('complaints').upsert(complaint), tag: 'save complaint');
-    } catch (e) {
-      dev.log('[WashUpDbService] Error saving complaint to Supabase: $e');
-    }
+  /// Saves a new complaint and returns the ticket the database gave it.
+  /// A plain insert: customers may not update complaints, so an upsert is refused.
+  Future<String> insertComplaint(Map<String, dynamic> complaint) async {
+    final row = await ApiCall.write(
+      () => SupabaseService.client.from('complaints').insert(complaint).select('ticket').single(),
+      tag: 'save complaint',
+    );
+    return row['ticket'] as String;
   }
 
   CustomerModel registerCustomer(String authId, String phone, String name) {

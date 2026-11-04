@@ -51,7 +51,7 @@ class ServiceProgressCard extends StatelessWidget {
                 Text('status.in_service'.tr, style: theme.titleMedium?.copyWith(color: Colors.white)),
                 4.height,
                 Text(
-                  'book.finishEta'.trParams({'time': FormatHelper.time(finish)}),
+                  'book.finishEta'.trParams({'time': FormatHelper.time(finish, branchId: order.branchId)}),
                   style: theme.bodySmall?.copyWith(color: Colors.white70),
                 ),
               ],

@@ -72,6 +72,7 @@ const _ln = LocalizedText('x', 'x');
 
 BranchModel branchFixture({
   String id = 'br_test',
+  String areaId = 'nasr',
   int capacity = 2,
   List<WorkingDay>? hours,
   BranchSettings settings = const BranchSettings(slotIntervalMin: 30, leadTimeMin: 0, maxAdvanceDays: 7),
@@ -82,7 +83,7 @@ BranchModel branchFixture({
     id: id,
     businessId: 'biz_test',
     name: _ln,
-    areaId: 'nasr',
+    areaId: areaId,
     address: _ln,
     lat: 30,
     lng: 31,

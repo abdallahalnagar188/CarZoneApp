@@ -43,32 +43,51 @@ class FormatHelper {
     return '$text ${country.currencySymbol.value}';
   }
 
-  static String time(DateTime d, {String? timezone}) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
+  /// The time zone of [branchId]'s country.
+  static String? timezoneOf(String? branchId) =>
+      branchId != null && Get.isRegistered<WashUpDbService>()
+          ? Get.find<WashUpDbService>().countryOfBranch(branchId).timezone
+          : null;
+
+  /// [d] as a wall clock to print. With [branchId], [d] is a moment in time
+  /// (an order, a timeline step) shown on that branch's clock wherever the
+  /// phone is. Otherwise a UTC value gets [timezone]'s offset and any other
+  /// value is already a wall clock (a slot picked in the branch's day).
+  static DateTime wallClock(DateTime d, {String? timezone, String? branchId}) {
+    if (branchId != null) {
+      final utc = d.toUtc();
+      return utc.add(BranchTimeHelper.offsetFor(timezoneOf(branchId), utc));
+    }
+    return d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
+  }
+
+  static String time(DateTime d, {String? timezone, String? branchId}) {
+    final local = wallClock(d, timezone: timezone, branchId: branchId);
     final pm = local.hour >= 12;
     final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
     final m = local.minute.toString().padLeft(2, '0');
     return isAr ? '$h:$m ${pm ? 'م' : 'ص'}' : '$h:$m ${pm ? 'PM' : 'AM'}';
   }
 
-  static String dayName(DateTime d, {String? timezone}) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
-    return isAr ? _arDays[local.weekday - 1] : _enDays[local.weekday - 1];
-  }
+  static String _dayName(DateTime local) => isAr ? _arDays[local.weekday - 1] : _enDays[local.weekday - 1];
 
-  static String date(DateTime d, {String? timezone}) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
+  static String dayName(DateTime d, {String? timezone, String? branchId}) =>
+      _dayName(wallClock(d, timezone: timezone, branchId: branchId));
+
+  static String date(DateTime d, {String? timezone, String? branchId}) {
+    final local = wallClock(d, timezone: timezone, branchId: branchId);
     final month = isAr ? _arMonths[local.month - 1] : _enMonths[local.month - 1];
-    return '${dayName(local)} ${local.day} $month';
+    return '${_dayName(local)} ${local.day} $month';
   }
 
-  static String shortDate(DateTime d, {String? timezone}) {
-    final local = d.isUtc ? d.add(BranchTimeHelper.offsetFor(timezone, d)) : d;
+  static String shortDate(DateTime d, {String? timezone, String? branchId}) {
+    final local = wallClock(d, timezone: timezone, branchId: branchId);
     final month = isAr ? _arMonths[local.month - 1] : _enMonths[local.month - 1];
     return '${local.day} $month';
   }
 
-  static String dateTime(DateTime d) => '${date(d)} · ${time(d)}';
+  static String dateTime(DateTime d, {String? branchId}) =>
+      '${date(d, branchId: branchId)} · ${time(d, branchId: branchId)}';
 
   static String distance(double km) {
     final n = km < 10 ? km.toStringAsFixed(1) : km.round().toString();
