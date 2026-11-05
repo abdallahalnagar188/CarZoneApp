@@ -42,10 +42,16 @@ class ApiException implements Exception {
       return ApiException(ApiErrorType.offline, error);
     }
     if (error is PostgrestException) {
-      final status = int.tryParse(error.code ?? '');
-      if (status != null && status >= 500) return ApiException(ApiErrorType.server, error);
+      final code = error.code ?? '';
       // statement_timeout
-      if (error.code == '57014') return ApiException(ApiErrorType.timeout, error);
+      if (code == '57014') return ApiException(ApiErrorType.timeout, error);
+      // A 3-digit code is the HTTP status of a reply without a JSON body; a
+      // 5-character one is a Postgres SQLSTATE (23505, 42501...), a refusal,
+      // not an outage. Only resource and internal errors count as the server.
+      final status = code.length == 3 ? int.tryParse(code) : null;
+      if ((status != null && status >= 500) || RegExp(r'^(53|57P|58|XX)').hasMatch(code)) {
+        return ApiException(ApiErrorType.server, error);
+      }
       // JWT expired / invalid
       if (error.code == 'PGRST301' || error.code == 'PGRST303') {
         return ApiException(ApiErrorType.unauthorized, error);

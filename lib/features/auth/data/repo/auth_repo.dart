@@ -78,6 +78,9 @@ class AuthRepo {
     final failure = error is Object ? ApiException.from(error) : null;
     if (failure != null) {
       lastFailureWasNetwork = true;
+      // Auth answered 5xx to a send: the code could not be delivered (the
+      // WhatsApp hook failed), which "service unavailable" would hide.
+      if (!isVerify && failure.type == ApiErrorType.server) return 'login.sms_error'.tr;
       return failure.message;
     }
 
