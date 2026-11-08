@@ -22,10 +22,14 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_accent" />
+        <!-- singleTask: the washup://login-callback link from the Google sign-in
+             Custom Tab must reach the running app (onNewIntent). With singleTop
+             Android starts a second app instance on top of the tab, which never
+             finishes the sign-in the first one started. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
