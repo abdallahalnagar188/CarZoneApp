@@ -5,6 +5,7 @@ import '../../../../commons/models/order_model.dart';
 import '../../../../commons/models/vehicle_model.dart';
 import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
 import '../../../../core/enums/enums.dart';
+import '../../../../core/helpers/route_argument_stack.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/washup_db_service.dart';
@@ -15,7 +16,7 @@ import '../../../../core/utils/utils.dart';
 import '../../../booking/presentaion/controllers/booking_controller.dart';
 import '../widgets/cancel_sheet.dart';
 
-class BookingDetailsController extends GetxController {
+class BookingDetailsController extends GetxController with RouteArgumentStack {
   final _orders = OrderService();
 
   final order = Rxn<OrderModel>();
@@ -26,8 +27,9 @@ class BookingDetailsController extends GetxController {
   /// Why the order could not be loaded; shown only when nothing is cached.
   final error = RxnString();
 
-  late final String orderId;
-  Worker? _reconnect;
+  /// The order shown: the top-most open booking page's (GAP-032).
+  String get orderId => activeArgument.value;
+  final _workers = <Worker>[];
 
   WashUpDbService get _db => Get.find<WashUpDbService>();
 
@@ -47,13 +49,24 @@ class BookingDetailsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    orderId = Get.arguments?.toString() ?? '';
+    initArgument(Get.arguments?.toString());
     _sync();
     load();
-    ever(_db.orders, (_) => _sync());
-    ever(_db.reviews, (_) => order.refresh());
+    _workers.addAll([
+      ever(_db.orders, (_) => _sync()),
+      ever(_db.reviews, (_) => order.refresh()),
+    ]);
     // Status changes made while offline did not arrive over realtime.
-    _reconnect = ConnectivityService.maybe?.onReconnect(load);
+    final reconnect = ConnectivityService.maybe?.onReconnect(load);
+    if (reconnect != null) _workers.add(reconnect);
+  }
+
+  @override
+  void onArgumentChanged() {
+    order.value = null;
+    error.value = null;
+    _sync(announce: false);
+    load();
   }
 
   Future<void> load() async {
@@ -79,16 +92,19 @@ class BookingDetailsController extends GetxController {
 
   @override
   void onClose() {
-    _reconnect?.dispose();
+    for (final w in _workers) {
+      w.dispose();
+    }
+    _workers.clear();
     super.onClose();
   }
 
-  void _sync() {
+  void _sync({bool announce = true}) {
     final prev = order.value?.status;
     final next = _db.order(orderId);
     order.value = next;
     order.refresh();
-    if (prev != null && next != null && prev != next.status) {
+    if (announce && prev != null && next != null && prev != next.status) {
       Utils.getSnakBar(message: 'status.${next.status.key}'.tr, type: TosterTypes.sucsses);
     }
   }

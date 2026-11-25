@@ -3,13 +3,14 @@ import 'package:get/get.dart';
 
 import '../../../../commons/models/order_model.dart';
 import '../../../../core/enums/enums.dart';
+import '../../../../core/helpers/route_argument_stack.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/services/washup_db_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/utils/utils.dart';
 
-class ReviewController extends GetxController {
+class ReviewController extends GetxController with RouteArgumentStack {
   final _orders = OrderService();
   final commentController = TextEditingController();
 
@@ -18,18 +19,63 @@ class ReviewController extends GetxController {
   final sending = false.obs;
   final error = RxnString();
 
-  static const tagKeys = ['clean', 'fast', 'staff', 'value'];
+  /// The visit being rated; loaded from the server when it is not cached
+  /// (a review push for an older order, GAP-038).
+  final order = Rxn<OrderModel>();
+  final loading = false.obs;
 
-  OrderModel? order;
+  /// Why the order could not be loaded.
+  final loadError = RxnString();
+
+  static const tagKeys = ['clean', 'fast', 'staff', 'value'];
 
   WashUpDbService get _db => Get.find<WashUpDbService>();
 
-  String get branchName => order == null ? '' : (_db.branch(order!.branchId)?.name.value ?? '');
+  String get orderId => activeArgument.value;
+
+  String get branchName => order.value == null ? '' : (_db.branch(order.value!.branchId)?.name.value ?? '');
 
   @override
   void onInit() {
     super.onInit();
-    order = _db.order(Get.arguments?.toString() ?? '');
+    initArgument(Get.arguments?.toString());
+    load();
+  }
+
+  @override
+  void onArgumentChanged() {
+    stars.value = 0;
+    tags.clear();
+    commentController.clear();
+    error.value = null;
+    order.value = null;
+    load();
+  }
+
+  Future<void> load() async {
+    final id = orderId;
+    if (id.isEmpty) return;
+    order.value = _db.order(id);
+    loadError.value = null;
+    loading.value = true;
+    try {
+      // The cached copy may be missing or out of date (still "in service").
+      await _db.refreshOrder(id, throwOnError: true);
+      final fresh = _db.order(id);
+      if (fresh != null) {
+        if (_db.branch(fresh.branchId) == null) await _db.fetchBranchDetails(fresh.branchId);
+        // Already rated on another device: submit says so instead of failing.
+        await _db.fetchOrderReview(id);
+      }
+      if (id != orderId) return;
+      order.value = fresh;
+      if (fresh == null) loadError.value = 'review.unavailable'.tr;
+    } catch (e) {
+      if (id != orderId) return;
+      if (order.value == null) loadError.value = ApiException.messageFor(e, fallback: 'review.unavailable'.tr);
+    } finally {
+      if (id == orderId) loading.value = false;
+    }
   }
 
   void setStars(int v) {
@@ -40,8 +86,16 @@ class ReviewController extends GetxController {
   void toggleTag(String t) => tags.contains(t) ? tags.remove(t) : tags.add(t);
 
   Future<void> submit() async {
-    final o = order;
-    if (o == null || o.status != OrderStatus.completed) return;
+    final o = order.value;
+    // Never a silent no-op: say why the review cannot be sent.
+    if (o == null) {
+      Utils.getSnakBar(message: loadError.value ?? 'review.unavailable'.tr, type: TosterTypes.failed);
+      return;
+    }
+    if (o.status != OrderStatus.completed) {
+      Utils.getSnakBar(message: 'review.notCompleted'.tr, type: TosterTypes.warning);
+      return;
+    }
     if (stars.value == 0) {
       error.value = 'review.need'.tr;
       return;

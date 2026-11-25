@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
+import '../../../../core/helpers/route_argument_stack.dart';
 import '../controllers/review_controller.dart';
 
 class ReviewPage extends StatelessWidget {
@@ -14,17 +15,24 @@ class ReviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<ReviewController>();
     final theme = Theme.of(context).textTheme;
-    return Scaffold(
+    return RouteArgumentScope<ReviewController>(
+      placeholder: Scaffold(appBar: AppTopBar(title: 'review.title'.tr), body: const AppShimmerList(count: 3)),
+      child: Scaffold(
       appBar: AppTopBar(title: 'review.title'.tr),
-      body: ListView(
+      body: Obx(() {
+        // GAP-038: loaded from the server when it was not cached.
+        if (controller.order.value == null) {
+          if (controller.loading.value) return const AppShimmerList(count: 3);
+          return AppErrorState(message: controller.loadError.value, onRetry: controller.load);
+        }
+        return ListView(
         padding: EdgeInsets.all(20.r),
         children: [
           RoundedContainer(
             child: Column(
               children: [
                 Text(controller.branchName, style: theme.titleLarge, textAlign: TextAlign.center),
-                if (controller.order != null)
-                  Text(controller.order!.primary.name.value, style: theme.bodySmall),
+                Text(controller.order.value!.primary.name.value, style: theme.bodySmall),
                 18.height,
                 Obx(() => RatingStars(value: controller.stars.value, size: 38.sp, onChanged: controller.setStars)),
                 Obx(
@@ -69,6 +77,8 @@ class ReviewPage extends StatelessWidget {
             ),
           ),
         ],
+      );
+      }),
       ),
     );
   }

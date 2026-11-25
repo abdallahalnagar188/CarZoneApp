@@ -9,6 +9,7 @@ import '../../../../core/constance/app_colors.dart';
 import '../../../../core/enums/enums.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/helpers/route_argument_stack.dart';
 import '../../../booking/presentaion/widgets/summary_section.dart';
 import '../controllers/booking_details_controller.dart';
 import '../widgets/booking_actions.dart';
@@ -24,7 +25,10 @@ class BookingDetailsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<BookingDetailsController>();
     final theme = Theme.of(context).textTheme;
-    return Scaffold(
+    // One controller serves every open booking page; each shows its own order (GAP-032).
+    return RouteArgumentScope<BookingDetailsController>(
+      placeholder: Scaffold(appBar: AppTopBar(title: 'book.details'.tr), body: const AppShimmerList(count: 5)),
+      child: Scaffold(
       appBar: AppTopBar(
         title: 'book.details'.tr,
         actions: [
@@ -167,6 +171,7 @@ class BookingDetailsPage extends StatelessWidget {
           ],
         );
       }),
+      ),
     );
   }
 }
