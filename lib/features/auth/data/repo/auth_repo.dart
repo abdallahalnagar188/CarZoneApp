@@ -304,7 +304,8 @@ class AuthRepo {
 
     if (idToken == null) {
       dev.log('[AuthRepo] idToken is null. Check if googleWebClientId is configured.');
-      throw const AuthException('تعذر الحصول على رمز التحقق من Google. يرجى التأكد من إضافة Web Client ID.');
+      // Logged only: the screen shows the translated login.google_failed (GAP-071).
+      throw const AuthException('Google returned no ID token; check the web client ID.');
     }
 
     // Supabase rejects the token unless the Google provider lists this

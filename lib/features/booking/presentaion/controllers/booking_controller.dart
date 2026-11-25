@@ -298,9 +298,7 @@ class BookingController extends GetxController {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(
-        message: FormatHelper.isAr
-            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
-            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
+        message: 'book.slotTooSoonMsg'.tr,
         type: TosterTypes.warning,
       );
       return;
@@ -326,9 +324,7 @@ class BookingController extends GetxController {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(
-        message: FormatHelper.isAr
-            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
-            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
+        message: 'book.slotTooSoonMsg'.tr,
         type: TosterTypes.warning,
       );
     } on SlotOutsideHoursException {
@@ -336,9 +332,7 @@ class BookingController extends GetxController {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(
-        message: FormatHelper.isAr
-            ? 'الموعد المحدد خارج ساعات العمل للمغسلة. يرجى اختيار موعد متاح.'
-            : 'The selected slot is outside branch operating hours. Please pick an available time.',
+        message: 'book.slotOutsideHours'.tr,
         type: TosterTypes.warning,
       );
     } on SlotTakenException catch (e) {
@@ -365,9 +359,7 @@ class BookingController extends GetxController {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(
-        message: FormatHelper.isAr
-            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
-            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
+        message: 'book.slotTooSoonMsg'.tr,
         type: TosterTypes.warning,
       );
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
@@ -397,9 +389,7 @@ class BookingController extends GetxController {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(
-        message: FormatHelper.isAr
-            ? 'الموعد المحدد قد فات بالفعل أو قريب جداً. يرجى اختيار موعد متاح أو الحجز ليوم آخر.'
-            : 'The selected slot has passed or is too soon. Please select an available slot or choose another day.',
+        message: 'book.slotTooSoonMsg'.tr,
         type: TosterTypes.warning,
       );
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
@@ -408,9 +398,7 @@ class BookingController extends GetxController {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(
-        message: FormatHelper.isAr
-            ? 'الموعد المحدد خارج ساعات العمل للمغسلة. يرجى اختيار موعد متاح.'
-            : 'The selected slot is outside branch operating hours. Please pick an available time.',
+        message: 'book.slotOutsideHours'.tr,
         type: TosterTypes.warning,
       );
       Get.until((r) => r.settings.name == Routes.bookSlotRoute);
