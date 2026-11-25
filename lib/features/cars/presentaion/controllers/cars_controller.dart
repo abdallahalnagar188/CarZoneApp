@@ -3,6 +3,8 @@ import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/helpers/worker_scope.dart';
+
 import '../../../../commons/models/car_catalog.dart';
 import '../../../../commons/models/vehicle_model.dart';
 import '../../../../core/enums/enums.dart';
@@ -17,7 +19,7 @@ import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/utils.dart';
 
-class CarsController extends GetxController {
+class CarsController extends GetxController with DisposesWorkers {
   final plateCode = TextEditingController();
   final plateDigits = TextEditingController();
   final yearController = TextEditingController();
@@ -48,7 +50,7 @@ class CarsController extends GetxController {
   void onInit() {
     super.onInit();
     refreshVehicles();
-    ever(_session.user, (_) => refreshVehicles());
+    keep(ever(_session.user, (_) => refreshVehicles()));
   }
 
   Future<void> refreshVehicles() async {

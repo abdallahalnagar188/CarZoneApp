@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../../../core/helpers/worker_scope.dart';
+
 import '../../../../commons/models/branch_listing_model.dart';
 import '../../../../commons/models/offer_model.dart';
 import '../../../../commons/models/order_model.dart';
@@ -24,7 +26,7 @@ class HomeCategory {
   const HomeCategory(this.id, this.name, this.from);
 }
 
-class HomeController extends GetxController {
+class HomeController extends GetxController with DisposesWorkers {
   final _discovery = DiscoveryService();
   final _pricing = PricingService();
 
@@ -49,7 +51,7 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     load();
-    everAll([
+    keep(everAll([
       _db.branches,
       _db.services,
       _db.offers,
@@ -62,10 +64,10 @@ class HomeController extends GetxController {
       session.areaId,
       session.position,
       session.countryCode,
-    ], (_) => _compute());
+    ], (_) => _compute()));
     // Another place means other washes: fetch the ones nearest to it.
-    debounce<Object?>(_place, (_) => refreshHome(), time: const Duration(milliseconds: 400));
-    everAll([session.areaId, session.position, session.countryCode], (_) => _place.value = Object());
+    keep(debounce<Object?>(_place, (_) => refreshHome(), time: const Duration(milliseconds: 400)));
+    keep(everAll([session.areaId, session.position, session.countryCode], (_) => _place.value = Object()));
   }
 
   final _place = Rxn<Object>();

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/helpers/worker_scope.dart';
+
 import '../../../../commons/models/branch_listing_model.dart';
 import '../../../../commons/models/branch_model.dart';
 import '../../../../commons/widgets/sheets/app_bottom_sheet.dart';
@@ -15,7 +17,7 @@ import '../../../../core/services/session_service.dart';
 import '../../../../core/utils/utils.dart';
 import '../widgets/filter_sheet.dart';
 
-class ResultsController extends GetxController {
+class ResultsController extends GetxController with DisposesWorkers {
   final _db = Get.find<WashUpDbService>();
   final _session = Get.find<SessionService>();
   final _discovery = DiscoveryService();
@@ -65,16 +67,10 @@ class ResultsController extends GetxController {
 
     scrollController.addListener(_onScroll);
 
-    everAll([_session.areaId, _session.countryCode, _session.position], (_) => load());
-    ever(_db.orders, (_) {
+    keep(everAll([_session.areaId, _session.countryCode, _session.position], (_) => load()));
+    keep(everAll([_db.orders, _db.branches, _db.services], (_) {
       if (!loading.value) _compute();
-    });
-    ever(_db.branches, (_) {
-      if (!loading.value) _compute();
-    });
-    ever(_db.services, (_) {
-      if (!loading.value) _compute();
-    });
+    }));
     _reconnect = ConnectivityService.maybe?.onReconnect(() {
       if (error.value != null) load();
     });

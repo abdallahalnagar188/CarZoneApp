@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../../../../core/helpers/worker_scope.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../../commons/models/branch_listing_model.dart';
@@ -16,7 +18,7 @@ import '../../../home/presentaion/controllers/home_controller.dart';
 
 enum MapFilter { all, open, rated, washNow }
 
-class WashMapController extends GetxController {
+class WashMapController extends GetxController with DisposesWorkers {
   final _discovery = DiscoveryService();
   final pageController = PageController(viewportFraction: 0.88);
 
@@ -41,23 +43,23 @@ class WashMapController extends GetxController {
     super.onInit();
     _loadStyle();
     _loadMapData();
-    ever(session.areaId, (_) async {
+    keep(ever(session.areaId, (_) async {
       await _loadMapData();
       _resetSelection();
       recenter();
-    });
-    ever(session.position, (_) async {
+    }));
+    keep(ever(session.position, (_) async {
       await _loadMapData();
       recenter();
-    });
-    ever(session.countryCode, (_) async {
+    }));
+    keep(ever(session.countryCode, (_) async {
       await _loadMapData();
       _resetSelection();
       recenter();
-    });
-    ever(Get.find<WashUpDbService>().orders, (_) => _compute());
-    ever(Get.find<WashUpDbService>().branches, (_) => _compute());
-    ever(Get.find<ThemeController>().isDarkMode, (_) => _loadStyle());
+    }));
+    keep(ever(Get.find<WashUpDbService>().orders, (_) => _compute()));
+    keep(ever(Get.find<WashUpDbService>().branches, (_) => _compute()));
+    keep(ever(Get.find<ThemeController>().isDarkMode, (_) => _loadStyle()));
     _reconnect = ConnectivityService.maybe?.onReconnect(_loadMapData);
   }
 
