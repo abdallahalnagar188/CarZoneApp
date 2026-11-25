@@ -72,6 +72,59 @@ class AuthRepo {
     }
   }
 
+  /// GAP-067: a Google/Apple account proves the phone number it claims before
+  /// the customer profile uses it. Sends a code to [e164Phone] to attach it to
+  /// the signed-in account (Supabase phone change). Returns null on success or
+  /// the error text; throws [PhoneInUseException] when another account already
+  /// owns the number.
+  Future<String?> requestPhoneChange(String e164Phone) async {
+    lastFailureWasNetwork = false;
+    try {
+      await ApiCall.write(() => _client.auth.updateUser(UserAttributes(phone: e164Phone)), tag: 'requestPhoneChange');
+      return null;
+    } on AuthException catch (e) {
+      dev.log('[AuthRepo] requestPhoneChange error: ${e.message} (code: ${e.code})');
+      if (isPhoneTaken(e)) throw PhoneInUseException();
+      return mapAuthError(e);
+    } catch (e) {
+      dev.log('[AuthRepo] requestPhoneChange unexpected error: $e');
+      return mapAuthError(e);
+    }
+  }
+
+  /// Checks the code [requestPhoneChange] sent; the account's phone is then
+  /// confirmed. Returns null on success, or an error text.
+  Future<String?> verifyPhoneChange(String e164Phone, String code) async {
+    lastFailureWasNetwork = false;
+    try {
+      await ApiCall.write(
+        () => _client.auth.verifyOTP(phone: e164Phone, token: code, type: OtpType.phoneChange),
+        tag: 'verifyPhoneChange',
+      );
+      return null;
+    } on AuthException catch (e) {
+      dev.log('[AuthRepo] verifyPhoneChange error: ${e.message}');
+      return mapAuthError(e, isVerify: true);
+    } catch (e) {
+      dev.log('[AuthRepo] verifyPhoneChange unexpected error: $e');
+      return mapAuthError(e, isVerify: true);
+    }
+  }
+
+  /// Supabase refuses a phone change to a number another account has.
+  static bool isPhoneTaken(AuthException e) {
+    final code = (e.code ?? '').toLowerCase();
+    final msg = e.message.toLowerCase();
+    return code == 'phone_exists' || (msg.contains('phone') && (msg.contains('already') || msg.contains('registered')));
+  }
+
+  /// Whether [user]'s confirmed phone is [e164Phone] (Auth stores it without "+").
+  static bool hasConfirmedPhone(User user, String e164Phone) {
+    String digits(String s) => s.replaceAll(RegExp(r'\D'), '');
+    final phone = user.phone ?? '';
+    return phone.isNotEmpty && user.phoneConfirmedAt != null && digits(phone) == digits(e164Phone);
+  }
+
   /// Map raw backend exceptions (Twilio 20003, sms_send_failed, network errors)
   /// to clean, user-friendly localized messages without exposing internal URLs or technical errors.
   String mapAuthError(dynamic error, {bool isVerify = false}) {

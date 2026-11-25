@@ -92,12 +92,15 @@ class SessionService extends GetxService {
         if (sessionToken != null) {
           await saveToken(sessionToken);
         }
-        // An hourly token refresh, or a profile update of the user already
-        // signed in, only brings a new token: no reload of the profile, cars,
-        // reviews and favorites (GAP-070).
-        final current = user.value;
-        final sameUser = current != null && (current.userId == authUser.id || current.id == authUser.id);
-        if (data.event == AuthChangeEvent.tokenRefreshed || (data.event == AuthChangeEvent.userUpdated && sameUser)) {
+        // An hourly token refresh or an update of the auth user (Apple name,
+        // phone change) only brings a new token: no reload of the profile,
+        // cars, reviews and favorites (GAP-070).
+        if (data.event == AuthChangeEvent.tokenRefreshed || data.event == AuthChangeEvent.userUpdated) {
+          return;
+        }
+        // A Google/Apple sign-up confirming its phone: the login screens
+        // finish it themselves (GAP-067), so do not open profile setup again.
+        if (Get.isRegistered<AuthController>() && Get.find<AuthController>().verifyingSocialPhone) {
           return;
         }
         // Customer ids (cu_…) are not auth ids: match the row by its user_id.

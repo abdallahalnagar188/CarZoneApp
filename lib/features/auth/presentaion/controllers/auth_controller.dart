@@ -51,6 +51,14 @@ class AuthController extends GetxController {
   /// connection; verifying again only redoes the lookup (the code is used up).
   bool _otpVerified = false;
 
+  /// The OTP page is confirming the phone of a Google/Apple sign-up (a Supabase
+  /// phone change), not signing in by phone (GAP-067).
+  bool _verifyingSocialPhone = false;
+  bool get verifyingSocialPhone => _verifyingSocialPhone;
+
+  /// The name typed on the profile setup page, kept for after the code.
+  String? _pendingName;
+
   SessionService get _session => Get.find<SessionService>();
 
   /// Initiate native in-app Google Sign-In popup without opening Chrome app
@@ -200,6 +208,7 @@ class AuthController extends GetxController {
     country.value = parsed.country;
     phone = parsed.pretty;
     _e164Phone = parsed.e164;
+    _verifyingSocialPhone = false;
 
     sending.value = true;
     final error = await _repo.sendOtp(_e164Phone);
@@ -236,7 +245,12 @@ class AuthController extends GetxController {
   Future<void> resend() async {
     if (resendIn.value > 0 || lockedFor.value > 0) return;
     sending.value = true;
-    final error = await _repo.sendOtp(_e164Phone);
+    String? error;
+    try {
+      error = _verifyingSocialPhone ? await _repo.requestPhoneChange(_e164Phone) : await _repo.sendOtp(_e164Phone);
+    } on PhoneInUseException {
+      error = 'auth.phoneInUse'.tr;
+    }
     sending.value = false;
 
     if (error != null) {
@@ -268,7 +282,11 @@ class AuthController extends GetxController {
 
     verifying.value = true;
     otpError.value = null;
-    final error = _otpVerified ? null : await _repo.verifyOtp(_e164Phone, code);
+    final error = _otpVerified
+        ? null
+        : _verifyingSocialPhone
+            ? await _repo.verifyPhoneChange(_e164Phone, code)
+            : await _repo.verifyOtp(_e164Phone, code);
     verifying.value = false;
 
     if (error != null) {
@@ -292,6 +310,13 @@ class AuthController extends GetxController {
     if (authUser == null) {
       otpError.value = null;
       Utils.getSnakBar(message: 'otp.error'.tr, type: TosterTypes.failed);
+      return;
+    }
+
+    // A Google/Apple sign-up that just proved its phone: create the profile.
+    if (_verifyingSocialPhone) {
+      _otpVerified = true;
+      await _register(authUser, _e164Phone, _pendingName ?? nameController.text.trim());
       return;
     }
 
@@ -389,6 +414,54 @@ class AuthController extends GetxController {
       effectivePhone = parsed.e164;
     }
 
+    // GAP-067: a phone the account has not confirmed by a code (a Google or
+    // Apple sign-up) is verified first, so nobody can register a stranger's
+    // number and later lose the account to its real owner.
+    if (!AuthRepo.hasConfirmedPhone(authUser, effectivePhone)) {
+      await _verifySocialPhone(effectivePhone, name);
+      return;
+    }
+
+    await _register(authUser, effectivePhone, name);
+  }
+
+  /// Sends a code to [e164] to attach it to the Google/Apple account; the OTP
+  /// page then confirms it and [verify] creates the profile.
+  Future<void> _verifySocialPhone(String e164, String name) async {
+    final parsed = PhoneHelper.parse(e164, country.value);
+    phone = parsed?.pretty ?? e164;
+    _e164Phone = e164;
+    _pendingName = name;
+    sending.value = true;
+    String? error;
+    try {
+      error = await _repo.requestPhoneChange(e164);
+    } on PhoneInUseException {
+      phoneInUse.value = e164;
+      Utils.getSnakBar(message: 'auth.phoneInUse'.tr, type: TosterTypes.failed);
+      return;
+    } finally {
+      sending.value = false;
+    }
+    if (error != null) {
+      Utils.getSnakBar(message: error, type: TosterTypes.failed);
+      return;
+    }
+    _verifyingSocialPhone = true;
+    otpError.value = null;
+    otpController.clear();
+    _otpVerified = false;
+    _attempts = 0;
+    _startTimer(resend: 30);
+    Get.toNamed(Routes.otpRoute);
+    Utils.getSnakBar(
+      message: 'otp.sent'.trParams({'phone': '⁦$phone⁩'}),
+      type: TosterTypes.sucsses,
+    );
+  }
+
+  /// Creates (or links) the customer profile for a verified phone and signs in.
+  Future<void> _register(User authUser, String effectivePhone, String name) async {
     final token = _repo.currentSessionToken;
     saving.value = true;
     final CustomerModel row;
@@ -407,6 +480,8 @@ class AuthController extends GetxController {
     } finally {
       saving.value = false;
     }
+    _verifyingSocialPhone = false;
+    _pendingName = null;
     await _session.signIn(row, token: token);
     Utils.getSnakBar(message: 'otp.success'.tr, type: TosterTypes.sucsses);
     AuthGuard.completeLogin();

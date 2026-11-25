@@ -197,3 +197,12 @@ Deno.test("provider error echoing the OTP or phone is scrubbed from logs", async
 Deno.test("maskPhone keeps only the last 3 digits", () => {
   assertEquals(maskPhone("+201001234567"), "+•••••••••567");
 });
+
+Deno.test("a phone-change code goes to the new number (Google/Apple account adding its phone, GAP-067)", async () => {
+  const { impl, calls } = stubFetch();
+  const change = { user: { id: "u1", phone: "", new_phone: "+966501234567" }, sms: { otp: "654321" } };
+  const res = await handleSendSms(signedRequest(change), envOf(), impl);
+  assertEquals(res.status, 200);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].body.to, "966501234567");
+});

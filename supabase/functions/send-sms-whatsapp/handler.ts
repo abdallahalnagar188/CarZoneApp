@@ -18,7 +18,9 @@
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 export interface SendSmsPayload {
-  user: { id: string; phone: string; email?: string };
+  // new_phone: the number being confirmed by a phone change (a Google/Apple account adding
+  // its phone, GAP-067); phone is then the old (often empty) number.
+  user: { id: string; phone: string; new_phone?: string; email?: string };
   sms: { otp: string };
 }
 
@@ -59,7 +61,8 @@ export async function handleSendSms(
     return hookError(401, "Invalid webhook signature");
   }
 
-  const phone = String(payload?.user?.phone ?? "").replace(/[\s-]/g, "");
+  // A phone-change code goes to the new number; a sign-in code to the account's number.
+  const phone = String(payload?.user?.new_phone || payload?.user?.phone || "").replace(/[\s-]/g, "");
   const otp = String(payload?.sms?.otp ?? "");
   if (!PHONE_RE.test(phone) || !OTP_RE.test(otp)) {
     console.warn("[send-sms] rejected payload with invalid phone or OTP format");
