@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../network/dio_helper.dart';
+import '../services/session_service.dart';
 import 'cache_helper.dart';
 
 class LanguageGetxController extends GetxController {
@@ -31,6 +32,8 @@ class LanguageGetxController extends GetxController {
     await Get.updateLocale(Locale(languageCode));
     await DioHelper.updateHeadersManually();
     update();
+    // Push notifications follow customers.locale (GAP-036).
+    if (Get.isRegistered<SessionService>()) Get.find<SessionService>().syncLocale(languageCode);
   }
 
   Future<void> toggle() => changeLanguage(isArabic ? 'en' : 'ar');

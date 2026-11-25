@@ -32,6 +32,20 @@ export interface NotificationRow {
 export interface Recipient {
   userId: string | null;
   locale: string | null;
+  /** customers.notify_reminders / notify_offers (GAP-036); undefined = on. */
+  notifyReminders?: boolean;
+  notifyOffers?: boolean;
+}
+
+/** Notification types the customer can switch off in the app settings. */
+const REMINDER_TYPES = new Set(["reminder", "booking_reminder", "review_reminder"]);
+const OFFER_TYPES = new Set(["offer"]);
+
+/** Whether the customer turned this kind of push off (the in-app row is kept). */
+export function optedOut(type: string, recipient: Recipient): boolean {
+  if (REMINDER_TYPES.has(type)) return recipient.notifyReminders === false;
+  if (OFFER_TYPES.has(type)) return recipient.notifyOffers === false;
+  return false;
 }
 
 export interface Deps {
@@ -142,6 +156,10 @@ export async function handleSendPush(req: Request, deps: Deps): Promise<Response
   const recipient = await deps.getRecipient(row.customer_id);
   if (!recipient?.userId) {
     return json(200, { id: row.id, skipped: "customer has no app account" });
+  }
+
+  if (optedOut(row.type, recipient)) {
+    return json(200, { id: row.id, skipped: "customer turned these notifications off" });
   }
 
   const tokens = [...new Set(await deps.getTokens(recipient.userId))];

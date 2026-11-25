@@ -1,6 +1,6 @@
 // deno test supabase/functions/send-push/handler_test.ts
 import { assert, assertEquals, assertFalse } from "jsr:@std/assert@1";
-import { buildMessage, type Deps, handleSendPush, localizedPair, type NotificationRow } from "./handler.ts";
+import { buildMessage, type Deps, handleSendPush, localizedPair, type NotificationRow, optedOut } from "./handler.ts";
 import { createFcmSender, fcmErrorCode, parseServiceAccount, type SendResult, signJwt } from "./fcm.ts";
 
 const URL_ = "https://tbcmgdwzarfdgzzmmele.supabase.co/functions/v1/send-push";
@@ -213,4 +213,24 @@ Deno.test("parseServiceAccount accepts raw or base64 JSON and rejects junk", () 
 Deno.test("fcmErrorCode falls back to the status", () => {
   assertEquals(fcmErrorCode({ error: { status: "INVALID_ARGUMENT" } }), "INVALID_ARGUMENT");
   assertEquals(fcmErrorCode({}), "UNKNOWN");
+});
+
+Deno.test("reminder and offer pushes respect the customer's settings (GAP-036)", async () => {
+  const off = { userId: "u-1", locale: "ar", notifyReminders: false, notifyOffers: false };
+  const { deps, sent } = fakeDeps({ getRecipient: async () => off });
+  const reminder = await handleSendPush(webhook({ ...ROW, type: "booking_reminder" }), deps);
+  assertEquals((await reminder.json()).skipped, "customer turned these notifications off");
+  const offer = await handleSendPush(webhook({ ...ROW, type: "offer", order_id: null }), deps);
+  assertEquals((await offer.json()).skipped, "customer turned these notifications off");
+  // Booking status changes are always sent.
+  const status = await handleSendPush(webhook(ROW), deps);
+  assertEquals((await status.json()).sent, 2);
+  assertEquals(sent.length, 2);
+});
+
+Deno.test("settings not loaded (older database) mean every push is on", () => {
+  assertFalse(optedOut("booking_reminder", { userId: "u", locale: "ar" }));
+  assertFalse(optedOut("offer", { userId: "u", locale: "ar", notifyOffers: true }));
+  assert(optedOut("review_reminder", { userId: "u", locale: "ar", notifyReminders: false }));
+  assertFalse(optedOut("confirmed", { userId: "u", locale: "ar", notifyReminders: false, notifyOffers: false }));
 });

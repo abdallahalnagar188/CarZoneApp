@@ -324,6 +324,37 @@ class SessionService extends GetxService {
     await _db.loadFavorites(customer.id);
     await _db.fetchVehicles(customer.id);
     await _db.fetchMyReviews(customer.id);
+    // A language picked while signed out reaches the server now (GAP-036).
+    syncLocale();
+  }
+
+  /// Puts the app language on the customer row, so pushes use it (GAP-036).
+  Future<void> syncLocale([String? code]) async {
+    final u = user.value;
+    final lang = code ?? Get.locale?.languageCode ?? 'ar';
+    if (u == null || u.locale == lang) return;
+    await saveCustomerSettings({'locale': lang});
+  }
+
+  /// Saves the customer's own settings (locale, notify_reminders,
+  /// notify_offers) on their row. False when it was not saved: offline, or a
+  /// column the database does not have yet; the phone keeps its copy.
+  Future<bool> saveCustomerSettings(Map<String, dynamic> changes) async {
+    final u = user.value;
+    if (u == null) return false;
+    try {
+      await _db.updateCustomerProfile(u.id, changes);
+      final locale = changes['locale'];
+      if (locale is String) u.locale = locale;
+      final reminders = changes['notify_reminders'];
+      if (reminders is bool) u.notifyReminders = reminders;
+      final offers = changes['notify_offers'];
+      if (offers is bool) u.notifyOffers = offers;
+      return true;
+    } catch (e) {
+      dev.log('[SessionService] customer settings not saved: $e');
+      return false;
+    }
   }
 
   Future<void> signOut() async {

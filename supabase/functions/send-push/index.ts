@@ -41,6 +41,18 @@ Deno.serve(async (req: Request) =>
   handleSendPush(req, {
     ...(await loadConfig()),
     getRecipient: async (customerId) => {
+      // notify_* come from migration 20261126122000 (GAP-036); without it, every push is on.
+      const withPrefs = await db
+        .from("customers")
+        .select("user_id, locale, notify_reminders, notify_offers")
+        .eq("id", customerId)
+        .maybeSingle();
+      if (!withPrefs.error) {
+        const d = withPrefs.data;
+        return d
+          ? { userId: d.user_id, locale: d.locale, notifyReminders: d.notify_reminders, notifyOffers: d.notify_offers }
+          : null;
+      }
       const { data, error } = await db.from("customers").select("user_id, locale").eq("id", customerId).maybeSingle();
       if (error) throw error;
       return data ? { userId: data.user_id, locale: data.locale } : null;

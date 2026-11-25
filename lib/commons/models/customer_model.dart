@@ -9,6 +9,11 @@ class CustomerModel {
   String? accessToken;
   DateTime? tokenUpdatedAt;
 
+  /// Push settings kept on the server (GAP-036); null when the database has
+  /// no such columns yet.
+  bool? notifyReminders;
+  bool? notifyOffers;
+
   CustomerModel({
     required this.id,
     required this.name,
@@ -19,6 +24,8 @@ class CustomerModel {
     this.lastActiveAt,
     this.accessToken,
     this.tokenUpdatedAt,
+    this.notifyReminders,
+    this.notifyOffers,
   });
 
   String get firstName => name.trim().split(' ').first;
@@ -34,6 +41,8 @@ class CustomerModel {
       lastActiveAt: DateTime.tryParse(json['last_active_at']?.toString() ?? ''),
       accessToken: json['access_token']?.toString() ?? json['accessToken']?.toString(),
       tokenUpdatedAt: DateTime.tryParse(json['token_updated_at']?.toString() ?? json['tokenUpdatedAt']?.toString() ?? ''),
+      notifyReminders: json['notify_reminders'] as bool?,
+      notifyOffers: json['notify_offers'] as bool?,
     );
   }
 
