@@ -76,7 +76,8 @@ class DeepLinkService extends GetxService {
       if (orderId == null || orderId.isEmpty) return false;
       AppReadyGate.run(() {
         if (Get.currentRoute == Routes.bookingDetailsRoute && Get.arguments == orderId) return;
-        Get.toNamed(Routes.bookingDetailsRoute, arguments: orderId);
+        // Another booking page may be open: open this one on top (GAP-032).
+        Get.toNamed(Routes.bookingDetailsRoute, arguments: orderId, preventDuplicates: false);
       });
       return true;
     }
@@ -168,7 +169,8 @@ class DeepLinkService extends GetxService {
         return;
       }
 
-      Get.toNamed(Routes.washDetailsRoute, arguments: branchId);
+      // Another wash page may be open: open this one on top (GAP-032).
+      Get.toNamed(Routes.washDetailsRoute, arguments: branchId, preventDuplicates: false);
     } catch (e) {
       dev.log('[DeepLinkService] Navigation to wash failed: $e');
     }

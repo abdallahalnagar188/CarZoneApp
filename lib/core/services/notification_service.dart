@@ -383,16 +383,19 @@ class NotificationService extends GetxService {
     final type = data['type']?.toString();
 
     if (orderId != null && orderId.isNotEmpty) {
-      if (type == 'review_reminder') {
-        Get.toNamed(Routes.reviewRoute, arguments: orderId);
-      } else {
-        Get.toNamed(Routes.bookingDetailsRoute, arguments: orderId);
-      }
+      _openOrderPage(type == 'review_reminder' ? Routes.reviewRoute : Routes.bookingDetailsRoute, orderId);
     } else if (type == 'offer') {
       Get.toNamed(Routes.offersRoute);
     } else {
       Get.toNamed(Routes.notificationsRoute);
     }
+  }
+
+  /// Opens [route] for [orderId] on top of whatever is open, even another
+  /// order's page of the same route (GAP-032); nothing when it is already shown.
+  void _openOrderPage(String route, String orderId) {
+    if (Get.currentRoute == route && Get.arguments?.toString() == orderId) return;
+    Get.toNamed(route, arguments: orderId, preventDuplicates: false);
   }
 
   void _handleSimplePayloadClick(String payload) {
@@ -402,7 +405,7 @@ class NotificationService extends GetxService {
   void _openForSimplePayload(String payload) {
     if (payload.startsWith('order:')) {
       final orderId = payload.replaceFirst('order:', '');
-      Get.toNamed(Routes.bookingDetailsRoute, arguments: orderId);
+      _openOrderPage(Routes.bookingDetailsRoute, orderId);
     } else if (payload == 'offers') {
       Get.toNamed(Routes.offersRoute);
     } else {
