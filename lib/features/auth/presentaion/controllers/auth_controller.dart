@@ -455,7 +455,7 @@ class AuthController extends GetxController {
     _startTimer(resend: 30);
     Get.toNamed(Routes.otpRoute);
     Utils.getSnakBar(
-      message: 'otp.sent'.trParams({'phone': '⁦$phone⁩'}),
+      message: 'otp.sent'.trParams({'phone': '\u2066$phone\u2069'}),
       type: TosterTypes.sucsses,
     );
   }
