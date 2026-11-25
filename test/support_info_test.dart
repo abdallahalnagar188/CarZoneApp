@@ -28,6 +28,15 @@ void main() {
     expect(info.hours, isNull);
   });
 
+  // GAP-040: no personal phone or mailbox is built into the app.
+  test('the built-in fallback has no contact, so the help screen hides it', () {
+    expect(SupportInfo.fallback.hasPhone, isFalse);
+    expect(SupportInfo.fallback.hasEmail, isFalse);
+    final info = SupportInfo.fromJson({});
+    expect(info.hasPhone, isFalse);
+    expect(info.hasEmail, isFalse);
+  });
+
   test('plain string hours are used for both languages', () {
     final info = SupportInfo.fromJson({'hours': '24/7'});
     Get.locale = const Locale('en');

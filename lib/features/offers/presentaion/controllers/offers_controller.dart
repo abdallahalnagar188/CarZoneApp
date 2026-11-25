@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import '../../../../commons/models/offer_model.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/washup_db_service.dart';
+import '../../../../core/services/discovery_service.dart';
 import '../../../../core/services/pricing_service.dart';
 
 class OffersController extends GetxController {
   final _pricing = PricingService();
+  final _discovery = DiscoveryService();
 
   final loading = true.obs;
   final offers = <OfferModel>[].obs;
@@ -38,8 +40,21 @@ class OffersController extends GetxController {
     return _db.branch(bid)?.name.value ?? 'app.name'.tr;
   }
 
+  /// A wash offer opens its wash; a Wash Up offer (or one without a wash)
+  /// opens the nearest wash, like the home carousel, or the nearby list when
+  /// none is known. Never a seed branch id (GAP-040).
   void open(OfferModel offer) {
-    final bid = offer.platform ? 'br_nasr' : (offer.branchIds.firstOrNull ?? 'br_nasr');
-    Get.toNamed(Routes.washDetailsRoute, arguments: bid);
+    final own = offer.platform ? null : offer.branchIds.firstOrNull;
+    final target = own ?? _nearestWashId();
+    if (target == null) {
+      Get.toNamed(Routes.resultsRoute, arguments: {'mode': 'nearby'});
+      return;
+    }
+    Get.toNamed(Routes.washDetailsRoute, arguments: target);
+  }
+
+  String? _nearestWashId() {
+    final rows = _discovery.listings()..sort((a, b) => a.km.compareTo(b.km));
+    return rows.firstOrNull?.branch.id;
   }
 }

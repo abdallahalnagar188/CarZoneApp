@@ -55,9 +55,6 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-      email:
-        recipients:
-          - bdallhmsd807@gmail.com
-        notify:
-          success: true
-          failure: true
+      # Build e-mails: add the team address in the app's Codemagic settings, or an
+      # "email: recipients:" block with a shared team mailbox. No personal address is
+      # kept in the repository (GAP-040).

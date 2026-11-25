@@ -37,18 +37,22 @@ class _HelpPageState extends State<HelpPage> {
               return RoundedContainer(
                 child: Column(
                   children: [
-                    _Row(
-                      icon: Iconsax.call,
-                      text: info.phone,
-                      onTap: () => launchUrl(Uri(scheme: 'tel', path: info.phone.replaceAll(' ', ''))),
-                    ),
-                    Divider(color: AppColors.line, height: 24.h),
-                    _Row(
-                      icon: Iconsax.sms,
-                      text: info.email,
-                      onTap: () => launchUrl(Uri(scheme: 'mailto', path: info.email)),
-                    ),
-                    Divider(color: AppColors.line, height: 24.h),
+                    if (info.hasPhone) ...[
+                      _Row(
+                        icon: Iconsax.call,
+                        text: info.phone,
+                        onTap: () => launchUrl(Uri(scheme: 'tel', path: info.phone.replaceAll(' ', ''))),
+                      ),
+                      Divider(color: AppColors.line, height: 24.h),
+                    ],
+                    if (info.hasEmail) ...[
+                      _Row(
+                        icon: Iconsax.sms,
+                        text: info.email,
+                        onTap: () => launchUrl(Uri(scheme: 'mailto', path: info.email)),
+                      ),
+                      Divider(color: AppColors.line, height: 24.h),
+                    ],
                     _Row(icon: Iconsax.clock, text: info.hours ?? 'help.hours'.tr, ltr: false),
                   ],
                 ),

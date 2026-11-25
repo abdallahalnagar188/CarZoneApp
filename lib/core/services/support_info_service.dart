@@ -16,7 +16,13 @@ class SupportInfo {
 
   const SupportInfo({required this.phone, required this.email, this.hoursAr, this.hoursEn});
 
-  static const fallback = SupportInfo(phone: '+20 102 243 7824', email: 'bdallhmsd807@gmail.com');
+  /// Nothing built in (GAP-040): no personal number or mailbox ships in the
+  /// app. The help screen hides an empty phone or email; the company contact
+  /// comes only from get_support_info() (super admin → Platform settings).
+  static const fallback = SupportInfo(phone: '', email: '');
+
+  bool get hasPhone => phone.isNotEmpty;
+  bool get hasEmail => email.isNotEmpty;
 
   /// Hours in the app's language, or null to use the built-in text.
   String? get hours => Get.locale?.languageCode == 'en' ? (hoursEn ?? hoursAr) : (hoursAr ?? hoursEn);

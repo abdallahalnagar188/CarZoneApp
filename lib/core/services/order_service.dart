@@ -143,7 +143,8 @@ class OrderService {
       orderId: order.id,
       customerName: customer?.name ?? '',
       branchId: order.branchId,
-      businessId: branch?.businessId ?? 'biz_default',
+      // The server takes the wash from the order (guard_customer_review); no seed id (GAP-040).
+      businessId: branch?.businessId ?? '',
       customerId: order.customerId,
       serviceId: order.primary.serviceId,
       serviceName: order.primary.name,
@@ -164,7 +165,8 @@ class OrderService {
       'order_id': order.id,
       'customer_id': order.customerId,
       'branch_id': order.branchId,
-      'business_id': branch?.businessId ?? 'biz_default',
+      // Set from the order by guard_customer_complaint; no seed id (GAP-040).
+      'business_id': branch?.businessId ?? '',
       'category': category,
       'description': description,
       'status': 'open',
