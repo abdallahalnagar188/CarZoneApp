@@ -5,7 +5,7 @@ class BranchListingModel {
   final double km;
   final double rating;
   final int reviewCount;
-  final int? fromPrice;
+  final num? fromPrice;
   final bool open;
   final DateTime? nextSlot;
 
@@ -19,7 +19,7 @@ class BranchListingModel {
     required this.nextSlot,
   });
 
-  BranchListingModel withPrice(int? price) => BranchListingModel(
+  BranchListingModel withPrice(num? price) => BranchListingModel(
         branch: branch,
         km: km,
         rating: rating,

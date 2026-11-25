@@ -102,7 +102,7 @@ WashServiceModel serviceFixture({
   required String id,
   String branchId = 'br_test',
   ServiceType type = ServiceType.primary,
-  int price = 100,
+  num price = 100,
   int durationMin = 30,
   String category = 'exterior',
 }) {

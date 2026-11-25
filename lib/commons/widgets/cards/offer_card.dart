@@ -26,14 +26,14 @@ class OfferCard extends StatelessWidget {
   });
 
   String get _badge => offer.discountType == DiscountType.percent
-      ? '${offer.discountValue}%'
+      ? '${offer.valueText}%'
       : FormatHelper.money(offer.discountValue, branchId: offer.branchIds.firstOrNull);
 
   bool get _titleRepeatsBadge {
     String digits(String s) => FormatHelper.latinDigits(s).replaceAll(RegExp(r'[^0-9.]'), '');
     final title = offer.title.value.trim();
     return title.isEmpty ||
-        (RegExp(r'^[\d٠-٩.\s%٪]+$').hasMatch(title) && digits(title) == digits('${offer.discountValue}'));
+        (RegExp(r'^[\d٠-٩.\s%٪]+$').hasMatch(title) && digits(title) == digits(offer.valueText));
   }
 
   @override

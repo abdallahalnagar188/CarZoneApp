@@ -5,7 +5,7 @@ class OrderItem {
   final String serviceId;
   final LocalizedText name;
   final ServiceType type;
-  final int price;
+  final num price;
   final int durationMin;
 
   const OrderItem({
@@ -22,7 +22,7 @@ class OrderItem {
       serviceId: json['service_id']?.toString() ?? json['serviceId']?.toString() ?? '',
       name: LocalizedText.fromJson(json['name']),
       type: typeStr == 'addon' ? ServiceType.addon : ServiceType.primary,
-      price: (json['price'] as num?)?.toInt() ?? 0,
+      price: (json['price'] as num?) ?? 0,
       durationMin: (json['duration_min'] ?? json['durationMin'] as num?)?.toInt() ?? 0,
     );
   }
@@ -63,10 +63,11 @@ class OrderModel {
   String vehicleId;
   final String branchId;
   final List<OrderItem> items;
-  final int subtotal;
-  final int discount;
+  /// Money keeps the decimals of the numeric columns (GAP-017).
+  final num subtotal;
+  final num discount;
   final String? offerId;
-  final int total;
+  final num total;
   final int durationMin;
   DateTime scheduledAt;
   OrderStatus status;
@@ -164,10 +165,10 @@ class OrderModel {
       vehicleId: json['vehicle_id']?.toString() ?? json['vehicleId']?.toString() ?? '',
       branchId: json['branch_id']?.toString() ?? json['branchId']?.toString() ?? '',
       items: items,
-      subtotal: (json['subtotal'] as num?)?.toInt() ?? 0,
-      discount: (json['discount_amount'] ?? json['discount'] as num?)?.toInt() ?? 0,
+      subtotal: (json['subtotal'] as num?) ?? 0,
+      discount: (json['discount_amount'] ?? json['discount']) as num? ?? 0,
       offerId: json['offer_id']?.toString() ?? json['offerId']?.toString(),
-      total: (json['total'] as num?)?.toInt() ?? 0,
+      total: (json['total'] as num?) ?? 0,
       durationMin: (json['duration_min'] ?? json['durationMin'] as num?)?.toInt() ?? 30,
       scheduledAt: DateTime.tryParse(json['scheduled_at'] ?? json['scheduledAt'] ?? '')?.toLocal() ?? DateTime.now(),
       status: status,

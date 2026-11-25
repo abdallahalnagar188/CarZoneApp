@@ -8,7 +8,8 @@ class WashServiceModel {
   final String category;
   final LocalizedText name;
   final LocalizedText description;
-  final int price;
+  /// In the branch currency; may have decimals (numeric column).
+  final num price;
   final int durationMin;
   final bool active;
 
@@ -37,7 +38,7 @@ class WashServiceModel {
       category: json['category_id']?.toString() ?? json['category']?.toString() ?? '',
       name: LocalizedText.fromJson(json['name']),
       description: LocalizedText.fromJson(json['description']),
-      price: (json['price'] as num?)?.toInt() ?? 0,
+      price: (json['price'] as num?) ?? 0,
       durationMin: (json['duration_min'] ?? json['durationMin'] as num?)?.toInt() ?? 30,
       active: json['active'] as bool? ?? true,
     );

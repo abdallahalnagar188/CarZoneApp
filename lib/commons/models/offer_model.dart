@@ -9,7 +9,7 @@ class OfferModel {
   final LocalizedText title;
   final LocalizedText description;
   final DiscountType discountType;
-  final int discountValue;
+  final num discountValue;
   final DateTime startAt;
   final DateTime endAt;
   final String status;
@@ -35,15 +35,26 @@ class OfferModel {
   bool isLive(DateTime now) =>
       status == 'active' && now.isAfter(startAt) && now.isBefore(endAt);
 
-  int discountFor(int price) => discountType == DiscountType.percent
-      ? (price * discountValue / 100).round()
-      : discountValue.clamp(0, price);
+  /// The amount create_order takes off [price]: a percentage is rounded to
+  /// whole units as the server does (round(price * value / 100)), a fixed
+  /// amount never goes past the price, and nothing goes below zero.
+  num discountFor(num price) {
+    final num amount = discountType == DiscountType.percent
+        ? (price * discountValue / 100).round()
+        : (discountValue < price ? discountValue : price);
+    return amount < 0 ? 0 : amount;
+  }
+
+  /// [discountValue] as people write it: 15.0 → "15", 2.75 → "2.75".
+  String get valueText => discountValue == discountValue.roundToDouble()
+      ? discountValue.round().toString()
+      : discountValue.toString();
 
   String get offerLabel => '\u2066−$badge\u2069';
 
   String get badge => discountType == DiscountType.percent
-      ? '$discountValue%'
-      : '$discountValue';
+      ? '$valueText%'
+      : valueText;
 
   factory OfferModel.fromJson(Map<String, dynamic> json) {
     final dtStr = (json['discount_type'] ?? json['discountType'])?.toString() ?? 'percent';
@@ -71,7 +82,7 @@ class OfferModel {
       title: LocalizedText.fromJson(json['title']),
       description: LocalizedText.fromJson(json['description']),
       discountType: discountType,
-      discountValue: (json['discount_value'] ?? json['discountValue'] as num?)?.toInt() ?? 0,
+      discountValue: (json['discount_value'] ?? json['discountValue']) as num? ?? 0,
       startAt: start,
       endAt: end,
       status: json['status']?.toString() ?? 'active',

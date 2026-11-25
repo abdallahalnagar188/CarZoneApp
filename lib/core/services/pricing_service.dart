@@ -7,8 +7,8 @@ import 'washup_db_service.dart';
 
 class PriceQuote {
   final List<OrderItem> items;
-  final int subtotal;
-  final int discount;
+  final num subtotal;
+  final num discount;
   final OfferModel? offer;
   final int durationMin;
 
@@ -20,7 +20,7 @@ class PriceQuote {
     required this.durationMin,
   });
 
-  int get total => subtotal - discount;
+  num get total => subtotal - discount;
 
   static const empty = PriceQuote(
     items: [],
@@ -71,7 +71,7 @@ class PricingService {
               durationMin: s.durationMin,
             ))
         .toList();
-    final subtotal = all.fold<int>(0, (sum, s) => sum + s.price);
+    final subtotal = all.fold<num>(0, (sum, s) => sum + s.price);
     final duration = all.fold<int>(0, (sum, s) => sum + s.durationMin);
     final offer = offerFor(branchId, primary.id);
     final discount = offer?.discountFor(primary.price) ?? 0;
@@ -84,7 +84,7 @@ class PricingService {
     );
   }
 
-  int? fromPrice(String branchId, {String? category}) {
+  num? fromPrice(String branchId, {String? category}) {
     final list = _db
         .servicesFor(branchId)
         .where((s) => s.isPrimary && (category == null || s.category == category))
