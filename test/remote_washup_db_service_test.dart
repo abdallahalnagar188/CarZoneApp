@@ -100,8 +100,8 @@ void main() {
     expect(session.accessToken, equals(testToken));
     expect(session.userToken.value, equals(testToken));
 
-    // Verify cached in CacheController and CacheHelper
-    expect(CacheController().getter(key: CacheKeys.userToken), equals(testToken));
+    // GAP-070: kept in secure storage only, never as a plain SharedPreferences copy
+    expect(CacheController().getter(key: CacheKeys.userToken), isNull);
 
     // Verify DioHelper Authorization header is updated
     expect(DioHelper.dio.options.headers['Authorization'], equals('Bearer $testToken'));

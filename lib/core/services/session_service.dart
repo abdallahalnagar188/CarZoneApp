@@ -92,7 +92,16 @@ class SessionService extends GetxService {
         if (sessionToken != null) {
           await saveToken(sessionToken);
         }
-        final cust = _db.customerById(authUser.id);
+        // An hourly token refresh, or a profile update of the user already
+        // signed in, only brings a new token: no reload of the profile, cars,
+        // reviews and favorites (GAP-070).
+        final current = user.value;
+        final sameUser = current != null && (current.userId == authUser.id || current.id == authUser.id);
+        if (data.event == AuthChangeEvent.tokenRefreshed || (data.event == AuthChangeEvent.userUpdated && sameUser)) {
+          return;
+        }
+        // Customer ids (cu_…) are not auth ids: match the row by its user_id.
+        final cust = _db.customers.firstWhereOrNull((c) => c.userId == authUser.id) ?? _db.customerById(authUser.id);
         if (cust != null) {
           await signIn(cust, token: sessionToken);
           if (Get.currentRoute == Routes.loginRoute || Get.currentRoute == Routes.otpRoute) {
@@ -153,12 +162,10 @@ class SessionService extends GetxService {
       final secure = await CacheHelper.safeRead(key: CacheKeys.userToken.name);
       if (secure != null && secure.isNotEmpty) {
         userToken.value = secure;
-      } else {
-        final cached = CacheController().getter(key: CacheKeys.userToken);
-        if (cached is String && cached.isNotEmpty) {
-          userToken.value = cached;
-        }
       }
+      // The token lives in secure storage only; drop the plain copy older
+      // versions kept in SharedPreferences (GAP-070).
+      await CacheController().setter(key: CacheKeys.userToken, value: null);
 
       // Check current Supabase active session token as definitive source
       final activeToken = SupabaseService.client.auth.currentSession?.accessToken;
@@ -199,8 +206,8 @@ class SessionService extends GetxService {
   Future<void> saveToken(String token) async {
     userToken.value = token;
     try {
+      // Secure storage only: no plain copy in SharedPreferences (GAP-070).
       await CacheHelper.assignSecureData(key: CacheKeys.userToken.name, value: token);
-      await CacheController().setter(key: CacheKeys.userToken, value: token);
       final uid = userId ?? SupabaseService.client.auth.currentUser?.id;
       if (uid != null) {
         await _db.updateCustomerToken(uid, token);
