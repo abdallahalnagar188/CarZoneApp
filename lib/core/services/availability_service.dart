@@ -27,7 +27,9 @@ class BranchTimeHelper {
     final fixed = _fixedHours[timezone];
     if (fixed != null) return Duration(hours: fixed);
     if (timezone == 'Asia/Beirut' || timezone == 'Asia/Hebron' || timezone == 'Asia/Gaza') {
-      // Summer time from the last Sunday of March to the last Sunday of October.
+      // Summer time from 00:00 local on the last Sunday of March to 00:00
+      // local on the last Sunday of October (the switch is at local midnight,
+      // not UTC midnight, GAP-069). Palestine moves its dates some years.
       final d = (date ?? DateTime.now()).toUtc();
       DateTime lastSunday(int month, int lastDay) {
         var day = lastDay;
@@ -36,7 +38,9 @@ class BranchTimeHelper {
         }
         return DateTime.utc(d.year, month, day);
       }
-      final summer = d.isAfter(lastSunday(3, 31)) && d.isBefore(lastSunday(10, 31));
+      final start = lastSunday(3, 31).subtract(const Duration(hours: 2));
+      final end = lastSunday(10, 31).subtract(const Duration(hours: 3));
+      final summer = !d.isBefore(start) && d.isBefore(end);
       return Duration(hours: summer ? 3 : 2);
     }
     return cairoOffset(date);
@@ -53,16 +57,18 @@ class BranchTimeHelper {
     while (DateTime.utc(year, 4, lastFriApril).weekday != DateTime.friday) {
       lastFriApril--;
     }
-    final dstStart = DateTime.utc(year, 4, lastFriApril);
+    // Clocks move at local midnight: 00:00 (UTC+2) Friday, i.e. 22:00 UTC Thursday.
+    final dstStart = DateTime.utc(year, 4, lastFriApril).subtract(const Duration(hours: 2));
 
     // Last Thursday of October
     var lastThuOct = 31;
     while (DateTime.utc(year, 10, lastThuOct).weekday != DateTime.thursday) {
       lastThuOct--;
     }
-    final dstEnd = DateTime.utc(year, 10, lastThuOct, 24);
+    // 24:00 (UTC+3) Thursday, i.e. 21:00 UTC Thursday.
+    final dstEnd = DateTime.utc(year, 10, lastThuOct, 24).subtract(const Duration(hours: 3));
 
-    final isDst = d.isAfter(dstStart) && d.isBefore(dstEnd);
+    final isDst = !d.isBefore(dstStart) && d.isBefore(dstEnd);
     return Duration(hours: isDst ? 3 : 2);
   }
 
@@ -228,11 +234,13 @@ class AvailabilityService {
         }).toList();
         return list;
       }
+      return const [];
     } catch (e) {
-      dev.log('[AvailabilityService] fetchRemoteSlots RPC failed, using local: $e');
+      // No made-up local slots (they ignore other bookings and blocked
+      // times, so the server would refuse them): the caller shows the error (GAP-069).
+      dev.log('[AvailabilityService] fetchRemoteSlots RPC failed: $e');
+      rethrow;
     }
-    return slotsFor(branch, day,
-        durationMin: durationMin, excludeOrderId: excludeOrderId, includeFull: includeFull);
   }
 
   bool isAvailable(BranchModel branch, DateTime start, int durationMin, {String? excludeOrderId}) {
@@ -240,8 +248,11 @@ class AvailabilityService {
         .any((s) => s.start == start);
   }
 
+  /// A local estimate for lists (open hours and the bookings cached on this
+  /// phone); booking itself always uses [fetchRemoteSlots].
   List<SlotModel> nextSlots(BranchModel branch, {int count = 3, int durationMin = 30}) {
-    final today = DateTime.now();
+    // The branch's own today, not the phone's (GAP-069).
+    final today = FormatHelper.wallClock(DateTime.now(), branchId: branch.id);
     for (var i = 0; i <= branch.settings.maxAdvanceDays; i++) {
       final day = DateTime(today.year, today.month, today.day + i);
       final slots = slotsFor(branch, day, durationMin: durationMin);

@@ -32,6 +32,9 @@ class BookingController extends GetxController {
   final slot = Rxn<DateTime>();
   final slots = <SlotModel>[].obs;
   final loadingSlots = false.obs;
+
+  /// Why the slots could not be loaded; never replaced by made-up local slots (GAP-069).
+  final slotsError = RxnString();
   final confirming = false.obs;
   final createdOrder = Rxn<OrderModel>();
   final rescheduleOrder = Rxn<OrderModel>();
@@ -64,13 +67,21 @@ class BookingController extends GetxController {
 
   VehicleModel? get vehicle => vehicleId.value == null ? null : _db.vehicle(vehicleId.value!);
 
+  /// Today in the branch's time zone, not the phone's (GAP-069).
+  DateTime get branchToday {
+    final w = FormatHelper.wallClock(DateTime.now(), branchId: branchId.value.isEmpty ? null : branchId.value);
+    return DateTime(w.year, w.month, w.day);
+  }
+
   List<DateTime> get days {
-    final now = DateTime.now();
+    final now = branchToday;
     final max = branch?.settings.maxAdvanceDays ?? 7;
     return List.generate(max + 1, (i) => DateTime(now.year, now.month, now.day + i));
   }
 
-  bool isClosedDay(DateTime d) => branch == null || _availability.isClosedDay(branch!, d);
+  /// Unknown hours close nothing here: the server's slots decide (GAP-016).
+  bool isClosedDay(DateTime d) =>
+      branch == null || (branch!.hoursKnown && _availability.isClosedDay(branch!, d));
 
   Worker? _reconnect;
 
@@ -83,7 +94,7 @@ class BookingController extends GetxController {
         _selectNewCar = false;
       }
     });
-    // Slots shown while offline come from the local estimate; get the real ones.
+    // Slots that failed to load while offline: try again once back online.
     _reconnect = ConnectivityService.maybe?.onReconnect(() {
       if (Get.currentRoute == Routes.bookSlotRoute && !loadingSlots.value) loadSlots();
     });
@@ -98,8 +109,8 @@ class BookingController extends GetxController {
     noteController.clear();
     rescheduleOrder.value = null;
     createdOrder.value = null;
-    final now = DateTime.now();
-    day.value = DateTime(now.year, now.month, now.day);
+    slotsError.value = null;
+    day.value = branchToday;
   }
 
   void clearDraft() => _reset(branchId.value);
@@ -108,7 +119,9 @@ class BookingController extends GetxController {
     _reset(id);
     primaryId.value = serviceId;
     if (slot != null) {
-      day.value = DateTime(slot.year, slot.month, slot.day);
+      // The slot's day on the branch clock (slots are UTC instants).
+      final w = FormatHelper.wallClock(slot, branchId: id);
+      day.value = DateTime(w.year, w.month, w.day);
       this.slot.value = slot;
     }
     Get.toNamed(Routes.bookServiceRoute);
@@ -197,6 +210,7 @@ class BookingController extends GetxController {
     final b = branch;
     if (b == null) return;
     loadingSlots.value = true;
+    slotsError.value = null;
     slots.clear();
 
     try {
@@ -211,18 +225,8 @@ class BookingController extends GetxController {
           .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.bookingLeadMin))
           .toList();
       slots.assignAll(available);
-    } catch (_) {
-      final local = _availability.slotsFor(
-        b,
-        day.value,
-        durationMin: durationMin,
-        excludeOrderId: rescheduleOrder.value?.id,
-        includeFull: false,
-      );
-      final available = local
-          .where((s) => !s.full && !BranchTimeHelper.isSlotTooSoon(s.start, b.settings.bookingLeadMin))
-          .toList();
-      slots.assignAll(available);
+    } catch (e) {
+      slotsError.value = ApiException.messageFor(e);
     } finally {
       loadingSlots.value = false;
       if (slot.value != null &&
@@ -326,7 +330,7 @@ class BookingController extends GetxController {
     final uid = _session.userId;
     if (uid == null || primaryId.value == null || vehicleId.value == null || slot.value == null) return;
     final b = branch;
-    if (b != null && BranchTimeHelper.isSlotTooSoon(slot.value!, b.settings.leadTimeMin)) {
+    if (b != null && BranchTimeHelper.isSlotTooSoon(slot.value!, b.settings.bookingLeadMin)) {
       slot.value = null;
       await loadSlots();
       Utils.getSnakBar(

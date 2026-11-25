@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/constance/app_colors.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/helpers/format_helper.dart';
@@ -38,11 +39,17 @@ class SlotGrid extends StatelessWidget {
         return _buildShimmerGrid();
       }
 
+      // The real slots could not be loaded: say so and offer a retry (GAP-069).
+      final loadError = controller.slotsError.value;
+      if (loadError != null && slots.isEmpty) {
+        return AppErrorState(message: loadError, onRetry: controller.loadSlots);
+      }
+
       // Filter only available slots (not full and not too soon)
       final availableSlots = slots.where((s) {
         if (s.full) return false;
         if (controller.branch != null &&
-            BranchTimeHelper.isSlotTooSoon(s.start, controller.branch!.settings.leadTimeMin)) {
+            BranchTimeHelper.isSlotTooSoon(s.start, controller.branch!.settings.bookingLeadMin)) {
           return false;
         }
         return true;
@@ -178,7 +185,7 @@ class SlotGrid extends StatelessWidget {
 
   Widget _buildEmptyState(BuildContext context, BookingController controller) {
     final theme = Theme.of(context).textTheme;
-    final isToday = FormatHelper.sameDay(controller.day.value, DateTime.now());
+    final isToday = FormatHelper.sameDay(controller.day.value, controller.branchToday);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),

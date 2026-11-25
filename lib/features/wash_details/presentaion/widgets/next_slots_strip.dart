@@ -18,7 +18,11 @@ class NextSlotsStrip extends StatelessWidget {
       final slots = controller.nextSlots;
       final tz = Get.find<WashUpDbService>().countryOfBranch(controller.branchId).timezone;
       if (slots.isEmpty) return const SizedBox.shrink();
-      final today = FormatHelper.sameDay(slots.first.start, DateTime.now());
+      // Both on the branch clock, not the phone's (GAP-069).
+      final today = FormatHelper.sameDay(
+        FormatHelper.wallClock(slots.first.start, timezone: tz),
+        FormatHelper.wallClock(DateTime.now(), branchId: controller.branchId),
+      );
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         child: Column(
