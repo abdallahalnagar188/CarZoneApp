@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:washup/commons/models/branch_listing_model.dart';
+import 'package:washup/commons/models/customer_model.dart';
 import 'package:washup/commons/models/branch_model.dart';
 import 'package:washup/commons/models/localized_text.dart';
 import 'package:washup/commons/widgets/cards/wash_card.dart';
@@ -126,9 +127,22 @@ void main() {
     expect(iconWidget.color, equals(AppColors.ink900));
   });
 
+  // GAP-037: favorites belong to the account; a guest is sent to sign in.
+  test('a guest tap does not flip the heart and waits for sign-in', () async {
+    final db = Get.put(WashUpDbService());
+    final session = Get.put(SessionService());
+    final favController = Get.put(FavoritesController());
+
+    await favController.toggle('br_guest');
+    expect(favController.isFavorite('br_guest'), isFalse);
+    expect(db.favorites, isEmpty);
+    expect(session.pendingAction, isNotNull);
+  });
+
   test('FavoritesController toggles favorite locally and dispatches to Supabase', () async {
     final db = Get.put(WashUpDbService());
-    Get.put(SessionService());
+    final session = Get.put(SessionService());
+    session.user.value = CustomerModel(id: 'cu_test_fav', name: 'Test', phone: '+201000000000');
     final favController = Get.put(FavoritesController());
 
     const testBranchId = 'br_test_toggle';

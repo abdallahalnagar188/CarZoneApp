@@ -578,25 +578,6 @@ class WashUpDbService extends GetxService {
     }
   }
 
-  /// Migrates any favorites recorded under guest ID to target user ID
-  Future<void> migrateGuestFavorites(String guestId, String targetUserId) async {
-    if (guestId == targetUserId || favorites.isEmpty) return;
-    try {
-      final effectiveTargetId = _customerIdFor(targetUserId);
-      final rows = favorites.map((bid) => {'customer_id': effectiveTargetId, 'branch_id': bid}).toList();
-      await ApiCall.write(
-        () => SupabaseService.client.from('customer_favorites').upsert(
-              rows,
-              onConflict: 'customer_id,branch_id',
-              ignoreDuplicates: true,
-            ),
-        tag: 'migrate favorites',
-      );
-    } catch (e) {
-      dev.log('[WashUpDbService] Error migrating guest favorites: $e');
-    }
-  }
-
   // Remote Write Operations (orders go through OrderService RPCs)
   /// Throws [ApiException] on a connection failure, or the server's error.
   Future<void> saveVehicle(VehicleModel vehicle) async {

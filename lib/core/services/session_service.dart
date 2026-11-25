@@ -316,11 +316,9 @@ class SessionService extends GetxService {
       await saveToken(effectiveToken);
     }
 
-    final guestId = CacheController().getter(key: CacheKeys.guestUserId);
-    if (guestId is String && guestId.isNotEmpty) {
-      await _db.migrateGuestFavorites(guestId, customer.id);
-      await CacheController().setter(key: CacheKeys.guestUserId, value: null);
-    }
+    // Guests no longer keep favorites (they sign in first, GAP-037); drop the
+    // id older versions stored.
+    await CacheController().setter(key: CacheKeys.guestUserId, value: null);
     await _db.loadFavorites(customer.id);
     await _db.fetchVehicles(customer.id);
     await _db.fetchMyReviews(customer.id);
