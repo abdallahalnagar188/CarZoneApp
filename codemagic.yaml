@@ -6,7 +6,10 @@ workflows:
     integrations:
       app_store_connect: codemagic_api_key
     environment:
-      flutter: 3.27.4     # Pinned: last stable BEFORE SPM became default (3.44+)
+      # GAP-057: the same Flutter as .github/workflows/shorebird.yml (FLUTTER_VERSION) and
+      # within pubspec.lock's sdks (test/qa/ci_flutter_version_test.dart checks it). Swift
+      # Package Manager is switched off by the first script, as in the Shorebird iOS job.
+      flutter: 3.47.7
       xcode: latest
       cocoapods: default
       ios_signing:
