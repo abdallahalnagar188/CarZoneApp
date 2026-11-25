@@ -129,6 +129,8 @@ void main() {
 
   // GAP-037: favorites belong to the account; a guest is sent to sign in.
   test('a guest tap does not flip the heart and waits for sign-in', () async {
+    // AuthGuard sends the guest to the login route; no navigator in a unit test.
+    Get.testMode = true;
     final db = Get.put(WashUpDbService());
     final session = Get.put(SessionService());
     final favController = Get.put(FavoritesController());

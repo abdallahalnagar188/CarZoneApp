@@ -299,7 +299,7 @@ class SessionService extends GetxService {
           final res = await SupabaseService.client.auth.refreshSession();
           if (res.session != null) {
             await saveToken(res.session!.accessToken);
-            return refreshProfile();
+            return await refreshProfile();
           }
         } catch (refreshErr) {
           if (ApiException.from(refreshErr)?.isTransient ?? false) return;
