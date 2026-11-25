@@ -268,6 +268,7 @@ class NotificationService extends GetxService {
           .from('push_devices')
           .delete()
           .eq('user_id', userId)
+          .eq('app', 'customer')
           .eq('token', token)
           .timeout(const Duration(seconds: 5));
     } catch (e) {

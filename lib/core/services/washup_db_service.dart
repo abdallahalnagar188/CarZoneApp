@@ -701,12 +701,11 @@ class WashUpDbService extends GetxService {
             ),
             tag: 'save push device',
           );
-        } else if (token == null) {
-          await ApiCall.write(
-            () => SupabaseService.client.from('push_devices').delete().eq('user_id', authUser.id),
-            tag: 'remove push device',
-          );
         }
+        // Signing out no longer deletes every push device of the auth user: the
+        // same account may also be signed in to the owner app or on another
+        // phone. NotificationService.unregisterDevice removes only this
+        // device's customer-app token (GAP-094).
       }
     } catch (e) {
       dev.log('[WashUpDbService] Error updating customer push device in Supabase: $e');
