@@ -43,15 +43,31 @@ class BookingsPage extends StatelessWidget {
         }
         return RefreshIndicator(
           onRefresh: controller.refreshList,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 130.h),
-            children: list
-                .map((o) => BookingCard(
+          // Older orders load as the list nears its end (GAP-039).
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              if (n.metrics.extentAfter < 400) controller.loadMore();
+              return false;
+            },
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 130.h),
+              children: [
+                ...list.map((o) => BookingCard(
                       order: o,
                       branchName: controller.branchName(o),
                       onTap: () => controller.open(o),
-                    ))
-                .toList(),
+                    )),
+                if (controller.loadingMore.value)
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                if (!controller.loadingMore.value && controller.hasMore.value)
+                  Center(
+                    child: TextButton(onPressed: controller.loadMore, child: Text('bookings.more'.tr)),
+                  ),
+              ],
+            ),
           ),
         );
       }),

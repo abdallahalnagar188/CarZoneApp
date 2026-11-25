@@ -312,6 +312,8 @@ class WashUpDbService extends GetxService {
                 .select('*, order_items(*), order_events(*)')
                 .eq('customer_id', lookupId)
                 .order('scheduled_at', ascending: false)
+                .order('at', referencedTable: 'order_events')
+                .order('position', referencedTable: 'order_items')
                 .limit(5),
             tag: 'home orders',
           );
@@ -463,10 +465,13 @@ class WashUpDbService extends GetxService {
   }
 
   /// 5. Bookings Page fetch: loads user's bookings with pagination (.range).
+  /// Orders per page of the Bookings tab.
+  static const bookingsPageSize = 15;
+
   Future<List<OrderModel>> fetchUserBookings({
     required String userId,
     int page = 0,
-    int pageSize = 15,
+    int pageSize = bookingsPageSize,
     bool throwOnError = false,
   }) async {
     try {
@@ -480,6 +485,9 @@ class WashUpDbService extends GetxService {
             .select('*, order_items(*), order_events(*)')
             .eq('customer_id', effectiveCustId)
             .order('scheduled_at', ascending: false)
+            // Timelines in order (GAP-039).
+            .order('at', referencedTable: 'order_events')
+            .order('position', referencedTable: 'order_items')
             .range(from, to),
         tag: 'bookings page $page',
       );
