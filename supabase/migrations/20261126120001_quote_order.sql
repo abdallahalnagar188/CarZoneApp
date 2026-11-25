@@ -1,4 +1,4 @@
--- NOT APPLIED — to be reviewed and applied by the lead
+-- APPLIED to tbcmgdwzarfdgzzmmele on 2026-11-26 by the lead (recorded in schema_migrations; quote_order as 20261126120001 to avoid colliding with vendor 20261126120000).
 --
 -- GAP-034: the customer app's booking summary priced orders with its own offer rules, so it
 -- could show a discount create_order never applies (platform offers, offers limited to other

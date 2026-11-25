@@ -1,4 +1,4 @@
--- NOT APPLIED — to be reviewed and applied by the lead
+-- APPLIED to tbcmgdwzarfdgzzmmele on 2026-11-26 by the lead (recorded in schema_migrations; quote_order as 20261126120001 to avoid colliding with vendor 20261126120000).
 --
 -- GAP-036: the app's Settings → "Booking reminders" / "Offers" switches were stored on the
 -- phone only and read by nothing. This adds where to keep them on the customer row; the app
