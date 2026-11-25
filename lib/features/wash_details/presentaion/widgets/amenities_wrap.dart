@@ -21,15 +21,24 @@ class AmenitiesWrap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<WashDetailsController>();
+    final branch = controller.branch!;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Wrap(
         spacing: 8.w,
         runSpacing: 8.h,
-        children: controller.branch!.amenities
-            .map((a) => AppChip(label: 'amenity.$a'.tr, icon: icons[a], flat: true))
+        children: branch.amenities
+            .map((a) => AppChip(label: _label(a, branch.amenityNames[a]?.value), icon: icons[a], flat: true))
             .toList(),
       ),
     );
+  }
+
+  /// The built-in wording for the known amenities, else the name the platform gave it.
+  static String _label(String id, String? dbName) {
+    final key = 'amenity.$id';
+    final built = key.tr;
+    if (built != key) return built;
+    return (dbName == null || dbName.isEmpty) ? id : dbName;
   }
 }

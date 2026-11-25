@@ -57,7 +57,7 @@ class WashCoverHeader extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            AppNetworkImage(photoId: AppNetworkImage.branchPhoto(row.branch.photoSeed), width: 900),
+            AppNetworkImage(photoId: AppNetworkImage.branchPhoto(row.branch.photoSeed), url: row.branch.photos.firstOrNull, width: 900),
             DecoratedBox(decoration: BoxDecoration(gradient: AppColors.photoShade)),
             PositionedDirectional(
               start: 20.w,
@@ -92,10 +92,12 @@ class WashCoverHeader extends StatelessWidget {
                             Icon(Iconsax.star1, size: 15.sp, color: AppColors.star),
                             4.width,
                             Text(
-                              'ratingCount'.trParams({
-                                'rating': row.rating.toStringAsFixed(1),
-                                'count': '${row.reviewCount}',
-                              }),
+                              row.reviewCount == 0
+                                  ? row.ratingLabel
+                                  : 'ratingCount'.trParams({
+                                      'rating': row.rating.toStringAsFixed(1),
+                                      'count': '${row.reviewCount}',
+                                    }),
                               style: theme.labelMedium?.copyWith(color: Colors.white),
                             ),
                           ],

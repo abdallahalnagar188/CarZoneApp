@@ -64,14 +64,13 @@ class DiscoveryService {
   final _pricing = PricingService();
 
   BranchListingModel decorate(BranchModel b, {String? category}) {
-    final liveRating = _db.ratingFor(b.id);
-    final rating = liveRating.count > 0 ? liveRating.rating : (b.rating > 0 ? b.rating : 5.0);
-    final reviewCount = liveRating.count > 0 ? liveRating.count : b.reviewCount;
+    // Always the database aggregates (kept current by the reviews trigger),
+    // never a recount of the few cached reviews; unrated stays 0 (GAP-033).
     return BranchListingModel(
       branch: b,
       km: FormatHelper.haversineKm(_session.lat, _session.lng, b.lat, b.lng),
-      rating: rating,
-      reviewCount: reviewCount,
+      rating: b.reviewCount > 0 ? b.rating : 0,
+      reviewCount: b.reviewCount,
       fromPrice: _pricing.fromPrice(b.id, category: category),
       open: _availability.isOpenNow(b),
       nextSlot: _availability.nextSlot(b),

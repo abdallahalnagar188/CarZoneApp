@@ -7,6 +7,9 @@ import '../../../core/constance/app_colors.dart';
 
 class AppNetworkImage extends StatelessWidget {
   final String photoId;
+
+  /// A real image URL (a wash photo); [photoId] is used when null.
+  final String? url;
   final int width;
   final int? height;
   final BoxFit fit;
@@ -14,6 +17,7 @@ class AppNetworkImage extends StatelessWidget {
   const AppNetworkImage({
     super.key,
     required this.photoId,
+    this.url,
     this.width = 800,
     this.height,
     this.fit = BoxFit.cover,
@@ -25,7 +29,7 @@ class AppNetworkImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CachedNetworkImage(
-      imageUrl: AppRes.photo(photoId, width: width, height: height),
+      imageUrl: url ?? AppRes.photo(photoId, width: width, height: height),
       fit: fit,
       fadeInDuration: const Duration(milliseconds: 250),
       placeholder: (_, __) => const _Fallback(),

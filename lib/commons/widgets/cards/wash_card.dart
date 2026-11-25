@@ -50,7 +50,7 @@ class WashCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  AppNetworkImage(photoId: AppNetworkImage.branchPhoto(b.photoSeed), width: 600),
+                  AppNetworkImage(photoId: AppNetworkImage.branchPhoto(b.photoSeed), url: b.photos.firstOrNull, width: 600),
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -114,14 +114,16 @@ class WashCard extends StatelessWidget {
                           Icon(Iconsax.star1, size: 13.sp, color: AppColors.star),
                           4.width,
                           Text(
-                            row.rating.toStringAsFixed(1),
+                            row.ratingLabel,
                             style: theme.labelMedium?.copyWith(color: AppColors.brandNight, fontWeight: FontWeight.w700),
                           ),
-                          4.width,
-                          Text(
-                            '(${row.reviewCount})',
-                            style: theme.labelSmall?.copyWith(color: AppColors.ink500),
-                          ),
+                          if (row.reviewCount > 0) ...[
+                            4.width,
+                            Text(
+                              '(${row.reviewCount})',
+                              style: theme.labelSmall?.copyWith(color: AppColors.ink500),
+                            ),
+                          ],
                         ],
                       ),
                     ),

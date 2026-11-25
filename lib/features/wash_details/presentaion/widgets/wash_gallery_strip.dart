@@ -11,7 +11,7 @@ class WashGalleryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<WashDetailsController>();
-    final seed = controller.branch!.photoSeed;
+    final photos = controller.branch!.photos;
     return SizedBox(
       height: 96.h,
       child: ListView.separated(
@@ -27,7 +27,7 @@ class WashGalleryStrip extends StatelessWidget {
               borderRadius: BorderRadius.circular(18.r),
               child: SizedBox(
                 width: 132.w,
-                child: AppNetworkImage(photoId: AppNetworkImage.branchPhoto(seed, i), width: 400),
+                child: AppNetworkImage(photoId: AppNetworkImage.branchPhoto(controller.branch!.photoSeed, i), url: photos[i], width: 400),
               ),
             ),
           ),

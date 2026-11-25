@@ -134,11 +134,13 @@ class AvailabilityService {
   /// not the phone's.
   bool isOpenNow(BranchModel branch, [DateTime? now]) {
     final ref = now ?? FormatHelper.wallClock(DateTime.now(), branchId: branch.id);
-    final day = branch.hoursFor(ref);
-    if (day.closed || !branch.bookable) return false;
+    if (!branch.bookable) return false;
     final mins = ref.hour * 60 + ref.minute;
-    return mins >= FormatHelper.clockToMinutes(day.open) &&
-        mins < FormatHelper.clockToMinutes(day.close);
+    final day = branch.hoursFor(ref);
+    if (!day.closed && mins >= day.openMin && mins < day.closeMin) return true;
+    // Still open from yesterday's hours that run past midnight.
+    final yesterday = branch.hoursFor(ref.subtract(const Duration(days: 1)));
+    return !yesterday.closed && yesterday.closeMin > 1440 && mins + 1440 < yesterday.closeMin;
   }
 
   bool isClosedDay(BranchModel branch, DateTime day) => branch.hoursFor(day).closed;
@@ -161,10 +163,13 @@ class AvailabilityService {
     if (!branch.bookable) return const [];
     final hours = branch.hoursFor(day);
     if (hours.closed) return const [];
-    final open = FormatHelper.clockToMinutes(hours.open);
-    final close = FormatHelper.clockToMinutes(hours.close);
+    // Same grid as get_branch_slots: closing past midnight runs into the next
+    // day, and slots are at least 15 minutes apart.
+    final open = hours.openMin;
+    final close = hours.closeMin;
+    final step = branch.settings.slotIntervalMin < 15 ? 15 : branch.settings.slotIntervalMin;
     final result = <SlotModel>[];
-    for (var m = open; m + durationMin <= close; m += branch.settings.slotIntervalMin) {
+    for (var m = open; m + durationMin <= close; m += step) {
       final slotLocal = DateTime(day.year, day.month, day.day, m ~/ 60, m % 60);
       final slotUtc = BranchTimeHelper.toUtcDateTime(slotLocal, timezone: _db.countryOfBranch(branch.id).timezone);
       if (BranchTimeHelper.isSlotTooSoon(slotUtc, branch.settings.bookingLeadMin)) continue;
@@ -173,7 +178,7 @@ class AvailabilityService {
       final used = _overlapping(branch.id, slotUtc, endUtc, excludeOrderId);
       final free = branch.capacity - used;
       if (free > 0 || includeFull) {
-        final hh = (m ~/ 60).toString().padLeft(2, '0');
+        final hh = ((m ~/ 60) % 24).toString().padLeft(2, '0');
         final mm = (m % 60).toString().padLeft(2, '0');
         result.add(SlotModel(slotUtc, free > 0 ? free : 0, localTime: '$hh:$mm'));
       }

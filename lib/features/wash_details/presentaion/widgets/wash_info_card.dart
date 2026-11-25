@@ -26,7 +26,10 @@ class WashInfoCard extends StatelessWidget {
     final row = controller.listing.value!;
     final b = row.branch;
     final theme = Theme.of(context).textTheme;
-    final today = b.hoursFor(DateTime.now());
+    // The branch's own day, not the phone's (GAP-069).
+    final w = FormatHelper.wallClock(DateTime.now(), branchId: b.id);
+    final branchNow = DateTime(w.year, w.month, w.day, w.hour, w.minute);
+    final today = b.hoursFor(branchNow);
     return RoundedContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,6 +39,10 @@ class WashInfoCard extends StatelessWidget {
             child: Text('${b.address.value} · ${FormatHelper.distance(row.km)}', style: theme.bodyMedium),
           ),
           12.height,
+          // Hours the wash has not set (or that could not load) are not made up (GAP-016).
+          if (!b.hoursKnown)
+            _InfoRow(icon: Iconsax.clock, child: Text('wash.hoursUnknown'.tr, style: theme.bodyMedium))
+          else ...[
           GestureDetector(
             onTap: controller.toggleHours,
             behavior: HitTestBehavior.opaque,
@@ -84,7 +91,7 @@ class WashInfoCard extends StatelessWidget {
                       padding: EdgeInsetsDirectional.only(start: 32.w, top: 10.h),
                       child: Column(
                         children: List.generate(7, (i) {
-                          final day = DateTime.now().add(Duration(days: i));
+                          final day = DateTime(branchNow.year, branchNow.month, branchNow.day + i);
                           final h = b.hoursFor(day);
                           return Padding(
                             padding: EdgeInsets.symmetric(vertical: 3.h),
@@ -100,6 +107,7 @@ class WashInfoCard extends StatelessWidget {
                     ),
             ),
           ),
+          ],
           16.height,
           Row(
             children: [

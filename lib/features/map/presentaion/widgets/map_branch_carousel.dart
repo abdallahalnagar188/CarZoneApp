@@ -78,7 +78,7 @@ class _BranchCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    AppNetworkImage(photoId: AppNetworkImage.branchPhoto(row.branch.photoSeed), width: 320),
+                    AppNetworkImage(photoId: AppNetworkImage.branchPhoto(row.branch.photoSeed), url: row.branch.photos.firstOrNull, width: 320),
                     PositionedDirectional(
                       top: 6.h,
                       start: 6.w,
@@ -94,7 +94,7 @@ class _BranchCard extends StatelessWidget {
                             Icon(Iconsax.star1, size: 11.sp, color: AppColors.star),
                             3.width,
                             Text(
-                              row.rating.toStringAsFixed(1),
+                              row.ratingLabel,
                               style: theme.labelSmall?.copyWith(color: AppColors.brandNight, fontWeight: FontWeight.w700),
                             ),
                           ],

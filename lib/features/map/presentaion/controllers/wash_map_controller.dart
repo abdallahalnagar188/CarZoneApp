@@ -121,7 +121,7 @@ class WashMapController extends GetxController {
       final r = rows[i];
       final isSelected = i == selected.value;
       final state = isSelected ? PinState.selected : (r.open ? PinState.normal : PinState.closed);
-      final label = r.fromPrice == null ? r.rating.toStringAsFixed(1) : FormatHelper.money(r.fromPrice!, branchId: r.branch.id);
+      final label = r.fromPrice == null ? r.ratingLabel : FormatHelper.money(r.fromPrice!, branchId: r.branch.id);
       next.add(Marker(
         markerId: MarkerId(r.branch.id),
         position: LatLng(r.branch.lat, r.branch.lng),

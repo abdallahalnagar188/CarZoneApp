@@ -8,6 +8,7 @@ import '../../../../core/utils/system_ui.dart';
 import '../../../../commons/widgets/common_widgets.dart';
 import '../../../../core/extensions/sized_box_extension.dart';
 import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/helpers/route_argument_stack.dart';
 import '../controllers/wash_details_controller.dart';
 import '../widgets/amenities_wrap.dart';
 import '../widgets/book_now_bar.dart';
@@ -25,7 +26,10 @@ class WashDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<WashDetailsController>();
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    // One controller serves every open wash page; each shows its own wash (GAP-032).
+    return RouteArgumentScope<WashDetailsController>(
+      placeholder: const Scaffold(body: SafeArea(child: AppShimmerList(count: 5))),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUi.onBrand,
       child: Scaffold(
         bottomNavigationBar: const BookNowBar(),
@@ -64,10 +68,15 @@ class WashDetailsPage extends StatelessWidget {
                   ),
                 ),
               ),
-              SliverToBoxAdapter(child: SectionHeader(title: 'wash.gallery'.tr)),
-              const SliverToBoxAdapter(child: WashGalleryStrip()),
-              SliverToBoxAdapter(child: SectionHeader(title: 'wash.amenities'.tr)),
-              const SliverToBoxAdapter(child: AmenitiesWrap()),
+              // Only what the wash set up in the partner portal (GAP-016).
+              if (controller.galleryCount > 0) ...[
+                SliverToBoxAdapter(child: SectionHeader(title: 'wash.gallery'.tr)),
+                const SliverToBoxAdapter(child: WashGalleryStrip()),
+              ],
+              if (controller.branch!.amenities.isNotEmpty) ...[
+                SliverToBoxAdapter(child: SectionHeader(title: 'wash.amenities'.tr)),
+                const SliverToBoxAdapter(child: AmenitiesWrap()),
+              ],
               SliverToBoxAdapter(child: SectionHeader(title: 'wash.next'.tr)),
               const SliverToBoxAdapter(child: NextSlotsStrip()),
               SliverToBoxAdapter(child: SectionHeader(title: 'wash.services'.tr)),
@@ -111,6 +120,7 @@ class WashDetailsPage extends StatelessWidget {
             ],
           );
         }),
+      ),
       ),
     );
   }

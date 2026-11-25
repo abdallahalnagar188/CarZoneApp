@@ -10,6 +10,8 @@ import '../../../../commons/models/offer_model.dart';
 import '../../../../commons/models/review_model.dart';
 import '../../../../commons/models/wash_service_model.dart';
 import '../../../../core/enums/enums.dart';
+import '../../../../core/helpers/format_helper.dart';
+import '../../../../core/helpers/route_argument_stack.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/availability_service.dart';
@@ -25,7 +27,7 @@ import '../../../../core/utils/utils.dart';
 import '../../../booking/presentaion/controllers/booking_controller.dart';
 import '../../../favorites/presentaion/controllers/favorites_controller.dart';
 
-class WashDetailsController extends GetxController {
+class WashDetailsController extends GetxController with RouteArgumentStack {
   final _discovery = DiscoveryService();
   final _availability = AvailabilityService();
   final _pricing = PricingService();
@@ -42,8 +44,14 @@ class WashDetailsController extends GetxController {
   /// Why the branch could not be loaded; shown only when nothing is cached.
   final error = RxnString();
 
-  late final String branchId;
-  Worker? _reconnect;
+  /// The wash shown: the top-most open wash page's (GAP-032). Empty when the
+  /// page was opened without one; then "not found" shows.
+  String get branchId => activeArgument.value;
+
+  final _workers = <Worker>[];
+
+  /// Bumped on every switch, so a slow load for the previous wash is dropped.
+  int _generation = 0;
 
   WashUpDbService get _db => Get.find<WashUpDbService>();
 
@@ -52,45 +60,104 @@ class WashDetailsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    branchId = Get.arguments?.toString() ?? 'br_nasr';
+    initArgument(Get.arguments?.toString());
     load();
-    ever(_db.branches, (_) => _compute());
-    ever(_db.services, (_) => _compute());
-    ever(_db.reviews, (_) => _compute());
-    ever(_db.orders, (_) => _compute());
-    _reconnect = ConnectivityService.maybe?.onReconnect(() {
+    _workers.addAll([
+      ever(_db.branches, (_) => _compute()),
+      ever(_db.services, (_) => _compute()),
+      ever(_db.reviews, (_) => _compute()),
+      ever(_db.orders, (_) => _compute()),
+    ]);
+    final reconnect = ConnectivityService.maybe?.onReconnect(() {
       if (error.value != null) load();
     });
+    if (reconnect != null) _workers.add(reconnect);
+  }
+
+  @override
+  void onArgumentChanged() {
+    listing.value = null;
+    primaries.clear();
+    addons.clear();
+    nextSlots.clear();
+    reviews.clear();
+    hoursExpanded.value = false;
+    reviewStarFilter.value = 0;
+    error.value = null;
+    load();
   }
 
   Future<void> load() async {
+    final id = branchId;
+    final generation = ++_generation;
+    if (id.isEmpty) {
+      loading.value = false;
+      return;
+    }
     loading.value = true;
     try {
-      await _db.fetchBranchDetails(branchId, throwOnError: true);
+      await _db.fetchBranchDetails(id, throwOnError: true);
+      if (generation != _generation) return;
       error.value = null;
     } catch (e) {
+      if (generation != _generation) return;
       error.value = ApiException.messageFor(e);
     } finally {
-      _compute();
-      loading.value = false;
+      if (generation == _generation) {
+        _compute();
+        loading.value = false;
+      }
     }
+    if (generation == _generation) await _loadNextSlots(generation);
   }
 
   @override
   void onClose() {
-    _reconnect?.dispose();
+    for (final w in _workers) {
+      w.dispose();
+    }
+    _workers.clear();
     super.onClose();
   }
 
   void _compute() {
+    if (branchId.isEmpty) return;
     final b = _db.branch(branchId);
     if (b == null) return;
     listing.value = _discovery.decorate(b);
     final services = _db.servicesFor(branchId);
     primaries.assignAll(services.where((s) => s.isPrimary));
     addons.assignAll(services.where((s) => s.type == ServiceType.addon));
-    nextSlots.assignAll(_availability.nextSlots(b));
     reviews.assignAll(_db.reviewsFor(branchId));
+  }
+
+  /// The next free times from get_branch_slots (bookings and blocked times
+  /// included), on the wash's own days; none when they cannot be loaded (GAP-016).
+  Future<void> _loadNextSlots(int generation, {int count = 3}) async {
+    final b = _db.branch(branchId);
+    if (b == null || !b.bookable) {
+      nextSlots.clear();
+      return;
+    }
+    final w = FormatHelper.wallClock(DateTime.now(), branchId: b.id);
+    final duration = primaries.isEmpty ? 30 : primaries.map((s) => s.durationMin).reduce((a, c) => a < c ? a : c);
+    try {
+      for (var i = 0; i <= b.settings.maxAdvanceDays; i++) {
+        final day = DateTime(w.year, w.month, w.day + i);
+        if (b.hoursKnown && b.hoursFor(day).closed) continue;
+        final slots = await _availability.fetchRemoteSlots(b, day, durationMin: duration);
+        if (generation != _generation) return;
+        final free = slots.where((s) => !s.full).toList();
+        if (free.isNotEmpty) {
+          nextSlots.assignAll(free.take(count));
+          return;
+        }
+      }
+      nextSlots.clear();
+    } catch (e) {
+      dev.log('[WashDetailsController] next slots unavailable: $e');
+      if (generation == _generation) nextSlots.clear();
+    }
   }
 
   List<int> get distribution {
@@ -107,7 +174,8 @@ class WashDetailsController extends GetxController {
 
   OfferModel? offerFor(WashServiceModel s) => _pricing.offerFor(branchId, s.id);
 
-  int get galleryCount => 8;
+  /// The wash's own photos only (GAP-016).
+  int get galleryCount => branch?.photos.length ?? 0;
 
   bool get isFavorite => Get.find<FavoritesController>().ids.contains(branchId);
 
@@ -129,13 +197,18 @@ class WashDetailsController extends GetxController {
     final b = branch;
     final name = b?.name.value ?? 'Wash Up';
     final address = b?.address.value ?? '';
-    final rating = listing.value?.rating.toStringAsFixed(1) ?? '4.8';
     final shareUrl = DeepLinkService.buildShareUrl(branchId);
+    // The wash's real rating, or "new" when nobody rated it yet (GAP-033), in
+    // the app's language (GAP-071).
+    final row = listing.value;
+    final ratingLine = row == null || row.reviewCount == 0
+        ? 'wash.shareNew'.tr
+        : 'wash.shareRated'.trParams({'rating': row.rating.toStringAsFixed(1), 'count': '${row.reviewCount}'});
 
     final text = '🚗 $name\n'
-        '⭐ $rating (${listing.value?.reviewCount ?? 0} تقييم)\n'
+        '$ratingLine\n'
         '📍 $address\n\n'
-        'احجز موعد غسيل سيارتك الآن على Wash Up:\n'
+        '${'wash.shareCta'.tr}\n'
         '$shareUrl';
 
     try {

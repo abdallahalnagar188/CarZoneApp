@@ -36,7 +36,7 @@ class _GalleryViewerPageState extends State<GalleryViewerPage> {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<WashDetailsController>();
-    final seed = controller.branch!.photoSeed;
+    final photos = controller.branch!.photos;
     final count = controller.galleryCount;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUi.onBrand,
@@ -53,7 +53,8 @@ class _GalleryViewerPageState extends State<GalleryViewerPage> {
                   child: Hero(
                     tag: 'gallery_$i',
                     child: AppNetworkImage(
-                      photoId: AppNetworkImage.branchPhoto(seed, i),
+                      photoId: AppNetworkImage.branchPhoto(controller.branch!.photoSeed, i),
+                      url: photos[i],
                       width: 1200,
                       fit: BoxFit.contain,
                     ),

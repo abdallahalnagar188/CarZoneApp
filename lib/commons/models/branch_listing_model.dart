@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import 'branch_model.dart';
 
 class BranchListingModel {
@@ -8,6 +10,9 @@ class BranchListingModel {
   final num? fromPrice;
   final bool open;
   final DateTime? nextSlot;
+
+  /// "New" for a wash nobody has rated yet, else its average (GAP-033).
+  String get ratingLabel => reviewCount == 0 ? 'rating.new'.tr : rating.toStringAsFixed(1);
 
   const BranchListingModel({
     required this.branch,

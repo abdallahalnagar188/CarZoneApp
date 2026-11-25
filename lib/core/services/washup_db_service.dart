@@ -84,10 +84,45 @@ class WashUpDbService extends GetxService {
     for (final b in newBranches) {
       final index = branches.indexWhere((existing) => existing.id == b.id);
       if (index >= 0) {
-        branches[index] = b;
+        // A row without its hours/amenities/photos keeps the ones already loaded.
+        branches[index] = BranchModel.keepRelated(b, branches[index]);
       } else {
         branches.add(b);
       }
+    }
+  }
+
+  /// Runs a branches query embedding the related tables (hours, amenities,
+  /// photos), again without the amenity names if the database refuses them.
+  static Future<T> _withRelated<T>(Future<T> Function(String related) query) async {
+    try {
+      return await query(BranchModel.relatedSelect);
+    } on PostgrestException catch (e) {
+      dev.log('[WashUpDbService] related select refused (${e.code}): ${e.message}');
+      return query(BranchModel.relatedSelectBasic);
+    }
+  }
+
+  /// Opening hours, amenities and photos of [branchIds] that were loaded
+  /// without them (discover_branches returns the branch row only), GAP-016.
+  Future<void> _fetchBranchRelated(List<String> branchIds) async {
+    final missing = branchIds.where((id) => branch(id)?.detailsLoaded == false).toList();
+    if (missing.isEmpty) return;
+    try {
+      final res = await _withRelated(
+        (related) => ApiCall.read(
+          () => SupabaseService.client.from('branches').select('id, $related').inFilter('id', missing),
+          tag: 'branch hours',
+        ),
+      );
+      for (final r in res as List) {
+        final m = Map<String, dynamic>.from(r as Map);
+        final i = branches.indexWhere((b) => b.id == m['id']?.toString());
+        if (i >= 0) branches[i] = branches[i].withRelated(m);
+      }
+    } catch (e) {
+      // Hours stay unknown: the washes show no hours instead of made-up ones.
+      dev.log('[WashUpDbService] branch related rows error: $e');
     }
   }
 
@@ -239,7 +274,12 @@ class WashUpDbService extends GetxService {
       if (from != null) {
         await discover(lat: from.lat, lng: from.lng, country: from.country, limit: 20, throwOnError: true);
       } else {
-        final res = await ApiCall.read(() => client.from('branches').select().eq('active', true).limit(20), tag: 'home branches');
+        final res = await _withRelated(
+          (related) => ApiCall.read(
+            () => client.from('branches').select('*, $related').eq('active', true).limit(20),
+            tag: 'home branches',
+          ),
+        );
         final list = _rows(res, BranchModel.fromJson);
         upsertBranches(list);
         await _fetchPrimaryServices(list.map((b) => b.id).toList());
@@ -335,8 +375,10 @@ class WashUpDbService extends GetxService {
           ),
       ];
       upsertBranches(rows.map((r) => r.branch).toList());
-      await _fetchPrimaryServices(rows.map((r) => r.branch.id).toList());
-      return rows;
+      final ids = rows.map((r) => r.branch.id).toList();
+      await Future.wait([_fetchPrimaryServices(ids), _fetchBranchRelated(ids)]);
+      // The cached branches now carry their hours, amenities and photos.
+      return [for (final r in rows) (branch: branch(r.branch.id) ?? r.branch, km: r.km, fromPrice: r.fromPrice)];
     } catch (e) {
       dev.log('[WashUpDbService] discover error: $e');
       if (throwOnError) rethrow;
@@ -369,7 +411,12 @@ class WashUpDbService extends GetxService {
     try {
       final client = SupabaseService.client;
       final results = await Future.wait<dynamic>([
-        ApiCall.read(() => client.from('branches').select().eq('id', branchId).maybeSingle(), tag: 'branch'),
+        _withRelated(
+          (related) => ApiCall.read(
+            () => client.from('branches').select('*, $related').eq('id', branchId).maybeSingle(),
+            tag: 'branch',
+          ),
+        ),
         ApiCall.read(() => client.from('services').select().eq('branch_id', branchId), tag: 'branch services'),
         ApiCall.read(
           () => client.from('reviews').select().eq('branch_id', branchId).order('created_at', ascending: false).limit(25),

@@ -16,15 +16,17 @@ class ReviewsSummary extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     return Obx(() {
       final dist = controller.distribution;
-      final total = controller.reviews.length;
+      // The wash's real average and count (branches.rating / review_count), GAP-033.
+      final row = controller.listing.value;
+      final total = row?.reviewCount ?? controller.reviews.length;
       final max = dist.fold<int>(1, (m, v) => v > m ? v : m);
-      final avg = controller.listing.value?.rating ?? 0;
+      final avg = row?.rating ?? 0;
       return RoundedContainer(
         child: Row(
           children: [
             Column(
               children: [
-                Text(avg.toStringAsFixed(1), style: theme.headlineLarge?.copyWith(fontSize: 38.sp)),
+                Text(row?.ratingLabel ?? avg.toStringAsFixed(1), style: theme.headlineLarge?.copyWith(fontSize: 38.sp)),
                 RatingStars(value: avg.round(), size: 14.sp),
                 4.height,
                 Text('$total', style: theme.bodySmall),
