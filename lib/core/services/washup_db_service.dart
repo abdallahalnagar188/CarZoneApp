@@ -258,7 +258,7 @@ class WashUpDbService extends GetxService {
         ApiCall.read(() => client.from('areas').select().eq('active', true).order('sort_order'), tag: 'areas'),
         ApiCall.read(() => client.from('countries').select().eq('active', true).order('sort_order'), tag: 'countries'),
         ApiCall.read(() => client.from('service_categories').select('id, name').order('id'), tag: 'categories'),
-        ApiCall.read(() => client.from('offers').select('*, offer_branches(branch_id)').limit(8), tag: 'offers'),
+        _fetchOffers(),
       ]);
 
       areas.assignAll(_rows(catalogResults[0], AreaModel.fromJson));
@@ -335,6 +335,25 @@ class WashUpDbService extends GetxService {
       return false;
     } finally {
       isSyncing.value = false;
+    }
+  }
+
+  /// Live offers with their branches and, where the database lets the app read
+  /// them, their categories (create_order's offer rule, GAP-034).
+  static Future<dynamic> _fetchOffers() async {
+    final client = SupabaseService.client;
+    try {
+      return await ApiCall.read(
+        () => client.from('offers').select('*, offer_branches(branch_id), offer_categories(category_id)').eq('status', 'active').limit(8),
+        tag: 'offers',
+      );
+    } on PostgrestException catch (e) {
+      // offer_categories not readable yet (migration 20261126120000 not applied).
+      dev.log('[WashUpDbService] offers without categories (${e.code}): ${e.message}');
+      return ApiCall.read(
+        () => client.from('offers').select('*, offer_branches(branch_id)').eq('status', 'active').limit(8),
+        tag: 'offers',
+      );
     }
   }
 

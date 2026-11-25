@@ -6,6 +6,9 @@ class OfferModel {
   final bool platform;
   final List<String> branchIds;
   final List<String> serviceIds;
+
+  /// Service categories the offer is limited to (offer_categories); empty = all.
+  final List<String> categoryIds;
   final LocalizedText title;
   final LocalizedText description;
   final DiscountType discountType;
@@ -21,6 +24,7 @@ class OfferModel {
     required this.platform,
     required this.branchIds,
     required this.serviceIds,
+    this.categoryIds = const [],
     required this.title,
     required this.description,
     required this.discountType,
@@ -69,6 +73,10 @@ class OfferModel {
 
     final rawServiceIds = (json['service_ids'] ?? json['serviceIds']) as List?;
     final serviceIds = rawServiceIds?.map((e) => e.toString()).toList() ?? [];
+    final categoryIds = ((json['offer_categories'] as List?) ?? const [])
+        .map((e) => e is Map ? (e['category_id']?.toString() ?? '') : e.toString())
+        .where((id) => id.isNotEmpty)
+        .toList();
 
     final start = DateTime.tryParse(json['starts_at'] ?? json['start_at'] ?? json['startAt'] ?? '') ?? DateTime.now();
     final end = DateTime.tryParse(json['ends_at'] ?? json['end_at'] ?? json['endAt'] ?? '') ?? DateTime.now().add(const Duration(days: 7));
@@ -79,6 +87,7 @@ class OfferModel {
       platform: isPlatform,
       branchIds: branchIds,
       serviceIds: serviceIds,
+      categoryIds: categoryIds,
       title: LocalizedText.fromJson(json['title']),
       description: LocalizedText.fromJson(json['description']),
       discountType: discountType,
@@ -96,6 +105,7 @@ class OfferModel {
     'platform': platform,
     'branch_ids': branchIds,
     'service_ids': serviceIds,
+    'offer_categories': [for (final c in categoryIds) {'category_id': c}],
     'title': title.toJson(),
     'description': description.toJson(),
     'discount_type': discountType == DiscountType.fixed ? 'fixed' : 'percent',

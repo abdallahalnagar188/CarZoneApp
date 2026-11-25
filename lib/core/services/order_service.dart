@@ -79,8 +79,6 @@ class OrderService {
     required List<String> addonIds,
     required String vehicleId,
     required DateTime slot,
-    // Not stored yet: orders has no note column (QA-M7).
-    String? note,
   }) async {
     final json = await _rpc('create_order', {
       'p_branch_id': branchId,
@@ -93,6 +91,25 @@ class OrderService {
     _db.upsertOrders([order]);
     // The "created" notification comes from the orders trigger on the server.
     return order;
+  }
+
+  /// Sends the customer's booking note to the wash (order_notes through the
+  /// add_customer_order_note RPC, GAP-035). Returns whether it was saved; a
+  /// database without that RPC yet counts as not saved. Never throws: the
+  /// booking itself already exists.
+  Future<bool> addNote(String orderId, String note) async {
+    final text = note.trim();
+    if (text.isEmpty) return true;
+    try {
+      await ApiCall.write(
+        () => SupabaseService.client.rpc('add_customer_order_note', params: {'p_order_id': orderId, 'p_note': text}),
+        tag: 'add_customer_order_note',
+      );
+      return true;
+    } catch (e) {
+      dev.log('[OrderService] booking note not saved: $e');
+      return false;
+    }
   }
 
   bool insideFreeWindow(OrderModel order) {

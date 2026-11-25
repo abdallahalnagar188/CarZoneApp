@@ -55,11 +55,39 @@ class BookingController extends GetxController {
   List<VehicleModel> get vehicles =>
       _db.vehicles.where((v) => v.customerId == _session.userId).toList();
 
-  PriceQuote get quote => _pricing.quote(
-        branchId: branchId.value,
-        primaryId: primaryId.value,
-        addonIds: addonIds.toList(),
-      );
+  /// create_order's price for the current choice (quote_order, GAP-034), once
+  /// loaded on the summary; the local estimate until then or without that RPC.
+  final serverQuote = Rxn<PriceQuote>();
+  String? _serverQuoteKey;
+
+  String get _quoteKey => '${branchId.value}|${primaryId.value}|${addonIds.join(',')}';
+
+  PriceQuote get quote {
+    final server = serverQuote.value;
+    final local = _pricing.quote(
+      branchId: branchId.value,
+      primaryId: primaryId.value,
+      addonIds: addonIds.toList(),
+    );
+    return server != null && _serverQuoteKey == _quoteKey ? server : local;
+  }
+
+  /// Asks the server what this booking will cost, so the summary shows the
+  /// price that will be charged.
+  Future<void> refreshQuote() async {
+    final primary = primaryId.value;
+    if (primary == null) return;
+    final key = _quoteKey;
+    try {
+      final q = await _pricing.serverQuote(branchId: branchId.value, primaryId: primary, addonIds: addonIds.toList());
+      if (key != _quoteKey) return;
+      _serverQuoteKey = key;
+      serverQuote.value = q;
+    } catch (e) {
+      // The local estimate stays; create_order prices the booking anyway.
+      debugPrint('[BookingController] quote_order failed: $e');
+    }
+  }
 
   int get durationMin => rescheduleOrder.value?.durationMin ?? quote.durationMin;
 
@@ -110,6 +138,8 @@ class BookingController extends GetxController {
     rescheduleOrder.value = null;
     createdOrder.value = null;
     slotsError.value = null;
+    serverQuote.value = null;
+    _serverQuoteKey = null;
     day.value = branchToday;
   }
 
@@ -279,6 +309,7 @@ class BookingController extends GetxController {
       await _confirmReschedule();
       return;
     }
+    refreshQuote();
     Get.toNamed(Routes.bookSummaryRoute);
   }
 
@@ -350,10 +381,13 @@ class BookingController extends GetxController {
         addonIds: addonIds.toList(),
         vehicleId: vehicleId.value!,
         slot: slot.value!,
-        note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
       );
+      // The note goes to the wash separately; the booking stands either way (GAP-035).
+      final note = noteController.text.trim();
+      final noteSaved = note.isEmpty || await _orders.addNote(order.id, note);
       confirming.value = false;
       createdOrder.value = order;
+      if (!noteSaved) Utils.getSnakBar(message: 'book.noteNotSent'.tr, type: TosterTypes.warning);
       Get.offNamedUntil(
         Routes.bookSuccessRoute,
         (r) => r.settings.name == Routes.mainRoute || r.settings.name == Routes.washDetailsRoute,
