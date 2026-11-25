@@ -80,6 +80,9 @@ class OrderModel {
   String? complaintId;
   final DateTime createdAt;
 
+  /// Last change on the server (orders.updated_at); null for rows built locally.
+  final DateTime? updatedAt;
+
   OrderModel({
     required this.id,
     required this.number,
@@ -102,6 +105,7 @@ class OrderModel {
     this.cancelledBy,
     this.lateCancel = false,
     this.complaintId,
+    this.updatedAt,
     List<TimelineEntry>? timeline,
   }) : timeline = timeline ?? [];
 
@@ -175,6 +179,7 @@ class OrderModel {
       lateCancel: json['late_cancel'] ?? json['lateCancel'] ?? false,
       complaintId: json['complaint_id']?.toString() ?? json['complaintId']?.toString(),
       createdAt: DateTime.tryParse(json['created_at'] ?? json['createdAt'] ?? '')?.toLocal() ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? json['updatedAt']?.toString() ?? '')?.toLocal(),
     );
   }
 
@@ -201,5 +206,6 @@ class OrderModel {
     'late_cancel': lateCancel,
     'complaint_id': complaintId,
     'created_at': createdAt.toUtc().toIso8601String(),
+    if (updatedAt != null) 'updated_at': updatedAt!.toUtc().toIso8601String(),
   };
 }

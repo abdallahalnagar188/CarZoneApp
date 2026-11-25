@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../commons/models/notification_model.dart';
 import '../../commons/models/order_model.dart';
 import '../enums/enums.dart';
 import '../helpers/format_helper.dart';
@@ -92,19 +93,42 @@ class LiveBookingService extends GetxService with WidgetsBindingObserver {
 
   /// A new status notification means the wash changed the order on the server:
   /// apply it to the local copy so the booking screens and the widget move on.
+  /// Oldest first, and only when it is newer than what the order already shows:
+  /// the notification history loaded at launch must not roll orders back (GAP-015).
   void _applyStatusNotifications() {
     var changed = false;
-    for (final n in _db.notifications) {
-      if (!_seenNotifications.add(n.id)) continue;
-      final status = _statusByType[n.type];
+    final fresh = _db.notifications.where((n) => _seenNotifications.add(n.id)).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    for (final n in fresh) {
       final order = n.orderId == null ? null : _db.order(n.orderId!);
-      if (status == null || order == null || order.status == status) continue;
+      if (order == null) continue;
+      final status = statusFromNotification(order, n);
+      if (status == null) continue;
       order
         ..status = status
         ..timeline.add(TimelineEntry(status.key, n.createdAt.toLocal()));
       changed = true;
     }
     if (changed) _db.orders.refresh();
+  }
+
+  /// The status [n] moves [order] to, or null when it is not a status
+  /// notification, says nothing new, or is not newer than the order's last
+  /// known change on the server (its update time or latest timeline step).
+  static OrderStatus? statusFromNotification(OrderModel order, NotificationModel n) {
+    final status = _statusByType[n.type];
+    if (status == null || order.status == status) return null;
+    if (!n.createdAt.isAfter(lastKnownChange(order))) return null;
+    return status;
+  }
+
+  /// When the local copy of [order] last changed, as far as it tells.
+  static DateTime lastKnownChange(OrderModel order) {
+    var latest = order.updatedAt ?? order.createdAt;
+    for (final t in order.timeline) {
+      if (t.at.isAfter(latest)) latest = t.at;
+    }
+    return latest;
   }
 
   void _reconcile() {
