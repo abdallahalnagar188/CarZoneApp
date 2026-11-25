@@ -609,6 +609,16 @@ class WashUpDbService extends GetxService {
     }
   }
 
+  /// Saves the columns a customer may change on their own row (the server's
+  /// guard trigger keeps phone, status and the auth link). Throws when the
+  /// server did not save it, so the screen never claims a save that failed.
+  Future<void> updateCustomerProfile(String customerId, Map<String, dynamic> changes) async {
+    await ApiCall.write(
+      () => SupabaseService.client.from('customers').update(changes).eq('id', customerId).select('id').single(),
+      tag: 'update customer',
+    );
+  }
+
   Future<void> updateCustomerToken(String customerId, String? token) async {
     try {
       final cust = customerById(customerId);

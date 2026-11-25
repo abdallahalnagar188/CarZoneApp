@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/enums/enums.dart';
 import '../../../../core/helpers/auth_guard.dart';
+import '../../../../core/local/cache_controller.dart';
 import '../../../../core/network/api_call.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../core/services/washup_db_service.dart';
@@ -51,11 +52,25 @@ class ProfileController extends GetxController {
       nameError.value = 'profile.nameErr'.tr;
       return;
     }
+    final user = session.user.value;
+    if (user == null || saving.value) return;
     saving.value = true;
-    await Future.delayed(const Duration(milliseconds: 300));
-    session.user.value?.name = name;
+    try {
+      // GAP-018: persisted on the server first; the local name changes only after.
+      await _db.updateCustomerProfile(user.id, {'name': name});
+    } on ApiException catch (e) {
+      Utils.getSnakBar(message: e.message, type: TosterTypes.failed);
+      return;
+    } catch (_) {
+      Utils.getSnakBar(message: 'profile.saveFailed'.tr, type: TosterTypes.failed);
+      return;
+    } finally {
+      saving.value = false;
+    }
+    user.name = name;
     session.user.refresh();
-    saving.value = false;
+    _db.customers.refresh();
+    await CacheController().setter(key: CacheKeys.name, value: name);
     Get.back();
   }
 
