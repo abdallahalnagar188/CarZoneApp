@@ -159,5 +159,5 @@ void main() {
     favController.toggle(testBranchId);
     expect(favController.isFavorite(testBranchId), isFalse);
     expect(db.favorites.contains(testBranchId), isFalse);
-  });
+  }, tags: ['live']); // the toggle writes to the deployed Supabase project (CI skips live tests)
 }

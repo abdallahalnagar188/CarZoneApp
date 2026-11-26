@@ -1,0 +1,45 @@
+# PR gates (GAP-055): analyze and unit/widget tests on every pull request and on pushes to main/ebrahim.
+# Build and release stay in shorebird.yml (Shorebird) and codemagic.yaml (iOS); this workflow builds nothing.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, ebrahim]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Same Flutter as shorebird.yml and codemagic.yaml (GAP-057); test/qa/ci_flutter_version_test.dart
+  # fails when the three differ.
+  FLUTTER_VERSION: '3.47.7'
+
+jobs:
+  flutter:
+    name: flutter analyze + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true # caches the SDK and the pub cache
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: flutter analyze
+        run: flutter analyze
+
+      # Tests tagged `live` (dart_test.yaml) call the deployed Supabase project; a PR gate must not
+      # depend on production data or reach it. Run them by hand: flutter test --tags live
+      - name: flutter test
+        run: flutter test --exclude-tags live

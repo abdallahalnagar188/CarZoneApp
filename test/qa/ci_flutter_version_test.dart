@@ -19,16 +19,24 @@ bool _atLeast(String v, String min) {
 void main() {
   final codemagic = File('codemagic.yaml').readAsStringSync();
   final shorebird = File('.github/workflows/shorebird.yml').readAsStringSync();
+  final ci = File('.github/workflows/ci.yml').readAsStringSync();
   final lock = File('pubspec.lock').readAsStringSync();
 
   final codemagicFlutter = RegExp(r'^\s+flutter:\s*([0-9.]+)', multiLine: true).firstMatch(codemagic)?.group(1);
   final shorebirdFlutter = RegExp(r"FLUTTER_VERSION:\s*'([0-9.]+)'").firstMatch(shorebird)?.group(1);
+  final ciFlutter = RegExp(r"FLUTTER_VERSION:\s*'([0-9.]+)'").firstMatch(ci)?.group(1);
   final lockMin = RegExp(r'flutter:\s*">=([0-9.]+)"').firstMatch(lock)?.group(1);
 
   test('Codemagic and the Shorebird workflow build with the same Flutter', () {
     expect(codemagicFlutter, isNotNull);
     expect(shorebirdFlutter, isNotNull);
     expect(codemagicFlutter, shorebirdFlutter);
+  });
+
+  // GAP-055: the PR gates analyze and test with the Flutter the releases are built with.
+  test('the CI workflow checks with the same Flutter', () {
+    expect(ciFlutter, isNotNull);
+    expect(ciFlutter, shorebirdFlutter);
   });
 
   test('the pinned Flutter satisfies pubspec.lock', () {

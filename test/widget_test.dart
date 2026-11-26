@@ -1,3 +1,7 @@
+// Live: talks to the deployed Supabase project. CI skips it (--exclude-tags live, dart_test.yaml).
+@Tags(['live'])
+library;
+
 import 'dart:io';
 
 import 'package:washup/app.dart';

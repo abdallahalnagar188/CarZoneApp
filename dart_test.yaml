@@ -1,0 +1,7 @@
+# Test tags (package:test configuration, read by `flutter test`).
+tags:
+  # Talks to the deployed Supabase project (real reads, the unsigned SMS-hook call, the favorite
+  # toggle). `flutter test` runs them; CI runs `flutter test --exclude-tags live` so a pull request
+  # never calls production and never fails on what the live data happens to hold.
+  # Run only them: flutter test --tags live
+  live:
