@@ -12,8 +12,66 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      admin_notification_reads: {
+        Row: {
+          admin_id: string
+          notification_id: string
+          read_at: string
+        }
+        Insert: {
+          admin_id: string
+          notification_id: string
+          read_at?: string
+        }
+        Update: {
+          admin_id?: string
+          notification_id?: string
+          read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notification_reads_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "admin_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_notifications: {
         Row: {
           body: Json
@@ -131,29 +189,46 @@ export type Database = {
       areas: {
         Row: {
           active: boolean
+          country_code: string
           created_at: string
           id: string
+          lat: number | null
+          lng: number | null
           name: Json
           sort_order: number
           updated_at: string
         }
         Insert: {
           active?: boolean
+          country_code?: string
           created_at?: string
           id: string
+          lat?: number | null
+          lng?: number | null
           name: Json
           sort_order?: number
           updated_at?: string
         }
         Update: {
           active?: boolean
+          country_code?: string
           created_at?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           name?: Json
           sort_order?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "areas_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
@@ -308,6 +383,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "branch_photos_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      branch_shares: {
+        Row: {
+          branch_id: string
+          created_at: string
+          id: string
+          platform: string | null
+          user_id: string | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          id?: string
+          platform?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          id?: string
+          platform?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_shares_branch_id_fkey"
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
@@ -639,6 +746,54 @@ export type Database = {
           },
         ]
       }
+      countries: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          currency: string
+          currency_decimals: number
+          currency_symbol: Json
+          dial_code: string
+          lat: number
+          lng: number
+          name: Json
+          sort_order: number
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          currency: string
+          currency_decimals?: number
+          currency_symbol: Json
+          dial_code: string
+          lat: number
+          lng: number
+          name: Json
+          sort_order?: number
+          timezone: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          currency?: string
+          currency_decimals?: number
+          currency_symbol?: Json
+          dial_code?: string
+          lat?: number
+          lng?: number
+          name?: Json
+          sort_order?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_favorites: {
         Row: {
           branch_id: string
@@ -730,6 +885,8 @@ export type Database = {
           last_active_at: string
           locale: string
           name: string
+          notify_offers: boolean
+          notify_reminders: boolean
           phone: string
           status: Database["public"]["Enums"]["account_status"]
           status_reason: string | null
@@ -742,6 +899,8 @@ export type Database = {
           last_active_at?: string
           locale?: string
           name: string
+          notify_offers?: boolean
+          notify_reminders?: boolean
           phone: string
           status?: Database["public"]["Enums"]["account_status"]
           status_reason?: string | null
@@ -754,6 +913,8 @@ export type Database = {
           last_active_at?: string
           locale?: string
           name?: string
+          notify_offers?: boolean
+          notify_reminders?: boolean
           phone?: string
           status?: Database["public"]["Enums"]["account_status"]
           status_reason?: string | null
@@ -828,542 +989,46 @@ export type Database = {
           },
         ]
       }
-      legacy_app_health: {
+      live_booking_devices: {
         Row: {
+          activity_token: string | null
           created_at: string
+          fcm_token: string
           id: string
-          service_name: string
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          service_name: string
-          status: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          service_name?: string
-          status?: string
-        }
-        Relationships: []
-      }
-      legacy_areas: {
-        Row: {
-          created_at: string
-          id: string
-          lat: number
-          lng: number
-          name: Json
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          lat: number
-          lng: number
-          name: Json
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          lat?: number
-          lng?: number
-          name?: Json
-        }
-        Relationships: []
-      }
-      legacy_branch_shares: {
-        Row: {
-          branch_id: string
-          created_at: string
-          id: string
-          platform: string | null
-          user_id: string | null
-        }
-        Insert: {
-          branch_id: string
-          created_at?: string
-          id?: string
-          platform?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          branch_id?: string
-          created_at?: string
-          id?: string
-          platform?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "branch_shares_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_branches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      legacy_branches: {
-        Row: {
-          active: boolean
-          address: Json
-          amenities: Json
-          area_id: string
-          business_active: boolean
-          business_id: string
-          capacity: number
-          created_at: string
-          featured: boolean
-          id: string
-          lat: number
-          lng: number
-          name: Json
-          phone: string
-          photo_seed: number
-          settings: Json
-          working_hours: Json
-        }
-        Insert: {
-          active?: boolean
-          address: Json
-          amenities?: Json
-          area_id: string
-          business_active?: boolean
-          business_id: string
-          capacity?: number
-          created_at?: string
-          featured?: boolean
-          id: string
-          lat: number
-          lng: number
-          name: Json
-          phone: string
-          photo_seed?: number
-          settings?: Json
-          working_hours?: Json
-        }
-        Update: {
-          active?: boolean
-          address?: Json
-          amenities?: Json
-          area_id?: string
-          business_active?: boolean
-          business_id?: string
-          capacity?: number
-          created_at?: string
-          featured?: boolean
-          id?: string
-          lat?: number
-          lng?: number
-          name?: Json
-          phone?: string
-          photo_seed?: number
-          settings?: Json
-          working_hours?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "branches_area_id_fkey"
-            columns: ["area_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_areas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      legacy_complaints: {
-        Row: {
-          created_at: string
-          customer_id: string | null
-          details: string | null
-          id: string
-          order_id: string | null
-          reason: string | null
-          status: string
-          ticket_number: string
-        }
-        Insert: {
-          created_at?: string
-          customer_id?: string | null
-          details?: string | null
-          id: string
-          order_id?: string | null
-          reason?: string | null
-          status?: string
-          ticket_number: string
-        }
-        Update: {
-          created_at?: string
-          customer_id?: string | null
-          details?: string | null
-          id?: string
-          order_id?: string | null
-          reason?: string | null
-          status?: string
-          ticket_number?: string
-        }
-        Relationships: []
-      }
-      legacy_customers: {
-        Row: {
-          access_token: string | null
-          created_at: string
-          id: string
-          name: string
-          phone: string
-          token_updated_at: string | null
-        }
-        Insert: {
-          access_token?: string | null
-          created_at?: string
-          id: string
-          name: string
-          phone: string
-          token_updated_at?: string | null
-        }
-        Update: {
-          access_token?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          phone?: string
-          token_updated_at?: string | null
-        }
-        Relationships: []
-      }
-      legacy_favorites: {
-        Row: {
-          branch_id: string
-          created_at: string
+          locale: string
+          order_id: string
+          platform: string
+          updated_at: string
           user_id: string
         }
         Insert: {
-          branch_id: string
+          activity_token?: string | null
           created_at?: string
-          user_id: string
+          fcm_token: string
+          id?: string
+          locale?: string
+          order_id: string
+          platform: string
+          updated_at?: string
+          user_id?: string
         }
         Update: {
-          branch_id?: string
+          activity_token?: string | null
           created_at?: string
+          fcm_token?: string
+          id?: string
+          locale?: string
+          order_id?: string
+          platform?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "favorites_branch_id_fkey"
-            columns: ["branch_id"]
+            foreignKeyName: "live_booking_devices_order_id_fkey"
+            columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "legacy_branches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      legacy_notifications: {
-        Row: {
-          body: Json
-          created_at: string
-          id: string
-          order_id: string | null
-          read: boolean
-          title: Json
-          type: string
-          user_id: string
-        }
-        Insert: {
-          body: Json
-          created_at?: string
-          id: string
-          order_id?: string | null
-          read?: boolean
-          title: Json
-          type: string
-          user_id: string
-        }
-        Update: {
-          body?: Json
-          created_at?: string
-          id?: string
-          order_id?: string | null
-          read?: boolean
-          title?: Json
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      legacy_offers: {
-        Row: {
-          branch_ids: Json
-          created_at: string
-          description: Json
-          discount_type: string
-          discount_value: number
-          end_at: string
-          featured: boolean
-          id: string
-          photo_index: number
-          platform: boolean
-          service_ids: Json
-          start_at: string
-          status: string
-          title: Json
-        }
-        Insert: {
-          branch_ids?: Json
-          created_at?: string
-          description: Json
-          discount_type: string
-          discount_value: number
-          end_at: string
-          featured?: boolean
-          id: string
-          photo_index?: number
-          platform?: boolean
-          service_ids?: Json
-          start_at: string
-          status?: string
-          title: Json
-        }
-        Update: {
-          branch_ids?: Json
-          created_at?: string
-          description?: Json
-          discount_type?: string
-          discount_value?: number
-          end_at?: string
-          featured?: boolean
-          id?: string
-          photo_index?: number
-          platform?: boolean
-          service_ids?: Json
-          start_at?: string
-          status?: string
-          title?: Json
-        }
-        Relationships: []
-      }
-      legacy_orders: {
-        Row: {
-          branch_id: string
-          cancel_reason: string | null
-          code: string
-          complaint_id: string | null
-          created_at: string
-          customer_id: string
-          discount: number
-          duration_min: number
-          id: string
-          items: Json
-          late_cancel: boolean
-          note: string | null
-          number: string
-          offer_id: string | null
-          payment_status: string
-          scheduled_at: string
-          status: string
-          subtotal: number
-          timeline: Json
-          total: number
-          vehicle_id: string | null
-        }
-        Insert: {
-          branch_id: string
-          cancel_reason?: string | null
-          code: string
-          complaint_id?: string | null
-          created_at?: string
-          customer_id: string
-          discount?: number
-          duration_min: number
-          id: string
-          items?: Json
-          late_cancel?: boolean
-          note?: string | null
-          number: string
-          offer_id?: string | null
-          payment_status?: string
-          scheduled_at: string
-          status?: string
-          subtotal: number
-          timeline?: Json
-          total: number
-          vehicle_id?: string | null
-        }
-        Update: {
-          branch_id?: string
-          cancel_reason?: string | null
-          code?: string
-          complaint_id?: string | null
-          created_at?: string
-          customer_id?: string
-          discount?: number
-          duration_min?: number
-          id?: string
-          items?: Json
-          late_cancel?: boolean
-          note?: string | null
-          number?: string
-          offer_id?: string | null
-          payment_status?: string
-          scheduled_at?: string
-          status?: string
-          subtotal?: number
-          timeline?: Json
-          total?: number
-          vehicle_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "orders_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_branches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      legacy_reviews: {
-        Row: {
-          branch_id: string
-          comment: string
-          created_at: string
-          customer_name: string
-          id: string
-          order_id: string | null
-          reply: string | null
-          service_name: Json
-          stars: number
-          tags: Json
-        }
-        Insert: {
-          branch_id: string
-          comment: string
-          created_at?: string
-          customer_name: string
-          id: string
-          order_id?: string | null
-          reply?: string | null
-          service_name: Json
-          stars: number
-          tags?: Json
-        }
-        Update: {
-          branch_id?: string
-          comment?: string
-          created_at?: string
-          customer_name?: string
-          id?: string
-          order_id?: string | null
-          reply?: string | null
-          service_name?: Json
-          stars?: number
-          tags?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_branches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      legacy_services: {
-        Row: {
-          active: boolean
-          branch_id: string
-          category: string
-          created_at: string
-          description: Json
-          duration_min: number
-          id: string
-          name: Json
-          price: number
-          type: string
-        }
-        Insert: {
-          active?: boolean
-          branch_id: string
-          category: string
-          created_at?: string
-          description: Json
-          duration_min: number
-          id: string
-          name: Json
-          price: number
-          type: string
-        }
-        Update: {
-          active?: boolean
-          branch_id?: string
-          category?: string
-          created_at?: string
-          description?: Json
-          duration_min?: number
-          id?: string
-          name?: Json
-          price?: number
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "services_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_branches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      legacy_vehicles: {
-        Row: {
-          color: string
-          created_at: string
-          customer_id: string
-          id: string
-          is_default: boolean
-          make: string
-          model: string
-          plate: string
-          year: number | null
-        }
-        Insert: {
-          color: string
-          created_at?: string
-          customer_id: string
-          id: string
-          is_default?: boolean
-          make: string
-          model: string
-          plate: string
-          year?: number | null
-        }
-        Update: {
-          color?: string
-          created_at?: string
-          customer_id?: string
-          id?: string
-          is_default?: boolean
-          make?: string
-          model?: string
-          plate?: string
-          year?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vehicles_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_customers"
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1809,6 +1474,7 @@ export type Database = {
           amount_paid: number
           business_id: string
           created_at: string
+          currency: string | null
           id: string
           paid_at: string | null
           period_end: string
@@ -1822,6 +1488,7 @@ export type Database = {
           amount_paid?: number
           business_id: string
           created_at?: string
+          currency?: string | null
           id?: string
           paid_at?: string | null
           period_end: string
@@ -1835,6 +1502,7 @@ export type Database = {
           amount_paid?: number
           business_id?: string
           created_at?: string
+          currency?: string | null
           id?: string
           paid_at?: string | null
           period_end?: string
@@ -2293,12 +1961,14 @@ export type Database = {
           commission: number
           commission_rate: number
           created_at: string
+          currency: string | null
           date: string
           flag: string | null
           gross: number
           id: string
           net_to_wash: number
           order_id: string
+          payout_id: string | null
           review_note: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           updated_at: string
@@ -2308,12 +1978,14 @@ export type Database = {
           commission: number
           commission_rate: number
           created_at?: string
+          currency?: string | null
           date: string
           flag?: string | null
           gross: number
           id?: string
           net_to_wash: number
           order_id: string
+          payout_id?: string | null
           review_note?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           updated_at?: string
@@ -2323,12 +1995,14 @@ export type Database = {
           commission?: number
           commission_rate?: number
           created_at?: string
+          currency?: string | null
           date?: string
           flag?: string | null
           gross?: number
           id?: string
           net_to_wash?: number
           order_id?: string
+          payout_id?: string | null
           review_note?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           updated_at?: string
@@ -2346,6 +2020,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: true
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
             referencedColumns: ["id"]
           },
         ]
@@ -2396,6 +2077,39 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_notification_reads: {
+        Row: {
+          notification_id: string
+          read_at: string
+          staff_id: string
+        }
+        Insert: {
+          notification_id: string
+          read_at?: string
+          staff_id: string
+        }
+        Update: {
+          notification_id?: string
+          read_at?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_notification_reads_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
             referencedColumns: ["id"]
           },
         ]
@@ -2544,18 +2258,203 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      app_health: {
+        Row: {
+          id: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      _assert_customer_can_book: {
+        Args: {
+          p_customer_id: string
+          p_duration: number
+          p_exclude_order?: string
+          p_start: string
+          p_vehicle_id: string
+        }
+        Returns: undefined
+      }
+      _assert_slot_bookable: {
+        Args: {
+          p_branch: Database["public"]["Tables"]["branches"]["Row"]
+          p_duration: number
+          p_exclude_order?: string
+          p_start: string
+        }
+        Returns: undefined
+      }
+      _booking_customer: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          last_active_at: string
+          locale: string
+          name: string
+          notify_offers: boolean
+          notify_reminders: boolean
+          phone: string
+          status: Database["public"]["Enums"]["account_status"]
+          status_reason: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _order_json: { Args: { p_order_id: string }; Returns: Json }
+      add_customer_order_note: {
+        Args: { p_note: string; p_order_id: string }
+        Returns: undefined
+      }
+      booking_lead_min: {
+        Args: { p_branch: Database["public"]["Tables"]["branches"]["Row"] }
+        Returns: number
+      }
+      branch_money: {
+        Args: { p_branch_id: string }
+        Returns: Record<string, unknown>
+      }
+      branch_timezone: { Args: { p_branch_id: string }; Returns: string }
+      cancel_order: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: Json
+      }
+      clean_demo_auth_users: { Args: never; Returns: undefined }
+      close_stale_orders: { Args: never; Returns: number }
+      create_order: {
+        Args: {
+          p_addon_service_ids?: string[]
+          p_branch_id: string
+          p_primary_service_id: string
+          p_scheduled_at: string
+          p_vehicle_id: string
+        }
+        Returns: Json
+      }
+      current_active_customer_id: { Args: never; Returns: string }
+      current_customer_id: { Args: never; Returns: string }
+      delete_my_account: { Args: never; Returns: undefined }
+      discover_branches: {
+        Args: {
+          p_category?: string
+          p_country?: string
+          p_lat: number
+          p_limit?: number
+          p_lng: number
+          p_max_km?: number
+          p_offset?: number
+          p_query?: string
+        }
+        Returns: {
+          branch: Json
+          country_code: string
+          from_price: number
+          km: number
+        }[]
+      }
+      format_booking_time:
+        | { Args: { p_at: string; p_lang?: string }; Returns: string }
+        | {
+            Args: { p_at: string; p_lang: string; p_tz: string }
+            Returns: string
+          }
       gen_check_in_code: { Args: never; Returns: string }
       gen_id: { Args: { prefix: string }; Returns: string }
+      generate_settlements: {
+        Args: { p_period_end: string; p_period_start: string }
+        Returns: number
+      }
+      get_branch_slots: {
+        Args: {
+          p_branch_id: string
+          p_date: string
+          p_duration?: number
+          p_exclude_order?: string
+          p_include_full?: boolean
+        }
+        Returns: {
+          free_capacity: number
+          local_time: string
+          start_at: string
+        }[]
+      }
+      get_support_info: { Args: never; Returns: Json }
+      is_business_live: { Args: { p_business_id: string }; Returns: boolean }
       is_localized: { Args: { value: Json }; Returns: boolean }
+      is_staff_or_admin: { Args: never; Returns: boolean }
       next_complaint_ticket: { Args: never; Returns: string }
       next_order_number: {
         Args: { src: Database["public"]["Enums"]["order_source"] }
         Returns: string
       }
       normalize_plate: { Args: { plate: string }; Returns: string }
+      notify_admins: {
+        Args: {
+          p_body: Json
+          p_href: string
+          p_title: Json
+          p_type: Database["public"]["Enums"]["admin_notification_type"]
+        }
+        Returns: undefined
+      }
+      notify_wash: {
+        Args: {
+          p_body: string
+          p_branch: string
+          p_business: string
+          p_href: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["vendor_notification_type"]
+        }
+        Returns: undefined
+      }
+      panel_push: {
+        Args: { p_id: string; p_target: string }
+        Returns: undefined
+      }
+      quote_order: {
+        Args: {
+          p_addon_service_ids?: string[]
+          p_branch_id: string
+          p_primary_service_id: string
+        }
+        Returns: Json
+      }
+      refresh_offer_statuses: { Args: never; Returns: number }
+      reschedule_order: {
+        Args: { p_order_id: string; p_scheduled_at: string }
+        Returns: Json
+      }
+      send_push_config: { Args: never; Returns: Json }
+      sync_customer_profile: {
+        Args: { p_locale?: string; p_name?: string; p_phone: string }
+        Returns: Json
+      }
+      vendor_panel_app_phone_confirmed: {
+        Args: { p_phone: string; p_user_id: string }
+        Returns: boolean
+      }
+      vendor_panel_business_branches: { Args: never; Returns: string[] }
+      vendor_panel_business_id: { Args: never; Returns: string }
+      vendor_panel_owns_offer: {
+        Args: { p_offer_id: string }
+        Returns: boolean
+      }
+      vendor_panel_staff_id: { Args: never; Returns: string }
+      vendor_panel_staff_phone_taken: {
+        Args: { p_phone: string }
+        Returns: boolean
+      }
+      vendor_panel_user_id: { Args: never; Returns: string }
     }
     Enums: {
       account_status: "active" | "suspended"
@@ -2743,6 +2642,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       account_status: ["active", "suspended"],

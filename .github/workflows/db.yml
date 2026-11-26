@@ -1,0 +1,55 @@
+# Database guards (GAP-007, GAP-059). supabase/ in this repo is the only schema history of the WASH UP database.
+name: db
+
+on:
+  pull_request:
+    paths: ["supabase/**", ".github/workflows/db.yml"]
+  push:
+    branches: [main, ebrahim]
+    paths: ["supabase/**", ".github/workflows/db.yml"]
+  schedule:
+    - cron: "0 5 * * 1" # weekly: catches schema changes made outside this folder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrations:
+    name: migrations folder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node supabase/scripts/check-migrations.mjs
+
+  types:
+    name: generated types match production
+    runs-on: ubuntu-latest
+    env:
+      # Optional repository secret: a Supabase personal access token with read access to the project.
+      # Without it this job only prints a notice.
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: env.SUPABASE_ACCESS_TOKEN == ''
+        run: echo "::notice::SUPABASE_ACCESS_TOKEN is not set; skipping the types drift check."
+      - if: env.SUPABASE_ACCESS_TOKEN != ''
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - if: env.SUPABASE_ACCESS_TOKEN != ''
+        name: compare supabase/database.types.ts with the live schema
+        run: |
+          supabase gen types typescript --project-id tbcmgdwzarfdgzzmmele > "$RUNNER_TEMP/live.types.ts"
+          if ! diff -u --strip-trailing-cr -B supabase/database.types.ts "$RUNNER_TEMP/live.types.ts" > "$RUNNER_TEMP/types.diff"; then
+            head -n 200 "$RUNNER_TEMP/types.diff"
+            echo "::error::supabase/database.types.ts is stale (or production changed outside supabase/migrations). Regenerate it (see supabase/README.md)."
+            exit 1
+          fi

@@ -2,10 +2,10 @@
 
 Sends every new `public.customer_notifications` row to the customer's phones over FCM HTTP v1.
 Called by the `trg_customer_notifications_send_push` trigger
-(`supabase/migrations/20261020150000_customer_notifications_send_push.sql`) through `pg_net`.
+(defined in the baseline `supabase/migrations/20261127120000_baseline_production_schema.sql`; history: `supabase/migrations_archive/customer-app/20261020150000_customer_notifications_send_push.sql`) through `pg_net`.
 
 It also keeps the live booking widget moving while the app is closed (`live.ts`): `trg_orders_live_push`
-(`supabase/migrations/20261021160000_live_booking_push.sql`) posts every status change of an order that a device
+(baseline; history: `supabase/migrations_archive/customer-app/20261021160000_live_booking_push.sql`) posts every status change of an order that a device
 follows in `live_booking_devices`, and the function sends iOS an ActivityKit push (via FCM `apns.live_activity_token`)
 and Android a silent data message (`kind = live_booking`) drawn by `LiveBookingPushReceiver`.
 
@@ -26,7 +26,7 @@ iOS delivery (alerts and Live Activity updates) also needs the APNs auth key (.p
 
 ```bash
 supabase functions deploy send-push --no-verify-jwt
-supabase db query --linked -f supabase/migrations/20261020150000_customer_notifications_send_push.sql
+# the triggers are part of the schema baseline: a new project gets them from supabase db push
 ```
 
 Store the Firebase key with `supabase/functions/send-push/set-firebase-key.sh <service-account.json>`.
