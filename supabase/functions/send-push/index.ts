@@ -40,6 +40,15 @@ async function loadConfig(): Promise<Config> {
 Deno.serve(async (req: Request) =>
   handleSendPush(req, {
     ...(await loadConfig()),
+    getNotification: async (id) => {
+      const { data, error } = await db
+        .from("customer_notifications")
+        .select("id, customer_id, type, title, body, order_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
     getRecipient: async (customerId) => {
       // notify_* come from migration 20261126122000 (GAP-036); without it, every push is on.
       const withPrefs = await db

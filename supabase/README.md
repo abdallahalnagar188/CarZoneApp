@@ -42,8 +42,16 @@ also catches DDL run in the dashboard outside this folder.
 - `supabase_migrations.schema_migrations` holds `20261127120000 baseline_production_schema` and later versions only.
   The rows recorded before the baseline (carZone's 8 foundation versions, the portals' and this app's migrations)
   were copied to `supabase_migrations.schema_migrations_pre_baseline` and removed, so the CLI sees one history.
-- Pending (in `migrations/`, not applied yet): `20261127130000_application_documents_bucket.sql` (GAP-001: adds
-  `image/webp` to the private KYC bucket; the upload route already accepts WebP).
+- Applied 2026-11-26 after a rolled-back test (`tests/20261127140000_db_security_group2.test.sql`, 9/9, again 9/9
+  after applying): `20261127140000` … `20261127143000` (GAP-060 settlements job timeout, GAP-061 staff/admin logins
+  kept on "delete my account", GAP-062 share throttle + `branch_reviews()`).
+- Pending (in `migrations/`, not applied yet):
+  - `20261127130000_application_documents_bucket.sql` (GAP-001: adds `image/webp` to the private KYC bucket; the
+    upload route already accepts WebP).
+  - `20261127150000_reviews_private_columns.sql` (GAP-062 stage 2; tested 4/4 rolled back) — only after the
+    customer-app release that reads wash reviews through `branch_reviews()` is the minimum supported version.
+- Edge function `send-push` changed (GAP-093: re-reads the notification by id) — needs
+  `supabase functions deploy send-push --no-verify-jwt`.
 - Outside the schema and set by hand on a new project: Vault secrets, Auth settings, edge-function deploys and
   secrets, storage objects, reference data. The baseline header lists them.
 

@@ -2323,6 +2323,21 @@ export type Database = {
         Args: { p_branch_id: string }
         Returns: Record<string, unknown>
       }
+      branch_reviews: {
+        Args: { p_branch_id: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          branch_id: string
+          business_id: string
+          comment: Json
+          created_at: string
+          id: string
+          reply: string
+          reply_at: string
+          service_id: string
+          stars: number
+          tags: string[]
+        }[]
+      }
       branch_timezone: { Args: { p_branch_id: string }; Returns: string }
       cancel_order: {
         Args: { p_order_id: string; p_reason?: string }

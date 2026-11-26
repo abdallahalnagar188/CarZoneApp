@@ -141,7 +141,26 @@ class WashUpDbService extends GetxService {
     for (final r in newReviews) {
       final index = reviews.indexWhere((existing) => existing.id == r.id);
       if (index >= 0) {
-        reviews[index] = r;
+        final old = reviews[index];
+        // branch_reviews() rows carry no order / customer id (GAP-062): keep the ones already known for the
+        // customer's own review, so "already rated" checks keep working.
+        reviews[index] = (r.orderId == null && old.orderId != null) || (r.customerId == null && old.customerId != null)
+            ? ReviewModel(
+                id: r.id,
+                customerName: r.customerName,
+                branchId: r.branchId,
+                serviceName: r.serviceName,
+                stars: r.stars,
+                comment: r.comment,
+                createdAt: r.createdAt,
+                orderId: r.orderId ?? old.orderId,
+                customerId: r.customerId ?? old.customerId,
+                businessId: r.businessId ?? old.businessId,
+                serviceId: r.serviceId ?? old.serviceId,
+                tags: r.tags,
+                reply: r.reply,
+              )
+            : r;
       } else {
         reviews.add(r);
       }
@@ -439,8 +458,9 @@ class WashUpDbService extends GetxService {
           ),
         ),
         ApiCall.read(() => client.from('services').select().eq('branch_id', branchId), tag: 'branch services'),
+        // Public columns only (GAP-062): no customer id or wash report reason; newest first, at most 25.
         ApiCall.read(
-          () => client.from('reviews').select().eq('branch_id', branchId).order('created_at', ascending: false).limit(25),
+          () => client.rpc('branch_reviews', params: {'p_branch_id': branchId, 'p_limit': 25}),
           tag: 'branch reviews',
         ),
       ]);

@@ -35,6 +35,7 @@ function fakeDeps(order: LiveOrder, devices: LiveDevice[], results: Record<strin
   const deleted: string[] = [];
   const deps: Deps = {
     webhookSecret: SECRET,
+    getNotification: async () => null,
     getRecipient: async () => null,
     getTokens: async () => [],
     deleteTokens: async () => {},

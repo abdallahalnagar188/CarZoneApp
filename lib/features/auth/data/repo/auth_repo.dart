@@ -21,6 +21,9 @@ class PhoneInUseException implements Exception {}
 /// The account still has an open booking (delete_my_account).
 class ActiveBookingException implements Exception {}
 
+/// The login also belongs to a wash staff member or an admin, so it cannot be deleted from the app (GAP-061).
+class StaffAccountException implements Exception {}
+
 class AuthRepo {
   SupabaseClient get _client => SupabaseService.client;
 
@@ -473,7 +476,8 @@ class AuthRepo {
 
   /// Permanently delete the signed-in account (customer profile, cars,
   /// favorites, reviews and the auth user) through the delete_my_account RPC.
-  /// Throws [ActiveBookingException] while a booking is still open and
+  /// Throws [ActiveBookingException] while a booking is still open, [StaffAccountException] when the login is also
+  /// a wash staff / admin account, and
   /// [ApiException] when the server could not be reached.
   Future<void> deleteAccount() async {
     try {
@@ -481,6 +485,7 @@ class AuthRepo {
     } on PostgrestException catch (e) {
       dev.log('[AuthRepo] deleteAccount refused: ${e.message}');
       if (e.message == 'active_booking') throw ActiveBookingException();
+      if (e.message == 'staff_account') throw StaffAccountException();
       rethrow;
     }
   }

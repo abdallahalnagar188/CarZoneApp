@@ -99,6 +99,9 @@ class ProfileController extends GetxController {
     } on ActiveBookingException {
       Utils.getSnakBar(message: 'profile.deleteActive'.tr, type: TosterTypes.warning);
       return;
+    } on StaffAccountException {
+      Utils.getSnakBar(message: 'profile.deleteStaff'.tr, type: TosterTypes.warning);
+      return;
     } on ApiException catch (e) {
       Utils.getSnakBar(message: e.message, type: TosterTypes.failed);
       return;

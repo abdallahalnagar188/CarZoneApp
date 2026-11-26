@@ -27,6 +27,7 @@ function fakeDeps(over: Partial<Deps> = {}, results: Record<string, SendResult> 
   const deleted: string[] = [];
   const deps: Deps = {
     webhookSecret: SECRET,
+    getNotification: async (id) => (id === ROW.id ? ROW : null),
     getRecipient: async (id) => (id === "cu_1" ? { userId: "u-1", locale: "ar" } : null),
     getTokens: async () => ["tok-a", "tok-b"],
     deleteTokens: async (t) => void deleted.push(...t),
@@ -116,7 +117,10 @@ Deno.test("fails closed without the right webhook secret", async () => {
 
 Deno.test("customers without an app account or devices are skipped", async () => {
   const { deps, sent } = fakeDeps({ getTokens: async () => [] });
-  assertEquals((await (await handleSendPush(webhook({ ...ROW, customer_id: "cu_none" }), deps)).json()).skipped, "customer has no app account");
+  assertEquals(
+    (await (await handleSendPush(webhook(ROW), { ...deps, getNotification: async () => ({ ...ROW, customer_id: "cu_none" }) })).json()).skipped,
+    "customer has no app account",
+  );
   assertEquals((await (await handleSendPush(webhook(ROW), deps)).json()).skipped, "no push devices");
   assertEquals(sent.length, 0);
 });
@@ -218,9 +222,9 @@ Deno.test("fcmErrorCode falls back to the status", () => {
 Deno.test("reminder and offer pushes respect the customer's settings (GAP-036)", async () => {
   const off = { userId: "u-1", locale: "ar", notifyReminders: false, notifyOffers: false };
   const { deps, sent } = fakeDeps({ getRecipient: async () => off });
-  const reminder = await handleSendPush(webhook({ ...ROW, type: "booking_reminder" }), deps);
+  const reminder = await handleSendPush(webhook(ROW), { ...deps, getNotification: async () => ({ ...ROW, type: "booking_reminder" }) });
   assertEquals((await reminder.json()).skipped, "customer turned these notifications off");
-  const offer = await handleSendPush(webhook({ ...ROW, type: "offer", order_id: null }), deps);
+  const offer = await handleSendPush(webhook(ROW), { ...deps, getNotification: async () => ({ ...ROW, type: "offer", order_id: null }) });
   assertEquals((await offer.json()).skipped, "customer turned these notifications off");
   // Booking status changes are always sent.
   const status = await handleSendPush(webhook(ROW), deps);
@@ -233,4 +237,19 @@ Deno.test("settings not loaded (older database) mean every push is on", () => {
   assertFalse(optedOut("offer", { userId: "u", locale: "ar", notifyOffers: true }));
   assert(optedOut("review_reminder", { userId: "u", locale: "ar", notifyReminders: false }));
   assertFalse(optedOut("confirmed", { userId: "u", locale: "ar", notifyReminders: false, notifyOffers: false }));
+});
+
+Deno.test("the posted record is only a hint: text and recipient come from the database (GAP-093)", async () => {
+  const { deps, sent } = fakeDeps();
+  const forged = { ...ROW, customer_id: "cu_victim", title: { ar: "مزيف", en: "Forged" }, body: "click here" };
+  const res = await handleSendPush(webhook(forged), deps);
+  assertEquals(await res.json(), { id: ROW.id, sent: 2, removed: 0, failed: 0 });
+  assertEquals(sent[0].notification, { title: "تم تأكيد الحجز", body: "تم تأكيد حجزك رقم #CZ-00123 بنجاح" });
+});
+
+Deno.test("an id that is not in the database sends nothing (GAP-093)", async () => {
+  const { deps, sent } = fakeDeps();
+  const res = await handleSendPush(webhook({ ...ROW, id: "cn_made_up" }), deps);
+  assertEquals(await res.json(), { id: "cn_made_up", skipped: "notification not found" });
+  assertEquals(sent.length, 0);
 });

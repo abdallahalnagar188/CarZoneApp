@@ -16,7 +16,9 @@
 // Security: fails closed. Every request must carry the x-webhook-secret header
 // matching the webhook secret (Vault send_push_webhook_secret, which the trigger
 // also sends; see index.ts). The function is deployed with --no-verify-jwt, so
-// this header is the only gate.
+// this header is the only gate. The payload is only a hint (GAP-093): the
+// notification is re-read by id from the database, so a caller holding the
+// secret cannot push text or recipients of its own.
 import type { FcmSend, SendResult } from "./fcm.ts";
 import { type LiveDeps, sendLiveUpdate } from "./live.ts";
 
@@ -50,6 +52,8 @@ export function optedOut(type: string, recipient: Recipient): boolean {
 
 export interface Deps {
   webhookSecret: string | undefined;
+  /** The customer_notifications row as stored (GAP-093); null when it does not exist. */
+  getNotification: (id: string) => Promise<NotificationRow | null>;
   getRecipient: (customerId: string) => Promise<Recipient | null>;
   getTokens: (userId: string) => Promise<string[]>;
   deleteTokens: (tokens: string[]) => Promise<void>;
@@ -143,9 +147,15 @@ export async function handleSendPush(req: Request, deps: Deps): Promise<Response
     return json(200, await sendLiveUpdate(payload.record.id, deps.live, deps.send));
   }
 
-  const row = payload?.record;
-  if (payload?.type !== "INSERT" || payload?.table !== "customer_notifications" || !row?.id || !row?.customer_id) {
+  const hint = payload?.record;
+  if (payload?.type !== "INSERT" || payload?.table !== "customer_notifications" || !hint?.id) {
     return json(200, { skipped: "not a customer_notifications insert" });
+  }
+
+  // Never trust the posted record: send what the database holds for that id.
+  const row = await deps.getNotification(hint.id);
+  if (!row?.customer_id) {
+    return json(200, { id: hint.id, skipped: "notification not found" });
   }
 
   if (!deps.send) {
